@@ -3,6 +3,7 @@ import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';
@@ -420,88 +421,26 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: isSmallScreen ? 10 : 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.badge_rounded,
-                                      color: whiteColor.withOpacity(0.9),
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        'ID: ${currentUser != null ? currentUser!['employee_id'] : 'DRV-0000'}',
-                                        style: whiteTextStyle.copyWith(
-                                          fontSize: 14,
-                                          fontWeight: medium,
-                                          color: Colors.white.withOpacity(0.9),
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: isSmallScreen ? 6 : 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  'AKTIF',
-                                  style: whiteTextStyle.copyWith(
-                                    fontSize: 12,
-                                    fontWeight: semiBold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                color: whiteColor.withOpacity(0.9),
-                                size: 16,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Jam Kerja: 08:00 - 17:00',
-                                style: whiteTextStyle.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: medium,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    // Statistik Hari Ini
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.7,
+                      children: [
+                        buildStatCard('Pengambilan Selesai', '12', Colors.blue),
+                        buildStatCard('Rating', '4.8', Colors.green),
+                        buildStatCard('Waktu Aktif', '7j', Colors.orange),
+                        buildStatCard('Pengambilan Menunggu', '17', Colors.teal),
+                      ],
                     ),
                   ],
                 ),
               ),
+
+              // Jadwal Pengambilan (sudah dihandle oleh widget baru)
 
               // Quick Stats Title with Responsive Layout
               Container(
