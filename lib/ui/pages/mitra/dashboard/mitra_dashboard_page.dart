@@ -44,37 +44,65 @@ class _MitraDashboardPageState extends State<MitraDashboardPage> {
     }
   }
 
+  bool _isOnline = false;
+
+  void _togglePower() {
+    setState(() {
+      _isOnline = !_isOnline;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: lightBackgroundColor,
-      floatingActionButton: Container(
-        height: 60,
-        width: 60,
-        margin: const EdgeInsets.only(top: 30),
-        child: FloatingActionButton(
-          onPressed: () {
-            // Navigate to pengambilan page
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PengambilanListPage(),
+      floatingActionButton: Builder(
+        builder: (context) {
+          final media = MediaQuery.of(context);
+          final double fabSize = media.size.width < 400 ? 60 : (media.size.width < 600 ? 72 : 80);
+          final double navHeight = media.size.width < 400 ? 62 : (media.size.width < 600 ? 76 : 88);
+          final double fabBottom = navHeight - fabSize / 2 + media.padding.bottom + 8;
+          return Positioned(
+            bottom: fabBottom,
+            left: (media.size.width - fabSize) / 2,
+            child: Material(
+              elevation: 12,
+              shape: const CircleBorder(),
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _togglePower,
+                customBorder: const CircleBorder(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  width: fabSize,
+                  height: fabSize,
+                  decoration: BoxDecoration(
+                    color: _isOnline ? greenColor : const Color(0xFFE0E0E0),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.power_settings_new_rounded,
+                      color: _isOnline ? Colors.white : Colors.grey[400],
+                      size: fabSize * 0.54,
+                    ),
+                  ),
+                ),
               ),
-            );
-          },
-          elevation: 4,
-          highlightElevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-            side: BorderSide(color: Colors.white, width: 3),
-          ),
-          backgroundColor: greenColor,
-          child: Icon(
-            Icons.local_shipping_rounded,
-            color: whiteColor,
-            size: 28,
-          ),
-        ),
+            ),
+          );
+        },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: CustomBottomNavBarMitra(
