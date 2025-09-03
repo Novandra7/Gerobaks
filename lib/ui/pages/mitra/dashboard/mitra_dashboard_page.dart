@@ -635,7 +635,6 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                         ),
                       ],
                     ),
-<<<<<<< HEAD
                     const SizedBox(height: 16),
                     // Statistik Hari Ini
                     GridView.count(
@@ -672,12 +671,6 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       ),
                     ),
                     const SizedBox(width: 12),
-=======
-                    
-                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                    
-                    // Greeting with name
->>>>>>> c011f86420a6865ebda894ce00d986d0353ee85f
                     Text(
                       'Selamat ${_getGreeting()}, ${currentUser != null ? currentUser!['name'].split(' ')[0] : 'Fulan bin Fulan'}',
                       style: whiteTextStyle.copyWith(
