@@ -5,7 +5,6 @@ import 'package:latlong2/latlong.dart';
 import '../../../../blocs/tracking/tracking_bloc.dart';
 import '../../../../blocs/tracking/tracking_event.dart';
 import '../../../../blocs/tracking/tracking_state.dart';
-import 'dart:math' as math;
 
 class TrackingContent extends StatefulWidget {
   const TrackingContent({super.key});
@@ -32,8 +31,9 @@ class _TrackingContentState extends State<TrackingContent> {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.truckmap',
+              urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              subdomains: const ['a', 'b', 'c', 'd'],
+              userAgentPackageName: 'com.gerobaks.app',
             ),
 
             // Garis rute

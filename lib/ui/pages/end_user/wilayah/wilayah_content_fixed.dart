@@ -435,8 +435,9 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                             children: [
                               // Peta dasar
                               TileLayer(
-                                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.example.truckmap',
+                                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                                subdomains: const ['a', 'b', 'c', 'd'],
+                                userAgentPackageName: 'com.gerobaks.app',
                               ),
 
                               // Zona hijau sebagai polygon
