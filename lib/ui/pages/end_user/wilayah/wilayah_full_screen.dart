@@ -36,8 +36,9 @@ class _WilayahFullScreenState extends State<WilayahFullScreen> {
               // Peta dasar
               TileLayer(
                 urlTemplate:
-                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.truckmap',
+                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                subdomains: const ['a', 'b', 'c', 'd'],
+                userAgentPackageName: 'com.gerobaks.app',
               ),
 
               // Zona hijau sebagai polygon
