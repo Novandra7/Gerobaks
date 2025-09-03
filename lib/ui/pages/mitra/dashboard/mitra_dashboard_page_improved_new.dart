@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
@@ -8,7 +9,6 @@ import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
-import 'package:flutter/material.dart';
 
 class MitraDashboardPage extends StatefulWidget {
   const MitraDashboardPage({super.key});
@@ -105,8 +105,8 @@ class _MitraDashboardPageState extends State<MitraDashboardPage> {
                   height: fabSize,
                   decoration: BoxDecoration(
                     gradient: _isOnline 
-                      ? LinearGradient(
-                          colors: [greenColor, const Color(0xFF0CAF60)],
+                      ? const LinearGradient(
+                          colors: [Color(0xFF00D737), Color(0xFF009E29)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
@@ -182,11 +182,8 @@ class MitraDashboardContent extends StatefulWidget {
 
 class _MitraDashboardContentState extends State<MitraDashboardContent> {
   Map<String, dynamic>? currentUser;
-  final GlobalKey<RefreshIndicatorState> _refreshKey =
-      GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _refreshKey = GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
-  
-  // Parent index untuk navigasi
   
   // Metode untuk update parent state
   void _updateParentIndex(int index) {
@@ -284,6 +281,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
     required String value,
     required Color backgroundColor,
     required Color valueColor,
+    required IconData icon,
   }) {
     final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
     
@@ -302,20 +300,36 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: blackTextStyle.copyWith(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 12 : 14),
-              fontWeight: medium,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: blackTextStyle.copyWith(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 12 : 14),
+                  fontWeight: medium,
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                decoration: BoxDecoration(
+                  color: valueColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: valueColor,
+                  size: ResponsiveHelper.getResponsiveIconSize(context, 14),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
           Text(
             value,
             style: TextStyle(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 30 : 36),
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 28 : 32),
               fontWeight: bold,
               color: valueColor,
             ),
@@ -353,6 +367,16 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
             padding: EdgeInsets.symmetric(
               horizontal: ResponsiveHelper.getResponsiveSpacing(context, 16),
               vertical: ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 10 : 12),
+            ),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF5F5F5), Color(0xFFFFFFFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -417,7 +441,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
           Container(
             padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9), // Light green background
+              gradient: const LinearGradient(
+                colors: [Color(0xFFE8F5E9), Color(0xFFF1FBF3)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.vertical(
                 bottom: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
               ),
@@ -447,7 +475,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                     SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
                     Expanded(
                       child: Text(
-                        'JL. Muso Salim B',
+                        'JL. Muso Salim B No. 28, Samarinda Utara',
                         style: greyTextStyle.copyWith(
                           fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
                         ),
@@ -536,7 +564,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: greenColor,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00BB38), Color(0xFF008F29)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 24)),
                     bottomRight: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 24)),
@@ -563,8 +595,8 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Image.asset(
-                          'assets/img_gerobakss.png', 
-                          height: ResponsiveHelper.getResponsiveHeight(context, 24),
+                          'assets/img_gerobaks.png', 
+                          height: ResponsiveHelper.getResponsiveHeight(context, 28),
                           color: Colors.white,
                         ),
                         Row(
@@ -635,7 +667,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       ],
                     ),
                     
-                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 20)),
                     
                     // Greeting with name
                     Text(
@@ -697,7 +729,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                               height: ResponsiveHelper.getResponsiveHeight(context, 24),
                               width: ResponsiveHelper.getResponsiveWidth(context, 3),
                               decoration: BoxDecoration(
-                                color: greenColor,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00BB38), Color(0xFF009E29)],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
                                 borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 2)),
                               ),
                             ),
@@ -722,7 +758,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                               vertical: ResponsiveHelper.getResponsiveSpacing(context, 6),
                             ),
                             decoration: BoxDecoration(
-                              color: greenColor.withOpacity(0.1),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFE8F5E9), Color(0xFFD7ECD9)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                               borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 20)),
                             ),
                             child: Row(
@@ -761,7 +801,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                   crossAxisCount: 2,
                   crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
                   mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                  childAspectRatio: 1.6,
+                  childAspectRatio: 1.5,
                   children: [
                     // Pengambilan Selesai
                     _buildStatCard(
@@ -769,6 +809,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '12',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFF22C55E),
+                      icon: Icons.check_circle_outline,
                     ),
                     
                     // Rating
@@ -777,6 +818,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '4.8',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFFEAB308),
+                      icon: Icons.star_border_rounded,
                     ),
                     
                     // Waktu Aktif
@@ -785,6 +827,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '7j',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFF3B82F6),
+                      icon: Icons.access_time_outlined,
                     ),
                     
                     // Pengambilan Menunggu
@@ -793,6 +836,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '17',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFFF97316),
+                      icon: Icons.hourglass_empty_rounded,
                     ),
                   ],
                 ),
@@ -815,7 +859,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                               height: ResponsiveHelper.getResponsiveHeight(context, 24),
                               width: ResponsiveHelper.getResponsiveWidth(context, 3),
                               decoration: BoxDecoration(
-                                color: greenColor,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00BB38), Color(0xFF009E29)],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
                                 borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 2)),
                               ),
                             ),
@@ -835,7 +883,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                               width: ResponsiveHelper.getResponsiveWidth(context, 8),
                               height: ResponsiveHelper.getResponsiveHeight(context, 8),
                               decoration: BoxDecoration(
-                                color: greenColor,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00BB38), Color(0xFF009E29)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -873,7 +925,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       height: ResponsiveHelper.getResponsiveHeight(context, 32),
                       width: ResponsiveHelper.getResponsiveWidth(context, 4),
                       decoration: BoxDecoration(
-                        color: greenColor,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00BB38), Color(0xFF009E29)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
                         borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 2)),
                       ),
                     ),
@@ -992,7 +1048,14 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                                 Container(
                                   padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)),
                                   decoration: BoxDecoration(
-                                    color: action['color'].withOpacity(0.1),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        action['color'].withOpacity(0.1),
+                                        action['color'].withOpacity(0.05),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
                                     borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 14)),
                                   ),
                                   child: Icon(
