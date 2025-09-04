@@ -14,6 +14,8 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/otp_service.dart';
 import 'package:bank_sha/utils/pantun_helper.dart';
@@ -134,6 +136,8 @@ class MyApp extends StatelessWidget {
         '/subscription-plans': (context) => SubscriptionPlansPage(),
         '/my-subscription': (context) => MySubscriptionPage(),
         '/tambah-jadwal': (context) => const TambahJadwalPage(),
+        '/user-add-schedule': (context) => const CreateSchedulePage(),
+        '/jadwal': (context) => const UserSchedulesPageNew(),
         '/tracking': (context) => const TrackingPage(),
         '/wilayah': (context) => const WilayahPage(),
         '/reward': (context) => const RewardPage(),
