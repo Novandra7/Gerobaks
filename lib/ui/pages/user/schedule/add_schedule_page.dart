@@ -2,113 +2,100 @@ import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/widgets/shared/map_picker.dart';
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
-import 'package:bank_sha/config/map_config.dart';
 import 'package:intl/intl.dart';
-import 'package:uuid/uuid.dart';
-import 'package:bank_sha/utils/dialog_utils.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AddSchedulePage extends StatefulWidget {
-  const AddSchedulePage({Key? key}) : super(key: key);
+  const AddSchedulePage({super.key});
 
   @override
   State<AddSchedulePage> createState() => _AddSchedulePageState();
 }
 
-class _AddSchedulePageState extends State<AddSchedulePage> with TickerProviderStateMixin {
+class _AddSchedulePageState extends State<AddSchedulePage> {
   final _formKey = GlobalKey<FormState>();
-  
-  // Controllers
   final _addressController = TextEditingController();
-  final _wasteTypeController = TextEditingController();
-  final _weightController = TextEditingController();
   final _notesController = TextEditingController();
-  final _contactNameController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
-  // FocusNodes for better keyboard handling
-  final _addressFocusNode = FocusNode();
-  final _notesFocusNode = FocusNode();
-  
-  // State variables
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
-  ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
-  double? _selectedLat;
-  double? _selectedLng;
+
+  final _scheduleService = ScheduleService();
   bool _isLoading = false;
-  bool _hasUserInteraction = false;
-  bool _hasSelectedLocation = false;
-  
-  // Animation controllers
-  late AnimationController _mapSelectionAnimationController;
-  
-  // Services
-  final _scheduleService = ScheduleService(LocalStorageService());
+  String? _userId;
+
+  DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 0);
+  LatLng _selectedLocation = const LatLng(-6.2088, 106.8456); // Default to Jakarta
+  String _selectedWasteType = 'Campuran';
+  ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
+
+  final List<String> _wasteTypes = [
+    'Campuran',
+    'Organik',
+    'Anorganik',
+    'B3',
+    'Elektronik',
+  ];
 
   @override
   void initState() {
     super.initState();
-    
-    // Initialize animation controller for map selection feedback
-    _mapSelectionAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+    _initialize();
   }
-  
+
   @override
   void dispose() {
-    // Clean up controllers
     _addressController.dispose();
-    _wasteTypeController.dispose();
-    _weightController.dispose();
     _notesController.dispose();
-    _contactNameController.dispose();
+    _weightController.dispose();
+    _nameController.dispose();
     _phoneController.dispose();
-    
-    // Clean up focus nodes
-    _addressFocusNode.dispose();
-    _notesFocusNode.dispose();
-    
-    // Clean up animation controllers
-    _mapSelectionAnimationController.dispose();
-    
     super.dispose();
   }
-  
-  // Date picker
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: greenColor,
-              onPrimary: whiteColor,
-              onSurface: blackColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
+
+  Future<void> _initialize() async {
+    if (!mounted) return;
     
-    if (picked != null && picked != _selectedDate) {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get current user ID
+      final localStorage = await LocalStorageService.getInstance();
+      final userData = await localStorage.getUserData();
+      if (userData != null) {
+        _userId = userData['id'] as String;
+      }
+
+      // Get current location
+      _getCurrentLocation();
+
+      if (!mounted) return;
       setState(() {
-        _selectedDate = picked;
-        _hasUserInteraction = true;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error initializing: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
       });
     }
   }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      // Check for location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
           // Permission denied
           return;
         }
