@@ -1,6 +1,7 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/ui/pages/end_user/address/select_address_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/models/subscription_model.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/subscription_plans_page.dart';
@@ -851,12 +852,12 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                           Future.delayed(const Duration(milliseconds: 150), () {
                             Navigator.pop(context); // Tutup modal
                             // Handle navigasi berdasarkan rute
-                            if (item['title'] == 'Jadwal Baru') {
+                            if (item['title'] == 'Jadwal') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      const SelectAddressPage(),
+                                      const UserSchedulesPage(),
                                 ),
                               );
                             } else {
@@ -977,10 +978,10 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
 
     List<Map<String, dynamic>> quickItems = [
       {
-        'icon': Icons.note_add_outlined,
-        'title': 'Jadwal Baru',
-        'subtitle': 'Buat Jadwal Pengambilan Sampah Anda',
-        'route': '/tambah-jadwal',
+        'icon': Icons.calendar_today,
+        'title': 'Jadwal',
+        'subtitle': 'Lihat dan Buat Jadwal Pengambilan Sampah',
+        'route': '/jadwal',
       },
       {
         'icon': Icons.location_on_outlined,
@@ -1251,12 +1252,12 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
               final item = quickItems[index];
               return InkWell(
                 onTap: () {
-                  // Handle special navigation for "Jadwal Baru"
-                  if (item['title'] == 'Jadwal Baru') {
+                  // Handle special navigation for "Jadwal"
+                  if (item['title'] == 'Jadwal') {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const SelectAddressPage(),
+                        builder: (context) => const UserSchedulesPage(),
                       ),
                     );
                   } else {
