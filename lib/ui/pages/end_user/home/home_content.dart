@@ -990,6 +990,12 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
         'route': '/tracking_full',
       },
       {
+        'icon': Icons.taxi_alert,
+        'title': 'Demo Taksi & Saldo',
+        'subtitle': 'Coba fitur panggilan taksi dan saldo baru',
+        'route': '/schedule-taxi-demo',
+      },
+      {
         'icon': Icons.assignment_outlined,
         'title': 'Keluhan',
         'subtitle': 'Kirim dan kelola keluhan tentang layanan kami',
