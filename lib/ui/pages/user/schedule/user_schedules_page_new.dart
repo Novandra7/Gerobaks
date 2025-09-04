@@ -5,9 +5,12 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:bank_sha/utils/map_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:bank_sha/ui/widgets/shared/map_picker.dart';
 
 class UserSchedulesPage extends StatefulWidget {
   const UserSchedulesPage({super.key});
@@ -177,7 +180,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           ScheduleStatus.cancelled
         );
         
-        if (updatedSchedule != null) {
+        if (updatedSchedule != null && mounted) {
           DialogHelper.showSuccessDialog(
             context: context,
             title: 'Jadwal Dibatalkan',
@@ -187,11 +190,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         }
       }
     } catch (e) {
-      DialogHelper.showErrorDialog(
-        context: context,
-        title: 'Gagal Membatalkan Jadwal',
-        message: 'Terjadi kesalahan saat membatalkan jadwal. Silakan coba lagi nanti.',
-      );
+      if (mounted) {
+        DialogHelper.showErrorDialog(
+          context: context,
+          title: 'Gagal Membatalkan Jadwal',
+          message: 'Terjadi kesalahan saat membatalkan jadwal. Silakan coba lagi nanti.',
+        );
+      }
       print('Error cancelling schedule: $e');
     }
   }
@@ -255,7 +260,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                         end: Alignment.bottomCenter,
                         colors: [
                           greenColor,
-                          greenColor.withOpacity(0.8),
+                          greenColor.withAlpha(204), // 0.8 * 255 = 204
                         ],
                       ),
                     ),
@@ -282,7 +287,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                     borderRadius: BorderRadius.circular(25),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
+                                        color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -338,7 +343,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                   borderRadius: BorderRadius.circular(25),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
@@ -397,7 +402,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: greenColor.withOpacity(0.1),
+                                  color: greenColor.withAlpha(26), // 0.1 * 255 = 26
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -495,7 +500,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -522,7 +527,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
+                            color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -572,13 +577,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             value: schedule.address,
           ),
           
-          if (schedule.latitude != null && schedule.longitude != null)
-            _buildDetailItem(
-              icon: Icons.pin_drop_rounded,
-              title: 'Koordinat',
-              value: '${schedule.latitude}, ${schedule.longitude}',
-              isCoordinates: true,
-            ),
+          // Display coordinates
+          _buildDetailItem(
+            icon: Icons.pin_drop_rounded,
+            title: 'Koordinat',
+            value: '${schedule.location.latitude}, ${schedule.location.longitude}',
+            isCoordinates: true,
+          ),
           
           if (schedule.wasteType != null)
             _buildDetailItem(
@@ -660,6 +665,21 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
     );
   }
   
+  // Function to view the location on a map inside the app
+  void _openMapView(double lat, double lng) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerPage(
+          initialLocation: LatLng(lat, lng),
+          onLocationSelected: (address, lat, lng) {
+            // This is a view-only map, so we don't need to handle selection
+          },
+        ),
+      ),
+    );
+  }
+  
   Widget _buildDetailItem({
     required IconData icon, 
     required String title, 
@@ -674,7 +694,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: greenColor.withOpacity(0.1),
+              color: greenColor.withAlpha(26), // 0.1 * 255 = 26
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -707,22 +727,64 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                       ),
                     ),
                     if (isCoordinates)
-                      GestureDetector(
-                        onTap: () {
-                          // TODO: Open map
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: greenColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              // Parse coordinates from the value string
+                              List<String> coords = value.split(',');
+                              if (coords.length == 2) {
+                                try {
+                                  double lat = double.parse(coords[0].trim());
+                                  double lng = double.parse(coords[1].trim());
+                                  _openMapView(lat, lng);
+                                } catch (e) {
+                                  print('Error parsing coordinates: $e');
+                                }
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: greenColor.withAlpha(26), // 0.1 * 255 = 26
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                Icons.map,
+                                color: greenColor,
+                                size: 16,
+                              ),
+                            ),
                           ),
-                          child: Icon(
-                            Icons.map,
-                            color: greenColor,
-                            size: 16,
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              // Parse coordinates from the value string
+                              List<String> coords = value.split(',');
+                              if (coords.length == 2) {
+                                try {
+                                  double lat = double.parse(coords[0].trim());
+                                  double lng = double.parse(coords[1].trim());
+                                  MapUtils.openMap(lat, lng);
+                                } catch (e) {
+                                  print('Error parsing coordinates: $e');
+                                }
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withAlpha(26),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Icon(
+                                Icons.directions,
+                                color: Colors.blue,
+                                size: 16,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                   ],
                 ),
@@ -754,8 +816,8 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
   Widget _buildHeaderStats() {
     // Count schedules by status
     int pendingCount = _schedules.where((s) => s.status == ScheduleStatus.pending).length;
-    int completedCount = _schedules.where((s) => s.status == ScheduleStatus.completed).length;
     int inProgressCount = _schedules.where((s) => s.status == ScheduleStatus.inProgress).length;
+    // We're not using completedCount yet, but will track all schedules
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,7 +842,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           style: whiteTextStyle.copyWith(
             fontSize: 14, 
             fontWeight: light,
-            color: Colors.white.withOpacity(0.9)
+            color: Colors.white.withAlpha(230) // 0.9 * 255 = 230
           ),
         ),
         const SizedBox(height: 20),
@@ -818,10 +880,10 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withAlpha(38), // 0.15 * 255 = 38
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withAlpha(51), // 0.2 * 255 = 51
             width: 1,
           ),
         ),
@@ -842,7 +904,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
               style: whiteTextStyle.copyWith(
                 fontSize: 11,
                 fontWeight: medium,
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withAlpha(230), // 0.9 * 255 = 230
               ),
               textAlign: TextAlign.center,
             ),
@@ -911,13 +973,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             boxShadow: [
               if (isSelected)
                 BoxShadow(
-                  color: statusColor.withOpacity(0.3),
+                  color: statusColor.withAlpha(77), // 0.3 * 255 = 77
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
               if (!isSelected)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withAlpha(8), // 0.03 * 255 = 8
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -964,7 +1026,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
             blurRadius: 10,
             spreadRadius: 0,
           ),
@@ -976,7 +1038,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           Icon(
             Icons.calendar_today_outlined,
             size: 80,
-            color: greyColor.withOpacity(0.5),
+            color: greyColor.withAlpha(128), // 0.5 * 255 = 128
           ),
           const SizedBox(height: 20),
           Text(
@@ -1048,13 +1110,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
-            color: statusColor.withOpacity(0.2),
+            color: statusColor.withAlpha(51), // 0.2 * 255 = 51
             width: 1.5,
           ),
         ),
@@ -1084,7 +1146,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
+                              color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1106,10 +1168,10 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
+                          color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: statusColor.withOpacity(0.3),
+                            color: statusColor.withAlpha(77), // 0.3 * 255 = 77
                           ),
                         ),
                         child: Row(
