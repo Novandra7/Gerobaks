@@ -116,7 +116,6 @@ class BalanceCard extends StatefulWidget {
 class _BalanceCardState extends State<BalanceCard> {
   bool _isLoading = true;
   bool _hasError = false;
-  String _errorMessage = '';
   double _balance = 0;
   bool _isRefreshing = false;
   
@@ -153,13 +152,11 @@ class _BalanceCardState extends State<BalanceCard> {
         _balance = result['balance'];
         _isLoading = false;
         _hasError = result['hasError'] ?? false;
-        _errorMessage = result['errorMessage'] ?? '';
       });
     } else {
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = result['message'] ?? 'Failed to load balance';
       });
     }
   }

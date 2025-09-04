@@ -2,7 +2,6 @@ import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/balance_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/schedule_item.dart';
-import 'package:bank_sha/ui/widgets/shared/taxi_call_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
@@ -20,68 +19,11 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
   bool _showEmptyState = false;
   List<ScheduleModel> _schedules = [];
   final String _userId = '123'; // Replace with actual user ID from your auth system
-  
-  // Taxi phone number - replace with your actual number
-  final String _taxiPhoneNumber = '+62 812-3456-7890';
 
   @override
   void initState() {
     super.initState();
     context.read<ScheduleBloc>().add(ScheduleFetch());
-  }
-
-  void _onTaxiCall() async {
-    // Here you would implement the actual call functionality
-    // For example, using url_launcher to make a phone call
-    
-    // For demonstration, we're just showing a confirmation dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Panggil Taksi',
-            style: blackTextStyle.copyWith(
-              fontWeight: semiBold,
-            ),
-          ),
-          content: Text(
-            'Anda akan dihubungkan dengan layanan taksi di $_taxiPhoneNumber',
-            style: blackTextStyle,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                'Batal',
-                style: greyTextStyle,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Menghubungi taksi...'),
-                    duration: Duration(seconds: 2),
-                    backgroundColor: greenColor,
-                  ),
-                );
-              },
-              child: Text(
-                'Hubungi',
-                style: TextStyle(
-                  color: greenColor,
-                  fontWeight: semiBold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -196,59 +138,6 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
               },
             ),
             
-            // Taxi Call Section
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: whiteColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    offset: const Offset(0, 2),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.local_taxi,
-                        color: greenColor,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Butuh Transportasi?',
-                        style: blackTextStyle.copyWith(
-                          fontSize: 18,
-                          fontWeight: semiBold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Anda dapat menghubungi taksi untuk transportasi menuju lokasi pengambilan sampah atau untuk keperluan lainnya.',
-                    style: blackTextStyle.copyWith(
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TaxiCallButton(
-                      onCall: _onTaxiCall,
-                      phoneNumber: _taxiPhoneNumber,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
             const SizedBox(height: 80), // Bottom padding for FAB
           ],
         ),
@@ -332,22 +221,18 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
     return Column(
       children: _schedules.map((schedule) {
         // Format date
-        final date = schedule.date != null
-            ? DateFormat('dd MMMM yyyy').format(schedule.date!)
-            : 'Tanggal tidak tersedia';
+        final date = DateFormat('dd MMMM yyyy').format(schedule.scheduledDate);
             
         // Format time
-        final time = schedule.time != null
-            ? schedule.time!
-            : 'Waktu tidak tersedia';
+        final time = '${schedule.timeSlot.hour}:${schedule.timeSlot.minute.toString().padLeft(2, '0')}';
             
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: ScheduleItem(
-            title: schedule.title ?? 'Jadwal Pengambilan Sampah',
+            title: 'Jadwal Pengambilan Sampah',
             date: date,
             time: time,
-            status: schedule.status ?? 'pending',
+            status: schedule.status.toString().split('.').last,
             onTap: () {
               // Navigate to detail page
               Navigator.pushNamed(

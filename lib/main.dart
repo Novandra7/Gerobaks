@@ -14,7 +14,8 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
-import 'package:bank_sha/ui/pages/user/schedule/schedule_taxi_balance_demo.dart'; // Import halaman demo baru
+import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/otp_service.dart';
 import 'package:bank_sha/utils/pantun_helper.dart';
@@ -135,6 +136,8 @@ class MyApp extends StatelessWidget {
         '/subscription-plans': (context) => SubscriptionPlansPage(),
         '/my-subscription': (context) => MySubscriptionPage(),
         '/tambah-jadwal': (context) => const TambahJadwalPage(),
+        '/user-add-schedule': (context) => const CreateSchedulePage(),
+        '/jadwal': (context) => const UserSchedulesPageNew(),
         '/tracking': (context) => const TrackingPage(),
         '/wilayah': (context) => const WilayahPage(),
         '/reward': (context) => const RewardPage(),
@@ -143,7 +146,6 @@ class MyApp extends StatelessWidget {
         '/goldenKeluhan': (context) => const GoldenKeluhanPage(),
         '/about-us': (context) => AboutUs(),
         '/wilayah_full': (context) => const WilayahFullScreen(),
-        '/schedule-taxi-demo': (context) => const ScheduleTaxiBalanceDemo(), // Menambahkan rute demo fitur baru
         '/qris-payment': (context) => QRISPaymentPage(
           amount: ModalRoute.of(context)?.settings.arguments != null 
             ? (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['amount'] as int? ?? 0 
