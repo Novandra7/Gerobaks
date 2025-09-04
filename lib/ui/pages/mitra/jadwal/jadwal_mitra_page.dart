@@ -1,5 +1,11 @@
+import 'package:bank_sha/models/schedule_model.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class JadwalMitraPage extends StatefulWidget {
   const JadwalMitraPage({super.key});
@@ -10,6 +16,11 @@ class JadwalMitraPage extends StatefulWidget {
 
 class _JadwalMitraPageState extends State<JadwalMitraPage> {
   DateTime selectedDate = DateTime.now();
+  String? _driverId;
+  bool _isLoading = false;
+  List<ScheduleModel> _schedules = [];
+  
+  final ScheduleService _scheduleService = ScheduleService();
 
   @override
   Widget build(BuildContext context) {

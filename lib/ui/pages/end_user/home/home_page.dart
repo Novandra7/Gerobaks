@@ -1,5 +1,6 @@
 import 'package:bank_sha/ui/pages/end_user/popupiklan.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
 import 'package:bank_sha/utils/subscription_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
@@ -56,7 +57,7 @@ class _HomePageState extends State<HomePage> {
             if (hasSubscription && mounted) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SelectAddressPage()),
+                MaterialPageRoute(builder: (context) => const AddSchedulePage()),
               );
             }
           },
