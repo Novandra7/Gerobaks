@@ -1,5 +1,4 @@
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:flutter/material.dart';
 
 class PengambilanListPage extends StatefulWidget {

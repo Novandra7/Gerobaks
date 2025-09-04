@@ -222,7 +222,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                             Switch(
                               value: _routinePantunEnabled,
                               onChanged: _toggleRoutinePantun,
-                              activeColor: greenColor,
+                              activeThumbColor: greenColor,
                             ),
                           ],
                         ),

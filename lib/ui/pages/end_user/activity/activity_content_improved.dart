@@ -12,13 +12,13 @@ class ActivityContentImproved extends StatefulWidget {
   final Future<void> Function()? onRefresh;
 
   const ActivityContentImproved({
-    Key? key,
+    super.key,
     this.selectedDate,
     required this.showActive,
     this.filterCategory,
     this.searchQuery,
     this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   State<ActivityContentImproved> createState() => _ActivityContentImprovedState();

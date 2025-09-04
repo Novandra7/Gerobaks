@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/models/user_model.dart';
-import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 
 class RewardContent extends StatefulWidget {
   const RewardContent({super.key});

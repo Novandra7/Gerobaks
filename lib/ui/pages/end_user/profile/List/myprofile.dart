@@ -1,7 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/models/user_model.dart';
@@ -212,7 +211,7 @@ class _MyprofileState extends State<Myprofile> {
                         ),
                       ],
                     ),
-                  )).toList(),
+                  )),
                 ],
               ],
             ),

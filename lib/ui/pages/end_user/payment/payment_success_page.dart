@@ -3,7 +3,7 @@ import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter/material.dart';
 
 class PaymentSuccessPage extends StatelessWidget {
-  const PaymentSuccessPage({Key? key}) : super(key: key);
+  const PaymentSuccessPage({super.key});
 
   String _formatAmount(int amount) {
     final formatter = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');

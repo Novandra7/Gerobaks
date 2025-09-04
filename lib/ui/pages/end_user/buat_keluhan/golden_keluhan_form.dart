@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'dart:math';
 
 class GoldenKeluhanForm extends StatefulWidget {
-  const GoldenKeluhanForm({Key? key}) : super(key: key);
+  const GoldenKeluhanForm({super.key});
 
   @override
   State<GoldenKeluhanForm> createState() => _GoldenKeluhanFormState();
@@ -394,7 +394,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         border: Border.all(color: greyColor.withOpacity(0.3)),
       ),
       child: DropdownButtonFormField<T>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(

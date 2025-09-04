@@ -41,7 +41,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
 
   // Method untuk mendapatkan status subscription
   Future<UserSubscription?> _getSubscriptionStatus() async {
-    return await _subscriptionService.getCurrentSubscription();
+    return _subscriptionService.getCurrentSubscription();
   }
 
   void _updateGreetingCache() {

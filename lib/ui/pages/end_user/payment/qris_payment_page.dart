@@ -14,12 +14,12 @@ class QRISPaymentPage extends StatefulWidget {
   final Map<String, dynamic>? returnData;
 
   const QRISPaymentPage({
-    Key? key,
+    super.key,
     required this.amount,
     required this.transactionId,
     required this.description,
     this.returnData,
-  }) : super(key: key);
+  });
 
   @override
   State<QRISPaymentPage> createState() => _QRISPaymentPageState();
