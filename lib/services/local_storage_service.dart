@@ -200,6 +200,19 @@ class LocalStorageService {
   Future<int> getInt(String key, {int defaultValue = 0}) async {
     return _preferences!.getInt(key) ?? defaultValue;
   }
+  
+  // General key-value storage methods for any temporary data
+  Future<void> saveValue(String key, String value) async {
+    await _preferences!.setString(key, value);
+  }
+  
+  Future<String?> getValue(String key) async {
+    return _preferences!.getString(key);
+  }
+  
+  Future<bool> removeValue(String key) async {
+    return await _preferences!.remove(key);
+  }
 
   Future<void> remove(String key) async {
     await _preferences!.remove(key);

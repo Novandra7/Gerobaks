@@ -240,6 +240,7 @@ class UserService {
     double? latitude,
     double? longitude,
     String? profilePicUrl,
+    bool? isPhoneVerified,
   }) async {
     final user = await _localStorage.getUser();
 
@@ -254,6 +255,7 @@ class UserService {
       latitude: latitude ?? user.latitude,
       longitude: longitude ?? user.longitude,
       profilePicUrl: profilePicUrl ?? user.profilePicUrl,
+      isPhoneVerified: isPhoneVerified ?? user.isPhoneVerified,
     );
 
     await _localStorage.saveUser(updatedUser);
@@ -292,6 +294,44 @@ class UserService {
 
     await _localStorage.updateUserPoints(currentPoints - amount);
     return await _localStorage.getUserPoints();
+  }
+  
+  // Request OTP for phone verification
+  Future<String> requestPhoneVerification(String phoneNumber) async {
+    // In a real app, this would call an API to send SMS
+    // For demo purposes, we'll generate a simple OTP
+    final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
+    
+    // In a real app, store this OTP with the phone number in a temporary storage
+    // For demo, we'll store it in localStorage with a key based on the phone number
+    await _localStorage.saveValue('otp_for_$phoneNumber', otp);
+    
+    print('Generated OTP for $phoneNumber: $otp');
+    return otp; // Return OTP for demo purposes, in production just return success status
+  }
+  
+  // Verify phone with OTP
+  Future<bool> verifyPhoneWithOTP(String phoneNumber, String otp) async {
+    // In a real app, validate against stored OTP or call API
+    // For demo, we'll check against our localStorage
+    final storedOTP = await _localStorage.getValue('otp_for_$phoneNumber');
+    
+    if (storedOTP == otp) {
+      // Update user with verified phone
+      final user = await getCurrentUser();
+      if (user != null) {
+        await updateUserProfile(
+          phone: phoneNumber,
+          isPhoneVerified: true,
+        );
+      }
+      
+      // Clear OTP after successful verification
+      await _localStorage.removeValue('otp_for_$phoneNumber');
+      return true;
+    }
+    
+    return false;
   }
 
   // Save an address
