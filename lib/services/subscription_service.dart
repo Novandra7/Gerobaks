@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import '../models/subscription_model.dart';
+import '../models/user_model.dart';
 import '../services/local_storage_service.dart';
+import '../services/user_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -29,10 +31,47 @@ class SubscriptionService {
       _currentSubscription = UserSubscription.fromJson(subscriptionData);
       _subscriptionController.add(_currentSubscription);
       print('DEBUG: Loaded subscription = $_currentSubscription');
+      
+      // Sync subscription status with user model
+      await _syncUserSubscriptionStatus();
     } else {
       print('DEBUG: No subscription data found in localStorage');
       _currentSubscription = null;
       _subscriptionController.add(null);
+      
+      // Sync subscription status with user model (set as not subscribed)
+      await _syncUserSubscriptionStatus();
+    }
+  }
+  
+  // Sync subscription status with user model
+  Future<void> _syncUserSubscriptionStatus() async {
+    try {
+      final userService = await UserService.getInstance();
+      await userService.init();
+      final currentUser = await userService.getCurrentUser();
+      
+      if (currentUser != null) {
+        final bool isActive = _currentSubscription?.isActive ?? false;
+        final String? subscriptionType = isActive 
+          ? _currentSubscription?.planId.split('_').first 
+          : null;
+        
+        // Only update if there's a mismatch
+        if (currentUser.isSubscribed != isActive || 
+            (isActive && subscriptionType != currentUser.subscriptionType)) {
+          
+          final updatedUser = currentUser.copyWith(
+            isSubscribed: isActive,
+            subscriptionType: subscriptionType,
+          );
+          
+          await userService.updateUserData(updatedUser);
+          print('DEBUG: Synced user subscription status: isSubscribed=$isActive, type=$subscriptionType');
+        }
+      }
+    } catch (e) {
+      print('Error syncing subscription status with user model: $e');
     }
   }
 
@@ -189,6 +228,24 @@ class SubscriptionService {
     _currentSubscription = subscription;
     _subscriptionController.add(_currentSubscription);
     
+    // Update user model with subscription information
+    try {
+      final userService = await UserService.getInstance();
+      await userService.init();
+      final currentUser = await userService.getCurrentUser();
+      
+      if (currentUser != null) {
+        final updatedUser = currentUser.copyWith(
+          isSubscribed: true,
+          subscriptionType: plan.type.toString().split('.').last,
+        );
+        
+        await userService.updateUserData(updatedUser);
+      }
+    } catch (e) {
+      print('Error updating user subscription status: $e');
+    }
+    
     return subscription;
   }
 
@@ -207,7 +264,35 @@ class SubscriptionService {
 
   // Check if user has active subscription
   bool hasActiveSubscription() {
-    return _currentSubscription?.isActive ?? false;
+    bool isActive = _currentSubscription?.isActive ?? false;
+    
+    // Ensure user model subscription status is in sync with actual subscription
+    Future.microtask(() async {
+      try {
+        final userService = await UserService.getInstance();
+        await userService.init();
+        final currentUser = await userService.getCurrentUser();
+        
+        if (currentUser != null) {
+          // Only update if there's a mismatch
+          if (currentUser.isSubscribed != isActive || 
+              (isActive && _currentSubscription != null && 
+               currentUser.subscriptionType != _currentSubscription!.planId.split('_').first)) {
+            
+            final updatedUser = currentUser.copyWith(
+              isSubscribed: isActive,
+              subscriptionType: isActive ? _currentSubscription?.planId.split('_').first : null,
+            );
+            
+            await userService.updateUserData(updatedUser);
+          }
+        }
+      } catch (e) {
+        print('Error syncing subscription status with user model: $e');
+      }
+    });
+    
+    return isActive;
   }
 
   // Cancel subscription
@@ -228,6 +313,24 @@ class SubscriptionService {
       await _localStorage.saveSubscription(cancelledSubscription.toJson());
       _currentSubscription = cancelledSubscription;
       _subscriptionController.add(_currentSubscription);
+      
+      // Update user subscription status
+      try {
+        final userService = await UserService.getInstance();
+        await userService.init();
+        final currentUser = await userService.getCurrentUser();
+        
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(
+            isSubscribed: false,
+            subscriptionType: null,
+          );
+          
+          await userService.updateUserData(updatedUser);
+        }
+      } catch (e) {
+        print('Error updating user subscription status: $e');
+      }
     }
   }
 
@@ -252,6 +355,24 @@ class SubscriptionService {
       await _localStorage.saveSubscription(newSubscription.toJson());
       _currentSubscription = newSubscription;
       _subscriptionController.add(_currentSubscription);
+      
+      // Update user model with subscription information
+      try {
+        final userService = await UserService.getInstance();
+        await userService.init();
+        final currentUser = await userService.getCurrentUser();
+        
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(
+            isSubscribed: true,
+            subscriptionType: plan.type.toString().split('.').last,
+          );
+          
+          await userService.updateUserData(updatedUser);
+        }
+      } catch (e) {
+        print('Error updating user subscription status: $e');
+      }
       
       return newSubscription;
     }

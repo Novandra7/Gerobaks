@@ -53,10 +53,21 @@ class _SignInPageState extends State<SignInPage> {
       await _userService!.init();
 
       // Check if user is already logged in
-      final isLoggedIn = await _userService!.getCurrentUser() != null;
+      final currentUser = await _userService!.getCurrentUser();
+      final isLoggedIn = currentUser != null;
+      
       if (isLoggedIn && mounted) {
-        // If already logged in, navigate to home page
-        Navigator.pushReplacementNamed(context, '/home');
+        // Get user data to check role
+        final localStorage = await LocalStorageService.getInstance();
+        final userData = await localStorage.getUserData();
+        
+        // Navigate based on role
+        if (userData != null && userData['role'] == 'mitra') {
+          Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
+        } else {
+          // Default to end_user dashboard
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     } catch (e) {
       print("Error initializing services: $e");
@@ -84,37 +95,51 @@ class _SignInPageState extends State<SignInPage> {
     });
 
     try {
-      // Make sure service is initialized
-      if (_userService == null) {
-        await _initializeServices();
-      }
-
-      // Login using UserService
-      final user = await _userService?.loginUser(
-        email: _emailController.text,
-        password: _passwordController.text,
+      // Validate login using UserDataMock
+      final user = UserDataMock.validateLogin(
+        _emailController.text,
+        _passwordController.text,
       );
 
       if (user != null) {
+        print("Login successful for: ${user['name']} (${user['email']})");
+        
+        // Save user data to local storage
+        final localStorage = await LocalStorageService.getInstance();
+        await localStorage.saveUserData(user);
+
         // Menampilkan notifikasi login berhasil
         await NotificationService().showNotification(
           id: DateTime.now().millisecond,
           title: 'Login Berhasil',
-          body: 'Selamat datang di Gerobaks!',
+          body: 'Selamat datang di Gerobaks, ${user['name']}!',
         );
 
-        // Menampilkan toast login berhasil dengan poin
+        // Menampilkan toast login berhasil
         if (mounted) {
+          String message = 'Login berhasil! ';
+          if (user['role'] == 'end_user') {
+            message += 'Poin Anda: ${user['points']}';
+          } else {
+            message += 'Selamat bekerja, Mitra!';
+          }
+          
           ToastHelper.showToast(
             context: context,
-            message: 'Login berhasil! Poin Anda: ${user.points}',
+            message: message,
             isSuccess: true,
           );
 
-          // Navigasi ke halaman home
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          // Navigate based on role
+          if (user['role'] == 'mitra') {
+            Navigator.pushNamedAndRemoveUntil(context, '/mitra-dashboard-new', (route) => false);
+          } else {
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          }
         }
       } else {
+        print("Login failed for: ${_emailController.text}");
+        
         if (mounted) {
           ToastHelper.showToast(
             context: context,

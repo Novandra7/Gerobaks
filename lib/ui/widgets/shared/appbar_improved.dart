@@ -12,7 +12,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
   final String? titleIconAsset; // Ikon yang ditampilkan di sebelah judul
 
   const CustomAppHeaderImproved({
-    Key? key,
+    super.key,
     required this.title,
     this.imageAssetPath,
     this.iconData,
@@ -21,7 +21,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
     this.bottom,
     this.showIconWithTitle = false,
     this.titleIconAsset,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,17 +52,26 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
       actionWidgets.addAll(actions!);
     }
     
+    // Get screen width for responsiveness
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    
     return AppBar(
       automaticallyImplyLeading: false,
       backgroundColor: uicolor,
       elevation: 0,
       flexibleSpace: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 5, 24, 15),
+          padding: EdgeInsets.fromLTRB(
+            isTablet ? 28 : 24, 
+            isTablet ? 8 : 5, 
+            isTablet ? 28 : 24, 
+            isTablet ? 18 : 15
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Title with optional icon
+              // Title with optional icon, responsive font size
               Expanded(
                 child: showIconWithTitle && titleIconAsset != null
                     ? Row(
@@ -72,14 +81,14 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
                             title,
                             style: blackTextStyle.copyWith(
                               fontWeight: semiBold,
-                              fontSize: 20,
+                              fontSize: isTablet ? 22 : 20,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Image.asset(
                             titleIconAsset!,
-                            width: 24,
-                            height: 24,
+                            width: isTablet ? 26 : 24,
+                            height: isTablet ? 26 : 24,
                           ),
                         ],
                       )
@@ -87,7 +96,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
                         title,
                         style: blackTextStyle.copyWith(
                           fontWeight: semiBold,
-                          fontSize: 20,
+                          fontSize: isTablet ? 22 : 20,
                         ),
                       ),
               ),
@@ -98,7 +107,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
                   children: actionWidgets.map((widget) {
                     // Add spacing between action icons
                     return Padding(
-                      padding: const EdgeInsets.only(left: 12),
+                      padding: EdgeInsets.only(left: isTablet ? 16 : 12),
                       child: widget,
                     );
                   }).toList(),
@@ -114,6 +123,11 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
   @override
   Size get preferredSize {
     final bottomHeight = bottom?.preferredSize.height ?? 0.0;
-    return Size.fromHeight(50 + bottomHeight);
+    
+    // Get screen width for responsiveness - using static method since we can't use context here
+    final isTablet = MediaQueryData.fromView(WidgetsBinding.instance.window).size.width > 600;
+    final baseHeight = isTablet ? 56.0 : 50.0;
+    
+    return Size.fromHeight(baseHeight + bottomHeight);
   }
 }

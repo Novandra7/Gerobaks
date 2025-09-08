@@ -237,8 +237,11 @@ class _SignUpBatch1PageState extends State<SignUpBatch1Page> {
                     // Next Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
                           // Menampilkan toast validasi berhasil
@@ -253,6 +256,9 @@ class _SignUpBatch1PageState extends State<SignUpBatch1Page> {
 =======
 >>>>>>> acba58a040fb6da781db35c748178afc5837a3f6
                           // Pass data to next page
+=======
+                          // Ke batch 2 (langkah 2 dari alur sign-up)
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                           Navigator.pushNamed(
                             context,
                             '/sign-up-batch-2',

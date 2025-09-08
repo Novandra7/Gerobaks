@@ -1,14 +1,14 @@
-import 'dart:async';
-
 import 'package:bank_sha/shared/theme.dart';
+<<<<<<< HEAD
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 <<<<<<< HEAD
 import 'package:bank_sha/utils/toast_helper.dart';
 =======
 >>>>>>> 02b957d (feat: adding & improve sign up)
+=======
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class SignUpBatch2Page extends StatefulWidget {
   const SignUpBatch2Page({super.key});
@@ -18,66 +18,38 @@ class SignUpBatch2Page extends StatefulWidget {
 }
 
 class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
-  final List<TextEditingController> _otpControllers = List.generate(
-    6,
-    (index) => TextEditingController(),
-  );
-  final List<FocusNode> _otpFocusNodes = List.generate(
-    6,
-    (index) => FocusNode(),
-  );
-  
-  Timer? _timer;
-  int _countDown = 120; // 2 minutes
-  bool _canResend = false;
-
   @override
   void initState() {
     super.initState();
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    for (var controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (var node in _otpFocusNodes) {
-      node.dispose();
-    }
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _canResend = false;
-    _countDown = 120;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countDown > 0) {
-          _countDown--;
+    
+    // Tunggu sejenak kemudian lanjut ke langkah berikutnya
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        if (arguments != null) {
+          // Lanjut ke batch 3 dengan data yang sama dan OTP dummy
+          Navigator.pushReplacementNamed(
+            context,
+            '/sign-up-batch-3',
+            arguments: {
+              ...arguments,
+              'otpCode': 'skip_verification', // Tambahkan dummy OTP untuk kompatibilitas
+            },
+          );
         } else {
-          _canResend = true;
-          timer.cancel();
+          // Jika tidak ada data, kembali ke langkah 1
+          Navigator.pushReplacementNamed(context, '/sign-up-batch-1');
         }
-      });
+      }
     });
-  }
-
-  String get _formattedTime {
-    int minutes = _countDown ~/ 60;
-    int seconds = _countDown % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final phone = arguments?['phone'] ?? '';
-
     return Scaffold(
       backgroundColor: whiteColor,
       body: SafeArea(
+<<<<<<< HEAD
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 26.0),
           child: ConstrainedBox(
@@ -358,8 +330,24 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
 
                   const SizedBox(height: 32),
                 ],
+=======
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
               ),
-            ),
+              const SizedBox(height: 24),
+              Text(
+                'Melanjutkan ke langkah berikutnya...',
+                style: blackTextStyle.copyWith(
+                  fontSize: 16,
+                  fontWeight: medium,
+                ),
+              ),
+            ],
           ),
         ),
       ),

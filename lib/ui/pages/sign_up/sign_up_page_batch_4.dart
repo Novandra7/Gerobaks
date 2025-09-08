@@ -1,6 +1,7 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+<<<<<<< HEAD
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 <<<<<<< HEAD
 import 'package:bank_sha/utils/toast_helper.dart';
@@ -14,6 +15,13 @@ import 'package:geolocator/geolocator.dart';
 =======
 import 'package:flutter/material.dart';
 >>>>>>> 02b957d (feat: adding & improve sign up)
+=======
+import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/sign_up_service.dart';
+import 'package:flutter/material.dart';
+import 'package:bank_sha/mixins/app_dialog_mixin.dart';
+import 'package:bank_sha/ui/widgets/shared/map_picker.dart';
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 
 class SignUpBatch4Page extends StatefulWidget {
   const SignUpBatch4Page({super.key});
@@ -22,7 +30,7 @@ class SignUpBatch4Page extends StatefulWidget {
   State<SignUpBatch4Page> createState() => _SignUpBatch4PageState();
 }
 
-class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
+class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin {
   final _addressController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -49,6 +57,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
             });
           },
         ),
+        fullscreenDialog: true, // Tampilkan sebagai dialog fullscreen
       ),
     );
   }
@@ -214,9 +223,12 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
 
                     const SizedBox(height: 24),
 
-                    // Location Picker
+                    // Location Picker - Enhanced UI
                     Container(
                       width: double.infinity,
+                      constraints: const BoxConstraints(
+                        maxHeight: 200, // Batasi tinggi maksimal
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _selectedLocation != null
@@ -224,18 +236,29 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
                               : greyColor.withOpacity(0.5),
                           width: _selectedLocation != null ? 2 : 1,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: _selectedLocation != null 
+                          ? [
+                              BoxShadow(
+                                color: greenColor.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ] 
+                          : null,
                       ),
                       child: InkWell(
                         onTap: _openMapPicker,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min, // Agar tidak terlalu besar
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
+<<<<<<< HEAD
                                   Icon(
                                     Icons.location_on,
                                     color: _selectedLocation != null
@@ -254,57 +277,155 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
                                               fontSize: 14,
                                               fontWeight: semiBold,
                                             ),
+=======
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedLocation != null 
+                                        ? greenColor.withOpacity(0.1) 
+                                        : greyColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      Icons.location_on,
+                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      size: 24,
+                                    ),
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                                   ),
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: greyColor,
-                                    size: 16,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pilih Lokasi di Peta',
+                                          style: (_selectedLocation != null ? greeTextStyle : blackTextStyle).copyWith(
+                                            fontSize: 16,
+                                            fontWeight: semiBold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _selectedLocation != null 
+                                            ? 'Lokasi sudah dipilih' 
+                                            : 'Klik untuk memilih lokasi',
+                                          style: greyTextStyle.copyWith(
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedLocation != null 
+                                        ? greenColor.withOpacity(0.1) 
+                                        : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Icon(
+                                      _selectedLocation != null 
+                                        ? Icons.check_circle 
+                                        : Icons.arrow_forward_ios,
+                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      size: _selectedLocation != null ? 22 : 16,
+                                    ),
                                   ),
                                 ],
                               ),
                               if (_selectedLocation != null) ...[
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: greenColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: greenColor.withOpacity(0.3),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Lokasi Terpilih:',
-                                        style: greeTextStyle.copyWith(
-                                          fontSize: 12,
-                                          fontWeight: semiBold,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.pin_drop,
+                                            color: greenColor,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Lokasi Terpilih',
+                                            style: greeTextStyle.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: semiBold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 8),
                                       Text(
                                         _selectedLocation!,
                                         style: blackTextStyle.copyWith(
                                           fontSize: 14,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 6),
                                       Text(
-                                        'Lat: ${_selectedLat?.toStringAsFixed(6)}, Lng: ${_selectedLng?.toStringAsFixed(6)}',
+                                        'Koordinat: ${_selectedLat?.toStringAsFixed(6)}, ${_selectedLng?.toStringAsFixed(6)}',
                                         style: greyTextStyle.copyWith(
-                                          fontSize: 10,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ] else ...[
+<<<<<<< HEAD
                                 const SizedBox(height: 8),
                                 Text(
                                   'Tap untuk membuka peta dan pilih lokasi tempat tinggal Anda',
                                   style: greyTextStyle.copyWith(fontSize: 12),
+=======
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.orange.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.orange,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Klik untuk memilih lokasi tempat tinggal Anda pada peta',
+                                          style: greyTextStyle.copyWith(
+                                            fontSize: 12,
+                                            color: Colors.orange.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                                 ),
                               ],
                             ],
@@ -328,8 +449,11 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
                     // Next Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
-                      onPressed: () {
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
+                      onPressed: () async {
                         if (_formKey.currentState!.validate() && _selectedLocation != null) {
+<<<<<<< HEAD
 <<<<<<< HEAD
                           // Pass all data to subscription page
                           Navigator.pushNamed(
@@ -342,13 +466,76 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
                             '/sign-up-batch-5',
 >>>>>>> 02b957d (feat: adding & improve sign up)
                             arguments: {
+=======
+                          // Show loading dialog
+                          showAppLoadingDialog(
+                            message: 'Mendaftarkan akun Anda...',
+                          );
+                          
+                          try {
+                            // Create user data object with all information
+                            final userData = {
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                               ...?arguments,
-                              'address': _addressController.text,
+                              'address': _selectedLocation ?? _addressController.text,
                               'selectedLocation': _selectedLocation,
                               'latitude': _selectedLat,
                               'longitude': _selectedLng,
-                            },
-                          );
+                            };
+                            
+                            // Register the user first using UserService
+                            final userService = await UserService.getInstance();
+                            await userService.init();
+                            
+                            // Register user with basic info
+                            final user = await userService.registerUser(
+                              name: userData['fullName'] ?? userData['name'] ?? 'User',
+                              email: userData['email'],
+                              password: userData['password'],
+                              phone: userData['phone'],
+                              address: _selectedLocation ?? _addressController.text,
+                              latitude: _selectedLat,
+                              longitude: _selectedLng,
+                            );
+                            
+                            // Save location coordinates in user data
+                            if (_selectedLat != null && _selectedLng != null) {
+                              // Save as a saved address if we have a pinpointed location
+                              if (_selectedLocation != null) {
+                                List<String> savedAddresses = user.savedAddresses ?? [];
+                                if (!savedAddresses.contains(_selectedLocation)) {
+                                  savedAddresses.add(_selectedLocation!);
+                                  await userService.updateSavedAddresses(savedAddresses);
+                                }
+                              }
+                            }
+                            
+                            // Mark onboarding complete
+                            final signUpService = await SignUpService.getInstance();
+                            await signUpService.markOnboardingComplete();
+                            
+                            // Close loading dialog
+                            if (mounted) Navigator.of(context).pop();
+                            
+                            // Navigate to subscription page with user data
+                            if (mounted) {
+                              Navigator.pushNamed(
+                                context,
+                                '/sign-up-subscription',
+                                arguments: userData,
+                              );
+                            }
+                          } catch (e) {
+                            // Close loading dialog
+                            if (mounted) Navigator.of(context).pop();
+                            
+                            // Show error dialog
+                            showAppErrorDialog(
+                              title: 'Gagal Mendaftar',
+                              message: 'Terjadi kesalahan saat mendaftarkan akun: ${e.toString()}',
+                              buttonText: 'Coba Lagi',
+                            );
+                          }
                         } else if (_selectedLocation == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -401,6 +588,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> {
 }
 
 // Map Picker Page
+<<<<<<< HEAD
 class MapPickerPage extends StatefulWidget {
   final Function(String address, double lat, double lng) onLocationSelected;
 
@@ -948,3 +1136,5 @@ class _MapPickerPageState extends State<MapPickerPage> {
     );
   }
 }
+=======
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34

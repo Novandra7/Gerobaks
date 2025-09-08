@@ -162,4 +162,32 @@ class DialogHelper {
   static void closeDialog(BuildContext context) {
     Navigator.of(context, rootNavigator: true).pop();
   }
+  
+  /// Menampilkan dialog custom dengan content widget kustom
+  static Future<void> showCustomDialog({
+    required BuildContext context,
+    required String title,
+    required String positiveButtonText,
+    required VoidCallback onPositivePressed,
+    String? negativeButtonText,
+    VoidCallback? onNegativePressed,
+    IconData? icon,
+    Widget? customContent,
+    bool isLoading = false,
+  }) async {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) => CustomDialog(
+        title: title,
+        content: '', // Content string kosong karena menggunakan customContent
+        positiveButtonText: positiveButtonText,
+        onPositivePressed: onPositivePressed,
+        negativeButtonText: negativeButtonText,
+        onNegativePressed: onNegativePressed,
+        icon: icon,
+        customContent: customContent,
+        isLoading: isLoading,
+      ),
+    );
+  }
 }

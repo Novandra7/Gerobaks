@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/models/subscription_model.dart';
 import 'package:bank_sha/services/subscription_service.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/ui/pages/subscription/payment_gateway_page.dart';
+import 'package:bank_sha/ui/pages/end_user/subscription/payment_gateway_page.dart';
+import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/mixins/app_dialog_mixin.dart';
 
 class SignUpSubscriptionPage extends StatefulWidget {
   const SignUpSubscriptionPage({super.key});
@@ -12,7 +13,7 @@ class SignUpSubscriptionPage extends StatefulWidget {
   State<SignUpSubscriptionPage> createState() => _SignUpSubscriptionPageState();
 }
 
-class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> {
+class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with AppDialogMixin {
   final SubscriptionService _subscriptionService = SubscriptionService();
   List<SubscriptionPlan> _plans = [];
 
@@ -388,35 +389,55 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> {
     final Map<String, dynamic> userData = 
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     
-    // Add subscription status and registration date
-    userData['hasSubscription'] = hasSubscription;
-    userData['registrationDate'] = DateTime.now().toIso8601String();
-    
-    // Initialize localStorage service
-    final localStorage = await LocalStorageService.getInstance();
-    
-    // Save user data to localStorage
-    await localStorage.saveUserData(userData);
-    
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          hasSubscription 
-            ? 'Selamat! Akun Anda berhasil dibuat dengan langganan aktif'
-            : 'Akun Anda berhasil dibuat. Anda bisa berlangganan kapan saja',
-          style: whiteTextStyle,
-        ),
-        backgroundColor: greenColor,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-
-    // Navigate to sign-in page
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/sign-in',
-      (route) => false,
-    );
+    try {
+      // Get user service and current user
+      final userService = await UserService.getInstance();
+      await userService.init();
+      
+      // The user should already be registered from batch 4
+      final user = await userService.getCurrentUser();
+      
+      if (user == null) {
+        print("WARNING: User not found in _completeSignup, cannot update subscription status");
+        
+        // Navigate directly to sign-in with the credentials
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/sign-in',
+          (route) => false,
+          arguments: {
+            'email': userData['email'],
+            'password': userData['password'],
+          },
+        );
+        return;
+      }
+      
+      // User exists, update subscription status (in a real app)
+      print("User found: ${user.name}, setting subscription status: $hasSubscription");
+      
+      // In a real app, you would store this status to the user's account
+      // For now we'll just navigate to the success page
+      
+      // Navigate to sign-up-success page to show success message
+      Navigator.pushNamed(
+        context,
+        '/sign-up-success',
+        arguments: {
+          'email': user.email,
+          'password': userData['password'],
+          'hasSubscription': hasSubscription,
+        },
+      );
+    } catch (e) {
+      print("Error in _completeSignup: $e");
+      
+      // Show error dialog
+      showAppErrorDialog(
+        title: 'Gagal Melanjutkan',
+        message: 'Terjadi kesalahan saat memproses pendaftaran: ${e.toString()}',
+        buttonText: 'Coba Lagi',
+      );
+    }
   }
 }

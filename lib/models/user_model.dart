@@ -4,9 +4,14 @@ class UserModel {
   final String email;
   final String? phone;
   final String? address;
+  final double? latitude;
+  final double? longitude;
   final String? profilePicUrl;
   final int points;
   final bool isVerified;
+  final bool isPhoneVerified;
+  final bool isSubscribed; // Tambahkan properti isSubscribed
+  final String? subscriptionType; // Tipe langganan (basic, premium, pro)
   final List<String>? savedAddresses;
   final DateTime createdAt;
   final DateTime? lastLogin;
@@ -17,9 +22,14 @@ class UserModel {
     required this.email,
     this.phone,
     this.address,
+    this.latitude,
+    this.longitude,
     this.profilePicUrl,
     this.points = 15, // New users start with 15 points
     this.isVerified = false,
+    this.isPhoneVerified = false,
+    this.isSubscribed = false, // Default tidak berlangganan
+    this.subscriptionType, 
     this.savedAddresses,
     required this.createdAt,
     this.lastLogin,
@@ -33,9 +43,15 @@ class UserModel {
       email: json['email'] ?? '',
       phone: json['phone'],
       address: json['address'],
-      profilePicUrl: json['profilePicUrl'],
+      latitude: json['latitude']?.toDouble(),
+      longitude: json['longitude']?.toDouble(),
+      // Handle both profilePicUrl and profile_picture formats
+      profilePicUrl: json['profilePicUrl'] ?? json['profile_picture'],
       points: json['points'] ?? 15,
       isVerified: json['isVerified'] ?? false,
+      isPhoneVerified: json['isPhoneVerified'] ?? false,
+      isSubscribed: json['isSubscribed'] ?? false,
+      subscriptionType: json['subscriptionType'],
       savedAddresses: json['savedAddresses'] != null 
           ? List<String>.from(json['savedAddresses']) 
           : null,
@@ -56,9 +72,14 @@ class UserModel {
       'email': email,
       'phone': phone,
       'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
       'profilePicUrl': profilePicUrl,
       'points': points,
       'isVerified': isVerified,
+      'isPhoneVerified': isPhoneVerified,
+      'isSubscribed': isSubscribed,
+      'subscriptionType': subscriptionType,
       'savedAddresses': savedAddresses,
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
@@ -72,9 +93,14 @@ class UserModel {
     String? email,
     String? phone,
     String? address,
+    double? latitude,
+    double? longitude,
     String? profilePicUrl,
     int? points,
     bool? isVerified,
+    bool? isPhoneVerified,
+    bool? isSubscribed,
+    String? subscriptionType,
     List<String>? savedAddresses,
     DateTime? createdAt,
     DateTime? lastLogin,
@@ -85,9 +111,14 @@ class UserModel {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
       points: points ?? this.points,
       isVerified: isVerified ?? this.isVerified,
+      isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
+      isSubscribed: isSubscribed ?? this.isSubscribed,
+      subscriptionType: subscriptionType ?? this.subscriptionType,
       savedAddresses: savedAddresses ?? this.savedAddresses,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,

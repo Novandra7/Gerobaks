@@ -1,6 +1,11 @@
 
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+<<<<<<< HEAD
+=======
+import 'package:bank_sha/utils/toast_helper.dart';
+import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 import 'package:flutter/material.dart';
 
 class SignUpBatch5Page extends StatefulWidget {
@@ -396,6 +401,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                   CustomFilledButton(
                     title: 'Langganan Sekarang',
                     onPressed: () {
+<<<<<<< HEAD
                       // Navigate to payment method
                       Navigator.pushNamed(
                         context,
@@ -404,6 +410,26 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                           ...?arguments,
                           'selectedPlan': _selectedPlan,
                           'planDetails': _subscriptionPlans.firstWhere((plan) => plan['id'] == _selectedPlan),
+=======
+                      // Show alpha version message
+                      ToastHelper.showToast(
+                        context: context,
+                        message: 'Fitur langganan sedang dalam versi alpha dan belum tersedia.',
+                        isSuccess: false,
+                        duration: const Duration(seconds: 3),
+                      );
+                      
+                      // Show dialog explaining alpha version using custom dialog
+                      DialogHelper.showInfoDialog(
+                        context: context,
+                        title: 'Versi Alpha',
+                        message: 'Fitur langganan masih dalam tahap pengembangan (versi alpha) dan belum tersedia saat ini. Anda dapat melanjutkan pendaftaran tanpa berlangganan.',
+                        buttonText: 'Daftar Tanpa Langganan',
+                        icon: Icons.info_outline,
+                        onPressed: () {
+                          Navigator.pop(context); // Close dialog
+                          _completeRegistration(); // Complete registration
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                         },
                       );
                     },
@@ -417,54 +443,20 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                     height: 50,
                     child: OutlinedButton(
                       onPressed: () {
-                        // Show confirmation dialog
-                        showDialog(
+                        // Show confirmation dialog using custom dialog
+                        DialogHelper.showConfirmDialog(
                           context: context,
-                          builder: (context) => AlertDialog(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            title: Text(
-                              'Yakin ingin melewati?',
-                              style: blackTextStyle.copyWith(
-                                fontSize: 18,
-                                fontWeight: bold,
-                              ),
-                            ),
-                            content: Text(
-                              'Anda akan kehilangan kesempatan mendapatkan diskon spesial ini. Anda bisa berlangganan kapan saja di halaman profil.',
-                              style: greyTextStyle.copyWith(
-                                fontSize: 14,
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: Text(
-                                  'Batal',
-                                  style: greyTextStyle.copyWith(
-                                    fontWeight: semiBold,
-                                  ),
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                  // Complete registration and go to home
-                                  _completeRegistration();
-                                },
-                                child: Text(
-                                  'Ya, Lewati',
-                                  style: greeTextStyle.copyWith(
-                                    fontWeight: semiBold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
+                          title: 'Yakin ingin melewati?',
+                          message: 'Anda akan kehilangan kesempatan mendapatkan diskon spesial ini. Anda bisa berlangganan kapan saja di halaman profil.',
+                          confirmText: 'Ya, Lewati',
+                          cancelText: 'Batal',
+                          icon: Icons.help_outline,
+                        ).then((confirmed) {
+                          if (confirmed) {
+                            // Complete registration and go to home
+                            _completeRegistration();
+                          }
+                        });
                       },
                       style: OutlinedButton.styleFrom(
                         backgroundColor: whiteColor,
@@ -495,6 +487,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
     );
   }
 
+<<<<<<< HEAD
   void _completeRegistration() {
     // Show success dialog
     showDialog(
@@ -548,5 +541,34 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
         ),
       ),
     );
+=======
+  void _completeRegistration() async {
+    try {
+      // Get user data from arguments
+      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+      if (args == null || !args.containsKey('email') || !args.containsKey('password')) {
+        throw Exception('Data registrasi tidak lengkap');
+      }
+
+      // Navigate to sign-up success page with credentials
+      Navigator.pushNamed(
+        context,
+        '/sign-up-success',
+        arguments: {
+          'fullName': args['fullName'],
+          'email': args['email'],
+          'password': args['password'],
+          'phone': args['phone'],
+        },
+      );
+    } catch (e) {
+      // Show error dialog using custom dialog
+      DialogHelper.showErrorDialog(
+        context: context,
+        title: 'Error',
+        message: 'Terjadi kesalahan saat melanjutkan registrasi: ${e.toString()}',
+      );
+    }
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
   }
 }

@@ -1,5 +1,4 @@
-import 'package:bank_sha/ui/pages/tracking/tracking_full_screen.dart';
-import 'package:bank_sha/ui/pages/wilayah/wilayah_full_screen.dart';
+import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_full_screen.dart';
 import 'package:bank_sha/ui/widgets/shared/chat_icon_with_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';

@@ -33,19 +33,26 @@ dependencies:
   google_fonts: ^6.2.1
   carousel_slider: ^5.1.1
   flutter_card_swiper: ^7.0.2
+  qr_flutter: ^4.1.0
   intl: ^0.20.2
   flutter_multi_formatter: ^2.13.7
-  flutter_map: ^8.1.1
+  flutter_map: ^8.2.1
   flutter_polyline_points: ^2.1.0
+  image_picker: ^1.0.7
   latlong2: ^0.9.1
   http: ^1.4.0
   flutter_dotenv: ^5.2.1
   geolocator: ^11.0.0
   flutter_bloc: ^9.1.1
+  geocoding: ^2.2.0
+
   lucide_icons_flutter: ^3.0.7
   shared_preferences: ^2.5.3
   google_generative_ai: ^0.4.3
+  url_launcher: ^6.3.2
   shimmer: ^3.0.0
+  flutter_svg: ^2.0.10+1
+  path_provider: ^2.1.5
   uuid: ^4.3.5
 
   # The following adds the Cupertino Icons font to your application.

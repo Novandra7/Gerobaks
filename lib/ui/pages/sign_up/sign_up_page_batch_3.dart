@@ -1,7 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/ui/widgets/shared/layout.dart';
 import 'package:flutter/material.dart';
 
 class SignUpBatch3Page extends StatefulWidget {
@@ -338,6 +337,8 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                     // Continue Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           // Navigate to batch 4 with all previous data plus password

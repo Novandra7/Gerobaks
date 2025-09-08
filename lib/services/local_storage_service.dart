@@ -18,12 +18,19 @@ class LocalStorageService {
   static const String _addressesKey = 'saved_addresses';
   static const String _settingsKey = 'app_settings';
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   static const String _credentialsKey = 'user_credentials';
 >>>>>>> 31182ad (feat: Enhance user data management by implementing LocalStorageService for profile and home content)
 =======
   static const String _credentialsKey = 'user_credentials';
 >>>>>>> 3272355 (feat: Add credential management methods to LocalStorageService for saving, retrieving, and clearing user credentials)
+=======
+  static const String _credentialsKey = 'user_credentials';
+  
+  // Public getter for login key
+  String getLoginKey() => _isLoggedInKey;
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 
   static LocalStorageService? _instance;
   static SharedPreferences? _preferences;
@@ -89,6 +96,7 @@ class LocalStorageService {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   // Credentials Storage
   Future<void> saveCredentials(String email, String password) async {
@@ -106,6 +114,8 @@ class LocalStorageService {
     return null;
   }
 >>>>>>> acba58a040fb6da781db35c748178afc5837a3f6
+=======
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 
   // User Data Storage
   Future<void> saveUserData(Map<String, dynamic> userData) async {
@@ -126,15 +136,32 @@ class LocalStorageService {
   
   // Enhanced User Management
   Future<void> saveUser(UserModel user) async {
-    await saveUserData(user.toJson());
+    // Convert to JSON
+    Map<String, dynamic> userData = user.toJson();
+    
+    // Preserve password if it exists
+    final existingData = await getUserData();
+    if (existingData != null && existingData.containsKey('password')) {
+      userData['password'] = existingData['password'];
+    }
+    
+    // Save the data
+    await saveUserData(userData);
     await saveBool(_isLoggedInKey, true);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
+    
+    print("User saved to localStorage: ${user.name} (${user.email})");
   }
   
   Future<UserModel?> getUser() async {
     final userData = await getUserData();
     if (userData != null) {
-      return UserModel.fromJson(userData);
+      try {
+        return UserModel.fromJson(userData);
+      } catch (e) {
+        print("Error parsing user data: $e");
+        return null;
+      }
     }
     return null;
   }
@@ -177,9 +204,15 @@ class LocalStorageService {
     return await getBool(_isLoggedInKey, defaultValue: false);
   }
   
+  // Modified to preserve user data when logging out
   Future<void> logout() async {
-    await remove(_isLoggedInKey);
-    await remove(_userKey);
+    // Only change login status without removing user data
+    await saveBool(_isLoggedInKey, false);
+    
+    // Save the logout timestamp but don't delete the user data
+    await saveString(_lastLoginKey, DateTime.now().toIso8601String());
+    
+    print("User logged out but data preserved in localStorage");
   }
 
   // Generic storage methods
@@ -206,6 +239,19 @@ class LocalStorageService {
   Future<int> getInt(String key, {int defaultValue = 0}) async {
     return _preferences!.getInt(key) ?? defaultValue;
   }
+  
+  // General key-value storage methods for any temporary data
+  Future<void> saveValue(String key, String value) async {
+    await _preferences!.setString(key, value);
+  }
+  
+  Future<String?> getValue(String key) async {
+    return _preferences!.getString(key);
+  }
+  
+  Future<bool> removeValue(String key) async {
+    return await _preferences!.remove(key);
+  }
 
   Future<void> remove(String key) async {
     await _preferences!.remove(key);
@@ -222,6 +268,7 @@ class LocalStorageService {
       'password': password,
     };
     await _preferences!.setString(_credentialsKey, jsonEncode(credentials));
+<<<<<<< HEAD
   }
 
   Future<Map<String, String>?> getCredentials() async {
@@ -231,6 +278,18 @@ class LocalStorageService {
       return {
         'email': credentials['email'] as String,
         'password': credentials['password'] as String,
+=======
+    print("Credentials saved for: $email");
+  }
+  
+  Future<Map<String, String>?> getCredentials() async {
+    final String? credentialsJson = _preferences!.getString(_credentialsKey);
+    if (credentialsJson != null) {
+      final Map<String, dynamic> data = jsonDecode(credentialsJson);
+      return {
+        'email': data['email'] as String,
+        'password': data['password'] as String,
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
       };
     }
     return null;

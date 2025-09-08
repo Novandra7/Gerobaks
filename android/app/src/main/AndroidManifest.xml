@@ -9,6 +9,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Permission for querying packages (needed for deep links in Android 11+) -->
+    <queries>
+        <!-- For ShopeePay -->
+        <package android:name="com.shopee.id" />
+        <!-- For GoPay -->
+        <package android:name="com.gojek.app" />
+        <!-- For DANA -->
+        <package android:name="id.dana" />
+    </queries>
     
     <application
         android:label="Gerobaks"

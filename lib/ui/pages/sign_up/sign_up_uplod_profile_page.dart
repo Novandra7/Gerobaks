@@ -69,7 +69,24 @@ class SignUpUplodProfilePage extends StatelessWidget {
                 CustomFilledButton(
                   title: 'Continue',
                   onPressed: () {
-                    Navigator.pushNamed(context, '/sign-up-success');
+                    // Get user data from arguments
+                    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+                    if (args != null) {
+                      // Pass data to sign-up-success
+                      Navigator.pushNamed(
+                        context,
+                        '/sign-up-success',
+                        arguments: args, // Pass all user data
+                      );
+                    } else {
+                      // Show error if data missing
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Data registrasi tidak lengkap'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                 ),
               ],

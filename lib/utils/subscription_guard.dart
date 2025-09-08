@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/models/subscription_model.dart';
-import 'package:bank_sha/ui/pages/subscription/subscription_plans_page.dart';
+import 'package:bank_sha/ui/pages/end_user/subscription/subscription_plans_page.dart';
+import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:bank_sha/shared/theme.dart';
 
 class SubscriptionGuard {
   static final SubscriptionService _subscriptionService = SubscriptionService();
@@ -19,36 +21,31 @@ class SubscriptionGuard {
   }
 
   static void _showSubscriptionDialog(BuildContext context) {
-    showDialog(
+    DialogHelper.showCustomDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Berlangganan Diperlukan'),
-          content: const Text(
-            'Untuk menggunakan layanan ini, Anda perlu berlangganan terlebih dahulu. Silakan pilih paket yang sesuai dengan kebutuhan Anda.',
+      title: 'Berlangganan Diperlukan',
+      positiveButtonText: 'Berlangganan',
+      negativeButtonText: 'Nanti',
+      icon: Icons.card_membership,
+      customContent: Text(
+        'Untuk menggunakan layanan ini, Anda perlu berlangganan terlebih dahulu. Silakan pilih paket yang sesuai dengan kebutuhan Anda.',
+        style: greyTextStyle.copyWith(
+          fontSize: 14,
+          height: 1.5,
+        ),
+        textAlign: TextAlign.center,
+      ),
+      onPositivePressed: () {
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SubscriptionPlansPage(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Nanti'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SubscriptionPlansPage(),
-                  ),
-                );
-              },
-              child: const Text('Berlangganan'),
-            ),
-          ],
         );
+      },
+      onNegativePressed: () {
+        Navigator.of(context).pop();
       },
     );
   }

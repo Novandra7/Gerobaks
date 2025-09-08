@@ -1,0 +1,572 @@
+import 'package:bank_sha/models/schedule_model.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/schedule_service.dart';
+import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+
+class JadwalMitraPage extends StatefulWidget {
+  const JadwalMitraPage({super.key});
+
+  @override
+  State<JadwalMitraPage> createState() => _JadwalMitraPageState();
+}
+
+class _JadwalMitraPageState extends State<JadwalMitraPage> {
+  DateTime selectedDate = DateTime.now();
+  String? _driverId;
+  bool _isLoading = false;
+  List<ScheduleModel> _schedules = [];
+  
+  final ScheduleService _scheduleService = ScheduleService();
+  
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+  
+  Future<void> _initialize() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // Initialize date formatting for Indonesia
+    await initializeDateFormatting('id_ID', null);
+    
+    try {
+      // Initialize schedule service
+      await _scheduleService.initialize();
+      
+      // Get driver ID
+      final localStorage = await LocalStorageService.getInstance();
+      final userData = await localStorage.getUserData();
+      if (userData != null) {
+        _driverId = userData['id'] as String;
+      }
+      
+      // Load schedules
+      await _loadSchedules();
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error initializing schedule page: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+  
+  Future<void> _loadSchedules() async {
+    if (_driverId == null) return;
+    
+    try {
+      final schedules = await _scheduleService.getDriverSchedulesByDate(_driverId!, selectedDate);
+      
+      setState(() {
+        _schedules = schedules;
+      });
+    } catch (e) {
+      print('Error loading schedules: $e');
+    }
+  }
+  
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: greenColor,
+              onPrimary: whiteColor,
+              surface: whiteColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+      _loadSchedules();
+    }
+  }
+  
+  Future<void> _updateScheduleStatus(ScheduleModel schedule, ScheduleStatus newStatus) async {
+    try {
+      final updatedSchedule = await _scheduleService.updateScheduleStatus(
+        schedule.id!, 
+        newStatus
+      );
+      
+      if (updatedSchedule != null) {
+        DialogHelper.showSuccessDialog(
+          context: context,
+          title: 'Status Diperbarui',
+          message: 'Status jadwal berhasil diperbarui.',
+        );
+        _loadSchedules();
+      }
+    } catch (e) {
+      DialogHelper.showErrorDialog(
+        context: context,
+        title: 'Gagal Memperbarui Status',
+        message: 'Terjadi kesalahan saat memperbarui status. Silakan coba lagi nanti.',
+      );
+      print('Error updating schedule status: $e');
+    }
+  }
+  
+  void _viewScheduleDetail(ScheduleModel schedule) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      builder: (context) => _buildScheduleDetailSheet(schedule),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: lightBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: greenColor,
+        elevation: 0,
+        title: Text(
+          'Jadwal Pengambilan',
+          style: whiteTextStyle.copyWith(
+            fontSize: 20,
+            fontWeight: semiBold,
+            letterSpacing: 0.3,
+          ),
+        ),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
+      body: _isLoading 
+          ? Center(
+              child: CircularProgressIndicator(color: greenColor),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadSchedules,
+              color: greenColor,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Date Selector
+                    GestureDetector(
+                      onTap: () => _selectDate(context),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: whiteColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                              spreadRadius: 0,
+                            ),
+                          ],
+                          border: Border.all(
+                            color: greenColor.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: greenColor.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.calendar_today_rounded,
+                                    color: greenColor,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Pilih Tanggal',
+                                      style: blackTextStyle.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: semiBold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(selectedDate),
+                                      style: greyTextStyle.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: medium,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: greenColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: greenColor,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Schedule List
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            height: 32,
+                            width: 4,
+                            decoration: BoxDecoration(
+                              color: greenColor,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            _isTodaySelected ? 'Jadwal Hari Ini' : 'Jadwal Dipilih',
+                            style: blackTextStyle.copyWith(
+                              fontSize: 18,
+                              fontWeight: semiBold,
+                            ),
+                          ),
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: _loadSchedules,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: greenColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.refresh_rounded,
+                                    color: greenColor,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Refresh',
+                                    style: TextStyle(
+                                      color: greenColor,
+                                      fontSize: 12,
+                                      fontWeight: medium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Schedule Items
+                    _schedules.isEmpty
+                        ? _buildEmptyState()
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _schedules.length,
+                            itemBuilder: (context, index) {
+                              return _buildScheduleItem(_schedules[index]);
+                            },
+                          ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+  
+  bool get _isTodaySelected => 
+    selectedDate.year == DateTime.now().year &&
+    selectedDate.month == DateTime.now().month &&
+    selectedDate.day == DateTime.now().day;
+  
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 72,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ada jadwal',
+              style: blackTextStyle.copyWith(
+                fontSize: 16,
+                fontWeight: semiBold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Belum ada jadwal penjemputan pada\ntanggal yang dipilih',
+              style: greyTextStyle.copyWith(
+                fontSize: 14,
+                fontWeight: regular,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleItem(ScheduleModel schedule) {
+    Color statusColor;
+    String statusText;
+    IconData statusIcon;
+
+    switch (schedule.status) {
+      case ScheduleStatus.pending:
+        statusColor = Colors.orange;
+        statusText = 'Menunggu';
+        statusIcon = Icons.access_time_rounded;
+        break;
+      case ScheduleStatus.inProgress:
+        statusColor = Colors.blue;
+        statusText = 'Sedang Berjalan';
+        statusIcon = Icons.directions_car_rounded;
+        break;
+      case ScheduleStatus.completed:
+        statusColor = Colors.green;
+        statusText = 'Selesai';
+        statusIcon = Icons.check_circle_outline_rounded;
+        break;
+      case ScheduleStatus.cancelled:
+        statusColor = Colors.red;
+        statusText = 'Dibatalkan';
+        statusIcon = Icons.cancel_outlined;
+        break;
+      case ScheduleStatus.missed:
+        statusColor = Colors.grey;
+        statusText = 'Terlewat';
+        statusIcon = Icons.schedule_outlined;
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: whiteColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(
+          color: greenColor.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Time and Status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time_rounded,
+                    color: greenColor,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${schedule.timeSlot.hour}:${schedule.timeSlot.minute.toString().padLeft(2, '0')}',
+                    style: blackTextStyle.copyWith(
+                      fontSize: 14,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      statusIcon,
+                      color: statusColor,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: medium,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Address
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                color: greenColor,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  schedule.address,
+                  style: blackTextStyle.copyWith(
+                    fontSize: 14,
+                    fontWeight: medium,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Waste type and weight
+          Row(
+            children: [
+              Icon(
+                Icons.delete_outline,
+                color: greenColor,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${schedule.wasteType ?? 'Sampah'} ${schedule.estimatedWeight != null ? '(${schedule.estimatedWeight!} kg)' : ''}',
+                style: greyTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: medium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: greenColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () => _viewScheduleDetail(schedule),
+                  child: Text(
+                    'Detail',
+                    style: TextStyle(
+                      color: greenColor,
+                      fontWeight: medium,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: greenColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: schedule.status != ScheduleStatus.completed && 
+                            schedule.status != ScheduleStatus.cancelled ? 
+                    () => _updateScheduleStatus(
+                      schedule, 
+                      schedule.status == ScheduleStatus.pending ? 
+                        ScheduleStatus.inProgress : ScheduleStatus.completed
+                    ) : null,
+                  child: Text(
+                    schedule.status == ScheduleStatus.pending
+                        ? 'Mulai'
+                        : schedule.status == ScheduleStatus.inProgress
+                            ? 'Selesai'
+                            : 'Selesai',
+                    style: whiteTextStyle.copyWith(
+                      fontWeight: medium,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

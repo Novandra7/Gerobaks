@@ -149,7 +149,7 @@ Buatkan 1 pantun motivasi tentang pengelolaan sampah dan lingkungan yang:
 - Singkat dan berima
 - Mengandung pesan positif tentang recycling atau waste management
 
-Format: 4 baris pantun tradisional (A-B-A-B)
+Format: 2 baris pantun tradisional (A-B) & Langsung Pantun tanpa Kata Lain.
 ''';
 
       final content = [Content.text(prompt)];
