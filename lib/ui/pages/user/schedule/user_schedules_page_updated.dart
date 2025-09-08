@@ -30,6 +30,8 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: lightBackgroundColor,
+      resizeToAvoidBottomInset: false, // Mencegah resize ketika keyboard muncul
+      extendBody: true, // Membuat body diperpanjang hingga di belakang FAB
       appBar: AppBar(
         title: Text(
           'Jadwal Pengambilan',
@@ -147,11 +149,16 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
           Navigator.pushNamed(context, '/user-add-schedule');
         },
         backgroundColor: greenColor,
+        elevation: 4, // Tambahkan elevation untuk efek bayangan yang lebih jelas
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16), // Ubah border radius
+        ),
         child: Icon(
           Icons.add,
           color: whiteColor,
         ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Tetapkan posisi FAB
     );
   }
 
