@@ -1,5 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 <<<<<<< HEAD
@@ -8,6 +9,9 @@ import 'package:bank_sha/utils/toast_helper.dart';
 >>>>>>> 02b957d (feat: adding & improve sign up)
 =======
 >>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
+=======
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
 import 'package:flutter/material.dart';
 
 class SignUpBatch2Page extends StatefulWidget {
@@ -18,6 +22,8 @@ class SignUpBatch2Page extends StatefulWidget {
 }
 
 class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
+  final _formKey = GlobalKey<FormState>();
+  
   @override
   void initState() {
     super.initState();
@@ -45,13 +51,90 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
   }
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    for (var controller in _otpControllers) {
+      controller.dispose();
+    }
+    for (var node in _otpFocusNodes) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _canResend = false;
+    _countDown = 120;
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_countDown > 0) {
+          _countDown--;
+        } else {
+          _canResend = true;
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  String get _formattedTime {
+    int minutes = _countDown ~/ 60;
+    int seconds = _countDown % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+  
+  // Send OTP via notification
+  Future<void> _sendOTP(String phoneNumber) async {
+    if (phoneNumber.isEmpty) {
+      return;
+    }
+    
+    try {
+      await _otpService.sendOTP(phoneNumber);
+      
+      // Show a toast or snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Kode OTP telah dikirim ke $phoneNumber',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal mengirim OTP: ${e.toString()}',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final phone = arguments?['phone'] ?? '';
+
     return Scaffold(
       backgroundColor: whiteColor,
       body: SafeArea(
 <<<<<<< HEAD
+<<<<<<< HEAD
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 26.0),
+=======
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -68,7 +151,11 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
 
                   // Logo GEROBAKS
                   Container(
+<<<<<<< HEAD
                     width: 250,
+=======
+                    width: 200,
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
                     height: 60,
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     child: Image.asset(
@@ -246,6 +333,7 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
                   else
                     TextButton(
                       onPressed: () {
+<<<<<<< HEAD
                         _startTimer();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -256,6 +344,14 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
                             backgroundColor: greenColor,
                           ),
                         );
+=======
+                        final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+                        final phone = arguments?['phone'] as String? ?? '';
+                        if (phone.isNotEmpty) {
+                          _sendOTP(phone);
+                          _startTimer();
+                        }
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
                       },
                       child: Text(
                         'Kirim Ulang OTP',
@@ -273,10 +369,25 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
                   // Verify Button
                   CustomFilledButton(
                     title: 'Verifikasi',
+<<<<<<< HEAD
                     onPressed: () {
                       String otpCode = _otpControllers
                           .map((controller) => controller.text)
                           .join();
+=======
+                    isLoading: _isVerifying,
+                    onPressed: () async {
+                      setState(() {
+                        _isVerifying = true;
+                      });
+                      
+                      String otpCode = _otpControllers
+                          .map((controller) => controller.text)
+                          .join();
+                          
+                      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+                      final phone = arguments?['phone'] as String? ?? '';
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
 
                       if (otpCode.length != 6) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -288,6 +399,7 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
                             backgroundColor: redcolor,
                           ),
                         );
+<<<<<<< HEAD
                         return;
                       }
 
@@ -300,6 +412,66 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
                           'otpCode': otpCode,
                         },
                       );
+=======
+                        setState(() {
+                          _isVerifying = false;
+                        });
+                        return;
+                      }
+                      
+                      try {
+                        // Verify OTP - now faster with SessionStorage
+                        bool isValid = false;
+                        if (phone.isNotEmpty) {
+                          isValid = await _otpService.verifyOTP(phone, otpCode);
+                          
+                          if (!isValid) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Kode OTP tidak valid atau sudah kadaluarsa',
+                                  style: whiteTextStyle.copyWith(fontSize: 14),
+                                ),
+                                backgroundColor: redcolor,
+                              ),
+                            );
+                            setState(() {
+                              _isVerifying = false;
+                            });
+                            return;
+                          }
+                        }
+                        
+                        // Pass all data to next page
+                        if (mounted) {
+                          Navigator.pushNamed(
+                            context,
+                            '/sign-up-batch-3',
+                            arguments: {
+                              ...?arguments,
+                              'otpCode': otpCode,
+                            },
+                          );
+                        }
+                      } catch (e) {
+                        print('Error verifying OTP: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Terjadi kesalahan saat verifikasi OTP',
+                              style: whiteTextStyle.copyWith(fontSize: 14),
+                            ),
+                            backgroundColor: redcolor,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isVerifying = false;
+                          });
+                        }
+                      }
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
                     },
                   ),
 
@@ -330,6 +502,7 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
 
                   const SizedBox(height: 32),
                 ],
+<<<<<<< HEAD
 =======
         child: Center(
           child: Column(
@@ -338,16 +511,10 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
               CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(greenColor),
 >>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
+=======
+>>>>>>> parent of fef3eca (refactor: Clean up unused code and improve layout in sign-up batch pages)
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Melanjutkan ke langkah berikutnya...',
-                style: blackTextStyle.copyWith(
-                  fontSize: 16,
-                  fontWeight: medium,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
