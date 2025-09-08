@@ -197,14 +197,17 @@ class UserService {
 
         // Save mock user data for future sessions
         final userData = user.toJson();
+        
+        // Tambahkan data penting yang tidak ada di model
         userData['password'] = password;
-
-        // print("🔐 Step 2.4: Saving user data to localStorage...");
+        userData['role'] = mockUserData['role'] ?? 'end_user';
+        
+        print("� [USER] Login success for ${user.name} with role: ${userData['role']}");
+        
+        // Simpan data lengkap dan pastikan set flag login
         await _localStorage.saveUserData(userData);
         await _localStorage.saveUser(user);
         await _localStorage.saveCredentials(email, password);
-
-        // ✅ CRITICAL FIX: Set login flag to true
         await _localStorage.saveBool(_localStorage.getLoginKey(), true);
 
         _notifyUserChange(user);
