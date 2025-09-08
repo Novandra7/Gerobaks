@@ -1,36 +1,21 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-<<<<<<< HEAD
 import 'package:bank_sha/models/user_model.dart';
-=======
-import 'package:bank_sha/utils/user_data_mock.dart';
->>>>>>> 31182ad (feat: Enhance user data management by implementing LocalStorageService for profile and home content)
 
 class LocalStorageService {
   static const String _chatKey = 'chat_conversations';
   static const String _notificationKey = 'notifications';
   static const String _subscriptionKey = 'user_subscription';
   static const String _userKey = 'user_data';
-<<<<<<< HEAD
   static const String _pointsKey = 'user_points';
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _lastLoginKey = 'last_login';
   static const String _addressesKey = 'saved_addresses';
   static const String _settingsKey = 'app_settings';
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  static const String _credentialsKey = 'user_credentials';
->>>>>>> 31182ad (feat: Enhance user data management by implementing LocalStorageService for profile and home content)
-=======
-  static const String _credentialsKey = 'user_credentials';
->>>>>>> 3272355 (feat: Add credential management methods to LocalStorageService for saving, retrieving, and clearing user credentials)
-=======
   static const String _credentialsKey = 'user_credentials';
   
   // Public getter for login key
   String getLoginKey() => _isLoggedInKey;
->>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 
   static LocalStorageService? _instance;
   static SharedPreferences? _preferences;
@@ -95,27 +80,6 @@ class LocalStorageService {
     await _preferences!.remove(_subscriptionKey);
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  // Credentials Storage
-  Future<void> saveCredentials(String email, String password) async {
-    final credentials = {'email': email, 'password': password};
-    final String credentialsJson = jsonEncode(credentials);
-    await _preferences!.setString(_credentialsKey, credentialsJson);
-  }
-
-  Future<Map<String, String>?> getCredentials() async {
-    final String? credentialsJson = _preferences!.getString(_credentialsKey);
-    if (credentialsJson != null) {
-      final Map<String, dynamic> decoded = jsonDecode(credentialsJson);
-      return {'email': decoded['email'], 'password': decoded['password']};
-    }
-    return null;
-  }
->>>>>>> acba58a040fb6da781db35c748178afc5837a3f6
-=======
->>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 
   // User Data Storage
   Future<void> saveUserData(Map<String, dynamic> userData) async {
@@ -126,10 +90,7 @@ class LocalStorageService {
   Future<Map<String, dynamic>?> getUserData() async {
     final String? userJson = _preferences!.getString(_userKey);
     if (userJson != null) {
-      final Map<String, dynamic> userData = jsonDecode(userJson);
-      // Get the user data from UserDataMock to ensure we have complete data
-      final mockUser = UserDataMock.getUserByEmail(userData['email']);
-      return mockUser ?? userData;
+      return jsonDecode(userJson);
     }
     return null;
   }
@@ -268,17 +229,6 @@ class LocalStorageService {
       'password': password,
     };
     await _preferences!.setString(_credentialsKey, jsonEncode(credentials));
-<<<<<<< HEAD
-  }
-
-  Future<Map<String, String>?> getCredentials() async {
-    final String? credentialsJson = _preferences!.getString(_credentialsKey);
-    if (credentialsJson != null) {
-      final Map<String, dynamic> credentials = jsonDecode(credentialsJson);
-      return {
-        'email': credentials['email'] as String,
-        'password': credentials['password'] as String,
-=======
     print("Credentials saved for: $email");
   }
   
@@ -289,7 +239,6 @@ class LocalStorageService {
       return {
         'email': data['email'] as String,
         'password': data['password'] as String,
->>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
       };
     }
     return null;
