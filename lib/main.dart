@@ -31,7 +31,6 @@ import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_success_page.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_uplod_profile_page.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_page_batch_1.dart';
-import 'package:bank_sha/ui/pages/sign_up/sign_up_page_batch_2.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_page_batch_3.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_page_batch_4.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_subscription_page.dart';
@@ -120,7 +119,16 @@ class MyApp extends StatelessWidget {
         '/sign-in': (context) => SignInPage(),
         // Sign up batch pages - urutan proses pendaftaran baru
         '/sign-up-batch-1': (context) => const SignUpBatch1Page(),
-        '/sign-up-batch-2': (context) => const SignUpBatch2Page(),
+        // Route sign-up-batch-2 masih ada untuk kompatibilitas, tapi dialihkan ke batch-3
+        '/sign-up-batch-2': (context) {
+          // Redirect ke batch-3 dengan parameter default
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+            args['otpCode'] = 'skip_verification'; // Tambahkan otpCode dummy
+            Navigator.pushReplacementNamed(context, '/sign-up-batch-3', arguments: args);
+          });
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        },
         '/sign-up-batch-3': (context) => const SignUpBatch3Page(),
         '/sign-up-batch-4': (context) => const SignUpBatch4Page(),
         '/sign-up-subscription': (context) => const SignUpSubscriptionPage(),

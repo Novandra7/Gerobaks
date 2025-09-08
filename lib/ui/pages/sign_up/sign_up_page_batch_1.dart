@@ -229,14 +229,16 @@ class _SignUpBatch1PageState extends State<SignUpBatch1Page> {
                       title: 'Lanjutkan',
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // Pass data to next page
+                          // Langsung ke batch 3 (lewati verifikasi OTP)
                           Navigator.pushNamed(
                             context,
-                            '/sign-up-batch-2',
+                            '/sign-up-batch-3',
                             arguments: {
                               'fullName': _fullNameController.text,
                               'email': _emailController.text,
                               'phone': _phoneController.text,
+                              // Tambahkan dummy otpCode untuk kompatibilitas
+                              'otpCode': 'skip_verification',
                             },
                           );
                         }
