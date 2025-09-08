@@ -260,7 +260,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                   ),
                   onPressed: _selectedAddress.isNotEmpty 
                     ? () {
@@ -272,11 +272,23 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         Navigator.pop(context);
                       }
                     : null,
-                  child: Text(
-                    'Pilih Lokasi Ini',
-                    style: whiteTextStyle.copyWith(
-                      fontWeight: semiBold,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 20,
+                        color: whiteColor,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Konfirmasi Lokasi',
+                        style: whiteTextStyle.copyWith(
+                          fontWeight: semiBold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

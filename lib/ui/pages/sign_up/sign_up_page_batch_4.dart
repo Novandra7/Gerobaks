@@ -41,6 +41,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
             });
           },
         ),
+        fullscreenDialog: true, // Tampilkan sebagai dialog fullscreen
       ),
     );
   }
@@ -209,89 +210,176 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
 
                     const SizedBox(height: 24),
 
-                    // Location Picker
+                    // Location Picker - Enhanced UI
                     Container(
                       width: double.infinity,
+                      constraints: const BoxConstraints(
+                        maxHeight: 200, // Batasi tinggi maksimal
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _selectedLocation != null ? greenColor : greyColor.withOpacity(0.5),
                           width: _selectedLocation != null ? 2 : 1,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: _selectedLocation != null 
+                          ? [
+                              BoxShadow(
+                                color: greenColor.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ] 
+                          : null,
                       ),
                       child: InkWell(
                         onTap: _openMapPicker,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min, // Agar tidak terlalu besar
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: _selectedLocation != null ? greenColor : greyColor,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Pilih Lokasi di Peta',
-                                    style: (_selectedLocation != null ? greeTextStyle : greyTextStyle).copyWith(
-                                      fontSize: 14,
-                                      fontWeight: semiBold,
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedLocation != null 
+                                        ? greenColor.withOpacity(0.1) 
+                                        : greyColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      Icons.location_on,
+                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      size: 24,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.arrow_forward_ios,
-                                    color: greyColor,
-                                    size: 16,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Pilih Lokasi di Peta',
+                                          style: (_selectedLocation != null ? greeTextStyle : blackTextStyle).copyWith(
+                                            fontSize: 16,
+                                            fontWeight: semiBold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _selectedLocation != null 
+                                          ? 'Lokasi sudah dipilih' 
+                                          : 'Klik untuk memilih lokasi',
+                                        style: greyTextStyle.copyWith(
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedLocation != null 
+                                        ? greenColor.withOpacity(0.1) 
+                                        : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Icon(
+                                      _selectedLocation != null 
+                                        ? Icons.check_circle 
+                                        : Icons.arrow_forward_ios,
+                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      size: _selectedLocation != null ? 22 : 16,
+                                    ),
                                   ),
                                 ],
                               ),
                               if (_selectedLocation != null) ...[
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: greenColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: greenColor.withOpacity(0.3),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Lokasi Terpilih:',
-                                        style: greeTextStyle.copyWith(
-                                          fontSize: 12,
-                                          fontWeight: semiBold,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.pin_drop,
+                                            color: greenColor,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Lokasi Terpilih',
+                                            style: greeTextStyle.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: semiBold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 8),
                                       Text(
                                         _selectedLocation!,
                                         style: blackTextStyle.copyWith(
                                           fontSize: 14,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 6),
                                       Text(
-                                        'Lat: ${_selectedLat?.toStringAsFixed(6)}, Lng: ${_selectedLng?.toStringAsFixed(6)}',
+                                        'Koordinat: ${_selectedLat?.toStringAsFixed(6)}, ${_selectedLng?.toStringAsFixed(6)}',
                                         style: greyTextStyle.copyWith(
-                                          fontSize: 10,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ] else ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Tap untuk membuka peta dan pilih lokasi tempat tinggal Anda',
-                                  style: greyTextStyle.copyWith(
-                                    fontSize: 12,
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.orange.withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.info_outline,
+                                        color: Colors.orange,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          'Klik untuk memilih lokasi tempat tinggal Anda pada peta',
+                                          style: greyTextStyle.copyWith(
+                                            fontSize: 12,
+                                            color: Colors.orange.shade800,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -319,6 +407,8 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                     // Next Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () async {
                         if (_formKey.currentState!.validate() && _selectedLocation != null) {
                           // Show loading dialog

@@ -1,10 +1,6 @@
-import 'dart:async';
-
-import 'package:bank_sha/services/otp_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class SignUpBatch2Page extends StatefulWidget {
   const SignUpBatch2Page({super.key});
@@ -14,38 +10,30 @@ class SignUpBatch2Page extends StatefulWidget {
 }
 
 class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
-  final List<TextEditingController> _otpControllers = List.generate(
-    6,
-    (index) => TextEditingController(),
-  );
-  final List<FocusNode> _otpFocusNodes = List.generate(
-    6,
-    (index) => FocusNode(),
-  );
+  final _formKey = GlobalKey<FormState>();
   
-  final OTPService _otpService = OTPService();
-  
-  Timer? _timer;
-  int _countDown = 120; // 2 minutes
-  bool _canResend = false;
-  bool _isVerifying = false;
-
   @override
   void initState() {
     super.initState();
-    _startTimer();
-    _initializeOTPService();
-  }
-  
-  Future<void> _initializeOTPService() async {
-    await _otpService.initialize();
     
-    // Get phone number from arguments when page loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      final phone = arguments?['phone'] as String? ?? '';
-      if (phone.isNotEmpty) {
-        _sendOTP(phone);
+    // Tunggu sejenak kemudian lanjut ke langkah berikutnya
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+        if (arguments != null) {
+          // Lanjut ke batch 3 dengan data yang sama dan OTP dummy
+          Navigator.pushReplacementNamed(
+            context,
+            '/sign-up-batch-3',
+            arguments: {
+              ...arguments,
+              'otpCode': 'skip_verification', // Tambahkan dummy OTP untuk kompatibilitas
+            },
+          );
+        } else {
+          // Jika tidak ada data, kembali ke langkah 1
+          Navigator.pushReplacementNamed(context, '/sign-up-batch-1');
+        }
       }
     });
   }

@@ -337,6 +337,8 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                     // Continue Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           // Navigate to batch 4 with all previous data plus password
