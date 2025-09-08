@@ -270,16 +270,17 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        _selectedLocation != null 
-                                          ? 'Lokasi sudah dipilih' 
-                                          : 'Klik untuk memilih lokasi',
-                                        style: greyTextStyle.copyWith(
-                                          fontSize: 12,
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _selectedLocation != null 
+                                            ? 'Lokasi sudah dipilih' 
+                                            : 'Klik untuk memilih lokasi',
+                                          style: greyTextStyle.copyWith(
+                                            fontSize: 12,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.all(8),
