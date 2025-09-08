@@ -273,7 +273,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                       }
                     : null,
                   child: Text(
-                    'Pilih',
+                    'Pilih Lokasi Ini',
                     style: whiteTextStyle.copyWith(
                       fontWeight: semiBold,
                     ),

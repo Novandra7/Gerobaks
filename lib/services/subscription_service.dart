@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import '../models/subscription_model.dart';
+import '../models/user_model.dart';
 import '../services/local_storage_service.dart';
+import '../services/user_service.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -189,6 +191,24 @@ class SubscriptionService {
     _currentSubscription = subscription;
     _subscriptionController.add(_currentSubscription);
     
+    // Update user model with subscription information
+    try {
+      final userService = await UserService.getInstance();
+      await userService.init();
+      final currentUser = await userService.getCurrentUser();
+      
+      if (currentUser != null) {
+        final updatedUser = currentUser.copyWith(
+          isSubscribed: true,
+          subscriptionType: plan.type.toString().split('.').last,
+        );
+        
+        await userService.updateUserData(updatedUser);
+      }
+    } catch (e) {
+      print('Error updating user subscription status: $e');
+    }
+    
     return subscription;
   }
 
@@ -228,6 +248,24 @@ class SubscriptionService {
       await _localStorage.saveSubscription(cancelledSubscription.toJson());
       _currentSubscription = cancelledSubscription;
       _subscriptionController.add(_currentSubscription);
+      
+      // Update user subscription status
+      try {
+        final userService = await UserService.getInstance();
+        await userService.init();
+        final currentUser = await userService.getCurrentUser();
+        
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(
+            isSubscribed: false,
+            subscriptionType: null,
+          );
+          
+          await userService.updateUserData(updatedUser);
+        }
+      } catch (e) {
+        print('Error updating user subscription status: $e');
+      }
     }
   }
 
