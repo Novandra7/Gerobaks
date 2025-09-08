@@ -104,11 +104,27 @@ class _SignInPageState extends State<SignInPage> {
       );
 
       if (user != null) {
-        print("Login successful for: ${user['name']} (${user['email']})");
+        print("Login validated for: ${user['name']} (${user['email']}) with role: ${user['role']}");
         
-        // Save user data to local storage
+        // LANGKAH 1: Simpan data user termasuk role ke localStorage
         final localStorage = await LocalStorageService.getInstance();
+        
+        // Pastikan role tersimpan dengan benar
+        if (!user.containsKey('role')) {
+          print("WARNING: Role not found in user data, adding default role");
+          user['role'] = 'end_user';
+        }
+        
+        // Simpan data user dengan role yang benar
         await localStorage.saveUserData(user);
+        print("User data saved with role: ${user['role']}");
+        
+        // LANGKAH 2: Set flag login = true
+        await localStorage.saveBool(localStorage.getLoginKey(), true);
+        
+        // LANGKAH 3: Simpan kredensial untuk auto-login berikutnya
+        await localStorage.saveCredentials(_emailController.text, _passwordController.text);
+        print("Credentials saved for future auto-login");
 
         // Menampilkan notifikasi login berhasil
         await NotificationService().showNotification(

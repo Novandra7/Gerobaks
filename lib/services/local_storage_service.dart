@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/models/user_model.dart';
 
+/// Service untuk mengelola penyimpanan lokal (SharedPreferences)
+/// Menangani data user, settings, chat, notifikasi, dll.
 class LocalStorageService {
+  // Key constants untuk SharedPreferences
   static const String _chatKey = 'chat_conversations';
   static const String _notificationKey = 'notifications';
   static const String _subscriptionKey = 'user_subscription';
@@ -13,6 +16,11 @@ class LocalStorageService {
   static const String _addressesKey = 'saved_addresses';
   static const String _settingsKey = 'app_settings';
   static const String _credentialsKey = 'user_credentials';
+  static const String _userRoleKey = 'user_role'; // Explicit key for role
+  
+  // Role constants
+  static const String ROLE_END_USER = 'end_user';
+  static const String ROLE_MITRA = 'mitra';
   
   // Public getter for login key
   String getLoginKey() => _isLoggedInKey;
@@ -22,6 +30,7 @@ class LocalStorageService {
 
   LocalStorageService._internal();
 
+  /// Singleton pattern untuk mendapatkan instance
   static Future<LocalStorageService> getInstance() async {
     _instance ??= LocalStorageService._internal();
     _preferences ??= await SharedPreferences.getInstance();
@@ -83,8 +92,18 @@ class LocalStorageService {
 
   // User Data Storage
   Future<void> saveUserData(Map<String, dynamic> userData) async {
+    print("📱 [STORAGE] Saving user data: ${userData['name']} with role: ${userData['role'] ?? 'unknown'}");
+    
     final String userJson = jsonEncode(userData);
     await _preferences!.setString(_userKey, userJson);
+    
+    // Jika ada role, simpan secara terpisah untuk memudahkan akses
+    if (userData.containsKey('role')) {
+      print("📱 [STORAGE] Explicitly saving role: ${userData['role']}");
+      await saveString(_userRoleKey, userData['role']);
+    } else {
+      print("📱 [STORAGE] WARNING: No role found in user data");
+    }
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
@@ -95,15 +114,33 @@ class LocalStorageService {
     return null;
   }
   
+  /// Mendapatkan role pengguna yang tersimpan
+  Future<String?> getUserRole() async {
+    // Coba ambil dari key khusus role dulu
+    final String? role = await getString(_userRoleKey);
+    if (role != null) {
+      return role;
+    }
+    
+    // Jika tidak ada, coba ambil dari user data
+    final userData = await getUserData();
+    return userData?['role'] as String?;
+  }
+  
   // Enhanced User Management
   Future<void> saveUser(UserModel user) async {
     // Convert to JSON
     Map<String, dynamic> userData = user.toJson();
     
-    // Preserve password if it exists
+    // Preserve password and role if they exist
     final existingData = await getUserData();
-    if (existingData != null && existingData.containsKey('password')) {
-      userData['password'] = existingData['password'];
+    if (existingData != null) {
+      if (existingData.containsKey('password')) {
+        userData['password'] = existingData['password'];
+      }
+      if (existingData.containsKey('role')) {
+        userData['role'] = existingData['role'];
+      }
     }
     
     // Save the data
@@ -111,7 +148,7 @@ class LocalStorageService {
     await saveBool(_isLoggedInKey, true);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
     
-    print("User saved to localStorage: ${user.name} (${user.email})");
+    print("📱 [STORAGE] User saved: ${user.name} (${user.email}) with role: ${userData['role'] ?? 'unknown'}");
   }
   
   Future<UserModel?> getUser() async {
@@ -165,7 +202,8 @@ class LocalStorageService {
     return await getBool(_isLoggedInKey, defaultValue: false);
   }
   
-  // Modified to preserve user data when logging out
+  /// Melakukan logout dengan cara menyimpan status login menjadi false,
+  /// tapi tetap menyimpan data user dan kredensial untuk auto-login berikutnya
   Future<void> logout() async {
     // Only change login status without removing user data
     await saveBool(_isLoggedInKey, false);
@@ -173,7 +211,18 @@ class LocalStorageService {
     // Save the logout timestamp but don't delete the user data
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
     
-    print("User logged out but data preserved in localStorage");
+    print("📱 [STORAGE] User logged out but data preserved for future auto-login");
+  }
+  
+  /// Melakukan full logout dengan menghapus semua data login
+  Future<void> fullLogout() async {
+    await saveBool(_isLoggedInKey, false);
+    await remove(_userKey);
+    await remove(_userRoleKey);
+    await remove(_credentialsKey);
+    await saveString(_lastLoginKey, DateTime.now().toIso8601String());
+    
+    print("📱 [STORAGE] User fully logged out with all data cleared");
   }
 
   // Generic storage methods
@@ -216,7 +265,7 @@ class LocalStorageService {
       'password': password,
     };
     await _preferences!.setString(_credentialsKey, jsonEncode(credentials));
-    print("Credentials saved for: $email");
+    print("📱 [STORAGE] Credentials saved for: $email");
   }
   
   Future<Map<String, String>?> getCredentials() async {
@@ -233,6 +282,7 @@ class LocalStorageService {
 
   Future<void> clearCredentials() async {
     await _preferences!.remove(_credentialsKey);
+    print("📱 [STORAGE] Credentials cleared");
   }
 
   // Check if user has active subscription

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/utils/auth_helper.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -47,23 +48,65 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     // Attempt auto-login after a brief delay to show the splash screen
     Timer(const Duration(seconds: 3), () async {
-      // Try to auto-login with saved credentials
-      final bool autoLoginSuccess = await AuthHelper.tryAutoLogin();
+      if (!mounted) return;
       
-      if (autoLoginSuccess && mounted) {
-        print("Auto-login successful, navigating to home page");
-        Navigator.pushNamedAndRemoveUntil(
-          context, 
-          '/home',
-          (route) => false,
-        );
-      } else if (mounted) {
-        print("Auto-login failed or not attempted, navigating to onboarding");
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/onboarding',
-          (route) => false,
-        );
+      try {
+        print("Attempting auto-login from splash page");
+        
+        // Get LocalStorageService instance for debugging
+        final localStorage = await LocalStorageService.getInstance();
+        final isLoggedIn = await localStorage.isLoggedIn();
+        print("isLoggedIn check result: $isLoggedIn");
+        
+        // Check user data directly for debugging
+        final userData = await localStorage.getUserData();
+        if (userData != null) {
+          print("User data found: ${userData['name']} (${userData['email']})");
+          print("Role in userData: ${userData['role']}");
+        } else {
+          print("No user data found in localStorage");
+        }
+        
+        // Try to auto-login with saved credentials
+        final Map<String, dynamic> autoLoginResult = await AuthHelper.tryAutoLogin();
+        print("Auto-login result: $autoLoginResult");
+        
+        if (autoLoginResult['success'] && mounted) {
+          final String role = autoLoginResult['role'] ?? AuthHelper.ROLE_END_USER;
+          print("Auto-login successful with role: $role");
+          
+          if (AuthHelper.isMitra(role)) {
+            print("🚀 [SPLASH] Auto-login successful for mitra, navigating to mitra dashboard");
+            Navigator.pushNamedAndRemoveUntil(
+              context, 
+              '/mitra-dashboard-new',
+              (route) => false,
+            );
+          } else {
+            print("🚀 [SPLASH] Auto-login successful for end user, navigating to home page");
+            Navigator.pushNamedAndRemoveUntil(
+              context, 
+              '/home',
+              (route) => false,
+            );
+          }
+        } else if (mounted) {
+          print("🚀 [SPLASH] Auto-login failed or not attempted, navigating to onboarding");
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/onboarding',
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        print("🚀 [SPLASH] Error during auto-login: $e");
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/onboarding',
+            (route) => false,
+          );
+        }
       }
     });
   }
