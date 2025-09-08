@@ -49,3 +49,19 @@ dependencies {
     // Tambahkan library desugaring yang diperlukan untuk flutter_local_notifications
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
+
+// Task untuk menyalin APK ke lokasi yang diharapkan Flutter
+tasks.register<Copy>("copyApkToExpectedLocation") {
+    from("C:/FlutterBuild/Gerobaks_Build/android/app/outputs/flutter-apk")
+    into("${project.rootProject.projectDir}/../build/app/outputs/flutter-apk")
+    
+    doFirst {
+        val targetDir = File("${project.rootProject.projectDir}/../build/app/outputs/flutter-apk")
+        targetDir.mkdirs()
+    }
+}
+
+// Pastikan task copyApk dijalankan setelah assembleDebug
+afterEvaluate {
+    tasks.findByName("assembleDebug")?.finalizedBy("copyApkToExpectedLocation")
+}
