@@ -39,8 +39,8 @@ class UserModel {
       email: json['email'] ?? '',
       phone: json['phone'],
       address: json['address'],
-      latitude: json['latitude'] != null ? json['latitude'].toDouble() : null,
-      longitude: json['longitude'] != null ? json['longitude'].toDouble() : null,
+      latitude: json['latitude']?.toDouble(),
+      longitude: json['longitude']?.toDouble(),
       // Handle both profilePicUrl and profile_picture formats
       profilePicUrl: json['profilePicUrl'] ?? json['profile_picture'],
       points: json['points'] ?? 15,

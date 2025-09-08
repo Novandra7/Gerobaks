@@ -1,7 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/models/activity_model_improved.dart';
 import 'package:bank_sha/utils/activity_helpers.dart';
-import 'package:bank_sha/utils/hero_tag_generator.dart';
 import 'package:flutter/material.dart';
 
 class ActivityItemImproved extends StatelessWidget {

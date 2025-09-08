@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/utils/auth_helper.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/services/user_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});

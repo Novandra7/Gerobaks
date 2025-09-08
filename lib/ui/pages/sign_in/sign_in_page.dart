@@ -68,7 +68,7 @@ class _SignInPageState extends State<SignInPage> {
         
         // Navigate based on role
         if (userData != null && userData['role'] == 'mitra') {
-          Navigator.pushReplacementNamed(context, '/mitra-dashboard');
+          Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
         } else {
           // Default to end_user dashboard
           Navigator.pushReplacementNamed(context, '/home');
@@ -134,7 +134,7 @@ class _SignInPageState extends State<SignInPage> {
 
           // Navigate based on role
           if (user['role'] == 'mitra') {
-            Navigator.pushNamedAndRemoveUntil(context, '/mitra-dashboard', (route) => false);
+            Navigator.pushNamedAndRemoveUntil(context, '/mitra-dashboard-new', (route) => false);
           } else {
             Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
           }

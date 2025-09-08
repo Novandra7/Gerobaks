@@ -1,7 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/ui/widgets/shared/layout.dart';
 import 'package:flutter/material.dart';
 
 class SignUpBatch3Page extends StatefulWidget {
@@ -17,7 +16,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
   final _formKey = GlobalKey<FormState>();
 
   bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
+  final bool _isConfirmPasswordVisible = false;
 
   @override
   void dispose() {

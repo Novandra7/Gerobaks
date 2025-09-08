@@ -70,11 +70,10 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
               surface: Colors.white,
               onSurface: Colors.black,
             ),
-            dialogBackgroundColor: Colors.white,
             textTheme: TextTheme(
               bodyMedium: TextStyle(fontSize: isTablet ? 16 : 14),
               labelLarge: TextStyle(fontSize: isTablet ? 16 : 14),
-            ),
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );

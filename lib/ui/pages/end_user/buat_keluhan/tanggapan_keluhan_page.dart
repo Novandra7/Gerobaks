@@ -6,9 +6,9 @@ class TanggapanKeluhanPage extends StatefulWidget {
   final Map<String, dynamic> keluhanData;
 
   const TanggapanKeluhanPage({
-    Key? key,
+    super.key,
     required this.keluhanData,
-  }) : super(key: key);
+  });
 
   @override
   State<TanggapanKeluhanPage> createState() => _TanggapanKeluhanPageState();

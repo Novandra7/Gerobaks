@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({Key? key}) : super(key: key);
+  const CheckoutPage({super.key});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -106,7 +106,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 CircularProgressIndicator(color: greenColor),
                 const SizedBox(height: 20),
                 Text(
-                  'Membuka halaman pembayaran ${_selectedPaymentMethod}...\nJangan tutup aplikasi ini.',
+                  'Membuka halaman pembayaran $_selectedPaymentMethod...\nJangan tutup aplikasi ini.',
                   style: greyTextStyle,
                   textAlign: TextAlign.center,
                 ),
@@ -149,7 +149,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ),
               content: Text(
-                'Apakah pembayaran di ${_selectedPaymentMethod} sudah selesai?',
+                'Apakah pembayaran di $_selectedPaymentMethod sudah selesai?',
                 style: greyTextStyle,
               ),
               actions: [

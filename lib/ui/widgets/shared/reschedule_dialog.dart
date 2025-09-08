@@ -8,10 +8,10 @@ class RescheduleDialog extends StatefulWidget {
   final Function(DateTime, TimeOfDay) onReschedule;
 
   const RescheduleDialog({
-    Key? key,
+    super.key,
     required this.initialDate,
     required this.onReschedule,
-  }) : super(key: key);
+  });
 
   @override
   State<RescheduleDialog> createState() => _RescheduleDialogState();
@@ -58,8 +58,7 @@ class _RescheduleDialogState extends State<RescheduleDialog> {
               primary: greenColor,
               onPrimary: whiteColor,
               onSurface: blackColor,
-            ),
-            dialogBackgroundColor: whiteColor,
+            ), dialogTheme: DialogThemeData(backgroundColor: whiteColor),
           ),
           child: child!,
         );
@@ -89,8 +88,7 @@ class _RescheduleDialogState extends State<RescheduleDialog> {
               primary: greenColor,
               onPrimary: whiteColor,
               onSurface: blackColor,
-            ),
-            dialogBackgroundColor: whiteColor,
+            ), dialogTheme: DialogThemeData(backgroundColor: whiteColor),
           ),
           child: child!,
         );

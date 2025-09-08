@@ -43,11 +43,11 @@ class PulsatingIcon extends StatefulWidget {
   final double size;
   
   const PulsatingIcon({
-    Key? key,
+    super.key,
     required this.icon,
     required this.color,
     this.size = 18,
-  }) : super(key: key);
+  });
 
   @override
   State<PulsatingIcon> createState() => _PulsatingIconState();
@@ -103,12 +103,12 @@ class ShimmerIndicator extends StatefulWidget {
   final double height;
   
   const ShimmerIndicator({
-    Key? key,
+    super.key,
     required this.baseColor,
     required this.highlightColor,
     this.width = 40,
     this.height = 4,
-  }) : super(key: key);
+  });
 
   @override
   State<ShimmerIndicator> createState() => _ShimmerIndicatorState();
@@ -170,10 +170,10 @@ class BouncingButton extends StatefulWidget {
   final VoidCallback onPressed;
   
   const BouncingButton({
-    Key? key,
+    super.key,
     required this.child,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<BouncingButton> createState() => _BouncingButtonState();

@@ -6,7 +6,7 @@ import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:flutter/material.dart';
 
 class PointsHistoryPage extends StatefulWidget {
-  const PointsHistoryPage({Key? key}) : super(key: key);
+  const PointsHistoryPage({super.key});
 
   @override
   State<PointsHistoryPage> createState() => _PointsHistoryPageState();

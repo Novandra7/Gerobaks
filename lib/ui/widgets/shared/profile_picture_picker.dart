@@ -6,10 +6,10 @@ class ProfilePicturePicker extends StatelessWidget {
   final Function(String) onPictureSelected;
 
   const ProfilePicturePicker({
-    Key? key,
+    super.key,
     required this.currentPicture,
     required this.onPictureSelected,
-  }) : super(key: key);
+  });
   
   // Helper method to determine the correct ImageProvider based on the path
   ImageProvider _getImageProvider(String path) {

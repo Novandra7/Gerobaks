@@ -11,19 +11,19 @@ class SkeletonLoader extends StatelessWidget {
   final Duration duration;
 
   const SkeletonLoader({
-    Key? key,
+    super.key,
     this.width = double.infinity,
     this.height = 20,
     this.borderRadius = 8,
     this.baseColor,
     this.highlightColor,
     this.duration = const Duration(milliseconds: 1500),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final baseColor = this.baseColor ?? theme.colorScheme.surfaceVariant.withOpacity(0.8);
+    final baseColor = this.baseColor ?? theme.colorScheme.surfaceContainerHighest.withOpacity(0.8);
     final highlightColor = this.highlightColor ?? theme.colorScheme.surface;
     
     return Shimmer.fromColors(

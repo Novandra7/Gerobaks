@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter/rendering.dart';
 import '../config/qris_config.dart';
 
 /// Service untuk mengelola pembayaran QRIS
@@ -75,7 +74,7 @@ class QRISService {
   /// Implementasi CRC16 untuk QRIS
   String _calculateCRC16(String payload) {
     // CRC16 CCITT implementation
-    final data = utf8.encode(payload + '6304');
+    final data = utf8.encode('${payload}6304');
     int crc = 0xFFFF;
     
     for (int byte in data) {

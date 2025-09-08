@@ -7,11 +7,11 @@ class QRISPaymentPage extends StatefulWidget {
   final Function(bool) onPaymentComplete;
 
   const QRISPaymentPage({
-    Key? key,
+    super.key,
     required this.amount,
     required this.orderId,
     required this.onPaymentComplete,
-  }) : super(key: key);
+  });
 
   @override
   State<QRISPaymentPage> createState() => _QRISPaymentPageState();

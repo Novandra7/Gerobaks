@@ -44,7 +44,7 @@ class _ChatIconWithBadgeState extends State<ChatIconWithBadge> {
   }
 
   void _loadSubscriptionStatus() async {
-    final currentSubscription = await _subscriptionService.getCurrentSubscription();
+    final currentSubscription = _subscriptionService.getCurrentSubscription();
     if (mounted) {
       setState(() {
         _subscriptionStatus = currentSubscription?.planName ?? 'none';

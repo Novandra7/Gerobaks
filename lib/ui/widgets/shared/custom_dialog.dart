@@ -52,7 +52,7 @@ class CustomDialog extends StatelessWidget {
   final bool isLoading;
 
   const CustomDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.content,
     required this.positiveButtonText,
@@ -62,7 +62,7 @@ class CustomDialog extends StatelessWidget {
     this.icon,
     this.customContent,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +215,7 @@ class CustomConfirmDialog extends StatelessWidget {
   final bool isDestructiveAction; // Untuk aksi berbahaya seperti delete
 
   const CustomConfirmDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.confirmText = 'Ya',
@@ -224,7 +224,7 @@ class CustomConfirmDialog extends StatelessWidget {
     this.onCancel,
     this.icon,
     this.isDestructiveAction = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -361,14 +361,14 @@ class CustomAlertDialog extends StatelessWidget {
   final bool isError;
 
   const CustomAlertDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.buttonText = 'OK',
     this.onPressed,
     this.icon,
     this.isError = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

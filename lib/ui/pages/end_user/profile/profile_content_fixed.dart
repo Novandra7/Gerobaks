@@ -3,7 +3,6 @@ import 'package:bank_sha/ui/pages/end_user/profile/List/myprofile.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/privacy_policy.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/settings/settings.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/points_history_page.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/ui/widgets/shared/responsive_menu.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
