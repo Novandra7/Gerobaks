@@ -1,15 +1,16 @@
 import 'dart:async';
 import 'dart:math';
 import '../models/subscription_model.dart';
-import '../models/user_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/user_service.dart';
+import 'package:logger/logger.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
 
+  final Logger _logger = Logger();
   final StreamController<UserSubscription?> _subscriptionController =
       StreamController<UserSubscription?>.broadcast();
   
@@ -25,17 +26,17 @@ class SubscriptionService {
 
   Future<void> _loadSubscription() async {
     final subscriptionData = await _localStorage.getSubscription();
-    print('DEBUG: LocalStorage subscription data = $subscriptionData');
+    _logger.d('LocalStorage subscription data = $subscriptionData');
     
     if (subscriptionData != null) {
       _currentSubscription = UserSubscription.fromJson(subscriptionData);
       _subscriptionController.add(_currentSubscription);
-      print('DEBUG: Loaded subscription = $_currentSubscription');
+      _logger.d('Loaded subscription = $_currentSubscription');
       
       // Sync subscription status with user model
       await _syncUserSubscriptionStatus();
     } else {
-      print('DEBUG: No subscription data found in localStorage');
+      _logger.d('No subscription data found in localStorage');
       _currentSubscription = null;
       _subscriptionController.add(null);
       
@@ -67,11 +68,11 @@ class SubscriptionService {
           );
           
           await userService.updateUserData(updatedUser);
-          print('DEBUG: Synced user subscription status: isSubscribed=$isActive, type=$subscriptionType');
+          _logger.d('Synced user subscription status: isSubscribed=$isActive, type=$subscriptionType');
         }
       }
     } catch (e) {
-      print('Error syncing subscription status with user model: $e');
+      _logger.e('Error syncing subscription status with user model: $e');
     }
   }
 
@@ -243,7 +244,7 @@ class SubscriptionService {
         await userService.updateUserData(updatedUser);
       }
     } catch (e) {
-      print('Error updating user subscription status: $e');
+      _logger.e('Error updating user subscription status: $e');
     }
     
     return subscription;
@@ -259,7 +260,7 @@ class SubscriptionService {
     await _localStorage.clearSubscription();
     _currentSubscription = null;
     _subscriptionController.add(null);
-    print('DEBUG: Subscription cleared');
+    _logger.d('Subscription cleared');
   }
 
   // Check if user has active subscription
@@ -288,7 +289,7 @@ class SubscriptionService {
           }
         }
       } catch (e) {
-        print('Error syncing subscription status with user model: $e');
+        _logger.e('Error syncing subscription status with user model: $e');
       }
     });
     
@@ -329,7 +330,7 @@ class SubscriptionService {
           await userService.updateUserData(updatedUser);
         }
       } catch (e) {
-        print('Error updating user subscription status: $e');
+        _logger.e('Error updating user subscription status: $e');
       }
     }
   }
@@ -371,7 +372,7 @@ class SubscriptionService {
           await userService.updateUserData(updatedUser);
         }
       } catch (e) {
-        print('Error updating user subscription status: $e');
+        _logger.e('Error updating user subscription status: $e');
       }
       
       return newSubscription;
