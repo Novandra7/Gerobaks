@@ -23,7 +23,8 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
           headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
             return [
               SliverAppBar(
-                expandedHeight: ResponsiveHelper.getResponsiveHeight(context, 180),
+                // Mengurangi ukuran expandedHeight header yang terlalu besar
+                expandedHeight: ResponsiveHelper.getResponsiveHeight(context, 140),
                 floating: false,
                 pinned: true,
                 snap: false,
@@ -56,7 +57,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                             padding: ResponsiveHelper.getResponsivePadding(
                               context,
                               horizontal: 20,
-                              vertical: 16,
+                              vertical: 12, // Mengurangi vertical padding
                             ),
                             child: Column(
                               children: [
@@ -92,32 +93,75 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                 ),
                                 
                                 if (!isCollapsed) ...[
-                                  SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 24)),
-                                  // Profile Info
-                                  CircleAvatar(
-                                    radius: ResponsiveHelper.getResponsiveRadius(context, 40),
-                                    backgroundColor: Colors.white.withOpacity(0.2),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: ResponsiveHelper.getResponsiveIconSize(context, 48),
-                                      color: whiteColor,
-                                    ),
-                                  ),
-                                  SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 16)),
-                                  Text(
-                                    'Ahmad Mitra',
-                                    style: whiteTextStyle.copyWith(
-                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
-                                      fontWeight: extraBold,
-                                    ),
-                                  ),
-                                  SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 4)),
-                                  Text(
-                                    'Mitra Gerobaks',
-                                    style: whiteTextStyle.copyWith(
-                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                                      fontWeight: medium,
-                                    ),
+                                  SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 16)), // Mengurangi spacing
+                                  
+                                  // Redesign layout profile section - lebih compact
+                                  Row(
+                                    children: [
+                                      // Memperkecil ukuran avatar
+                                      CircleAvatar(
+                                        radius: ResponsiveHelper.getResponsiveRadius(context, 30), // Mengurangi dari 40 ke 30
+                                        backgroundColor: Colors.white.withOpacity(0.2),
+                                        child: Icon(
+                                          Icons.person,
+                                          size: ResponsiveHelper.getResponsiveIconSize(context, 36), // Mengurangi ukuran ikon
+                                          color: whiteColor,
+                                        ),
+                                      ),
+                                      SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // ID Karyawan dalam badge status yang lebih compact
+                                            Container(
+                                              padding: ResponsiveHelper.getResponsivePadding(
+                                                context,
+                                                horizontal: 10,
+                                                vertical: 4,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(0.2),
+                                                borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 20)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    Icons.verified_user,
+                                                    size: ResponsiveHelper.getResponsiveIconSize(context, 14),
+                                                    color: whiteColor,
+                                                  ),
+                                                  SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 4)),
+                                                  Text(
+                                                    'ID: M230945 • Rating: 4.8 ★',
+                                                    style: whiteTextStyle.copyWith(
+                                                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                                      fontWeight: medium,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 8)),
+                                            Text(
+                                              'Ahmad Mitra',
+                                              style: whiteTextStyle.copyWith(
+                                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18), // Mengurangi ukuran font
+                                                fontWeight: extraBold,
+                                              ),
+                                            ),
+                                            Text(
+                                              'Selamat pagi, semangat bekerja!',
+                                              style: whiteTextStyle.copyWith(
+                                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                                fontWeight: medium,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ],
@@ -139,80 +183,85 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             ),
             child: Column(
               children: [
-                // Statistics Cards
+                // Mengubah 3 Statistics Cards menjadi 2 card
                 Row(
                   children: [
                     Expanded(
                       child: _buildStatCard(
-                        title: 'Total\nTransaksi',
+                        title: 'Total Pengambilan',
                         value: '125',
                         color: const Color(0xFF10B981),
+                        icon: Icons.shopping_bag_outlined,
                       ),
                     ),
                     SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
                     Expanded(
                       child: _buildStatCard(
-                        title: 'Poin\nTerkumpul',
-                        value: '2,450',
-                        color: const Color(0xFF3B82F6),
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
-                    Expanded(
-                      child: _buildStatCard(
-                        title: 'Rating\nMitra',
+                        title: 'Rating Mitra',
                         value: '4.8',
                         color: const Color(0xFFF59E0B),
+                        icon: Icons.star_outline,
                       ),
                     ),
                   ],
                 ),
 
-                SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 32)),
+                SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 24)),
 
-                // Quick Actions
+                // Quick Actions dengan grid layout yang lebih responsif
                 _buildInfoSection(
                   title: 'Aksi Cepat',
                   items: [
-                    GridView.count(
+                    GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: isSmallScreen ? 2 : 3,
-                      crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                      mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                      childAspectRatio: 1.0,
-                      children: [
-                        _buildActionCard(
-                          title: 'Edit Profil',
-                          icon: 'assets/ic_edit_profile.png',
-                          onTap: () {},
-                        ),
-                        _buildActionCard(
-                          title: 'Riwayat\nTransaksi',
-                          icon: 'assets/ic_history.png',
-                          onTap: () {},
-                        ),
-                        _buildActionCard(
-                          title: 'My Rewards',
-                          icon: 'assets/ic_my_rewards.png',
-                          onTap: () {},
-                        ),
-                        _buildActionCard(
-                          title: 'Pengaturan',
-                          icon: 'assets/ic_setting.png',
-                          onTap: () {},
-                        ),
-                        _buildActionCard(
-                          title: 'Bantuan',
-                          icon: 'assets/ic_help.png',
-                          onTap: () {},
-                        ),
-                        _buildActionCard(
-                          title: 'Tentang Kami',
-                          icon: 'assets/ic_aboutus.png',
-                          onTap: () {},
-                        ),
-                      ],
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isSmallScreen ? 2 : 3,
+                        crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                        mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
+                        childAspectRatio: isSmallScreen ? 1.2 : 1.3, // Lebih proporsional
+                      ),
+                      itemCount: 6,
+                      itemBuilder: (context, index) {
+                        final actionItems = [
+                          {
+                            'title': 'Edit Profil',
+                            'icon': 'assets/ic_edit_profile.png',
+                            'onTap': () {},
+                          },
+                          {
+                            'title': 'Riwayat',
+                            'icon': 'assets/ic_history.png',
+                            'onTap': () {},
+                          },
+                          {
+                            'title': 'Rewards',
+                            'icon': 'assets/ic_my_rewards.png',
+                            'onTap': () {},
+                          },
+                          {
+                            'title': 'Pengaturan',
+                            'icon': 'assets/ic_setting.png',
+                            'onTap': () {},
+                          },
+                          {
+                            'title': 'Bantuan',
+                            'icon': 'assets/ic_help.png',
+                            'onTap': () {},
+                          },
+                          {
+                            'title': 'Tentang Kami',
+                            'icon': 'assets/ic_aboutus.png',
+                            'onTap': () {},
+                          },
+                        ];
+                        
+                        return _buildActionCard(
+                          title: actionItems[index]['title'] as String,
+                          icon: actionItems[index]['icon'] as String,
+                          onTap: actionItems[index]['onTap'] as VoidCallback,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -397,6 +446,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     required String title,
     required String value,
     required Color color,
+    required IconData icon,
   }) {
     return Container(
       padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
@@ -412,36 +462,53 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: color.withOpacity(0.2), // Mengurangi opacity shadow
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Row(
         children: [
-          Text(
-            value,
-            style: whiteTextStyle.copyWith(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 24),
-              fontWeight: extraBold,
+          Container(
+            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 10)),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
+            ),
+            child: Icon(
+              icon,
+              size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+              color: whiteColor,
             ),
           ),
-          SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 4)),
-          Text(
-            title,
-            style: whiteTextStyle.copyWith(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-              fontWeight: medium,
-            ),
-            textAlign: TextAlign.center,
+          SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 12)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: whiteTextStyle.copyWith(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 22),
+                  fontWeight: extraBold,
+                ),
+              ),
+              SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 4)),
+              Text(
+                title,
+                style: whiteTextStyle.copyWith(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                  fontWeight: medium,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  // Action card yang lebih compact
   Widget _buildActionCard({
     required String title,
     required String icon,
@@ -451,15 +518,15 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)), // Mengurangi padding
         decoration: BoxDecoration(
           color: whiteColor,
           borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: Colors.black.withOpacity(0.03), // Mengurangi opacity shadow
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
           border: Border.all(
@@ -471,19 +538,19 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)),
+              padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 10)),
               decoration: BoxDecoration(
                 color: (color ?? greenColor).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
               ),
               child: Image.asset(
                 icon,
-                height: ResponsiveHelper.getResponsiveHeight(context, 32),
-                width: ResponsiveHelper.getResponsiveWidth(context, 32),
+                height: ResponsiveHelper.getResponsiveHeight(context, 28), // Ukuran icon lebih kecil
+                width: ResponsiveHelper.getResponsiveWidth(context, 28),
                 color: color ?? greenColor,
               ),
             ),
-            SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 12)),
+            SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 8)), // Mengurangi spacing
             Text(
               title,
               style: blackTextStyle.copyWith(
@@ -491,6 +558,8 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 fontWeight: semiBold,
               ),
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -498,21 +567,22 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     );
   }
 
+  // Section card yang lebih ringan
   Widget _buildInfoSection({
     required String title,
     required List<Widget> items,
   }) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 20)),
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)), // Mengurangi padding
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.03), // Mengurangi opacity shadow
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
@@ -525,45 +595,53 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         children: [
           Row(
             children: [
-              Image.asset(
-                'assets/img_gerobakss.png',
-                height: ResponsiveHelper.getResponsiveHeight(context, 20),
+              Container(
+                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                decoration: BoxDecoration(
+                  color: greenColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+                ),
+                child: Image.asset(
+                  'assets/img_gerobakss.png',
+                  height: ResponsiveHelper.getResponsiveHeight(context, 16),
+                ),
               ),
               SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 8)),
               Text(
                 title,
                 style: blackTextStyle.copyWith(
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                   fontWeight: semiBold,
                 ),
               ),
             ],
           ),
-          SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 16)),
+          SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 12)),
           ...items,
         ],
       ),
     );
   }
 
+  // Info item yang lebih compact
   Widget _buildInfoItem(String label, String value, IconData icon) {
     return Padding(
-      padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveHeight(context, 16)),
+      padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveHeight(context, 12)), // Mengurangi bottom padding
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 10)),
+            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)), // Mengurangi padding
             decoration: BoxDecoration(
               color: greenColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
+              borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 10)),
             ),
             child: Icon(
               icon,
-              size: ResponsiveHelper.getResponsiveIconSize(context, 22),
+              size: ResponsiveHelper.getResponsiveIconSize(context, 20), // Ukuran icon lebih kecil
               color: greenColor,
             ),
           ),
-          SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
+          SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 12)), // Mengurangi spacing
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,14 +649,14 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 Text(
                   label,
                   style: greyTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13), // Ukuran font lebih kecil
                   ),
                 ),
-                SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 4)),
+                SizedBox(height: ResponsiveHelper.getResponsiveHeight(context, 2)), // Mengurangi spacing
                 Text(
                   value,
                   style: blackTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 15), // Ukuran font lebih kecil
                     fontWeight: semiBold,
                   ),
                 ),
