@@ -121,7 +121,7 @@ class DashboardHeader extends StatelessWidget {
               Text(
                 vehicleNumber,
                 style: whiteTextStyle.copyWith(
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                   fontWeight: medium,
                 ),
               ),
@@ -135,14 +135,14 @@ class DashboardHeader extends StatelessWidget {
               Text(
                 driverId,
                 style: whiteTextStyle.copyWith(
-                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(context, 16),
                   fontWeight: medium,
                 ),
               ),
             ],
           ),
           
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 20)),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 10)),
           
           // Greeting with name
           Text(

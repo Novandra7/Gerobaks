@@ -11,7 +11,7 @@ import 'package:bank_sha/utils/responsive_helper.dart';
 
 // Importing the new custom widgets
 import 'package:bank_sha/ui/widgets/mitra/dashboard_header.dart';
-import 'package:bank_sha/ui/widgets/mitra/statistics_section.dart';
+import 'package:bank_sha/ui/widgets/mitra/statistics_grid.dart';
 import 'package:bank_sha/ui/widgets/mitra/schedule_section.dart';
 import 'package:bank_sha/ui/widgets/mitra/custom_bottom_navbar.dart';
 

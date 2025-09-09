@@ -488,6 +488,115 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                   ),
                                 ],
                               ),
+<<<<<<< HEAD
+=======
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Stats
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          title: 'Rating',
+                          value: currentUser!['rating'].toString(),
+                          icon: Icons.star_rounded,
+                          color: Color(0xFFEAB308), // Vibrant amber
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          title: 'Total Pengambilan',
+                          value: currentUser!['total_collections'].toString(),
+                          icon: Icons.local_shipping_rounded,
+                          color: Color(0xFF3B82F6), // Vibrant blue
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Vehicle Info
+                  _buildInfoSection(
+                    title: 'Informasi Kendaraan',
+                    items: [
+                      _buildInfoItem(
+                        'Jenis Kendaraan',
+                        currentUser!['vehicle_type'],
+                        Icons.local_shipping_rounded,
+                      ),
+                      _buildInfoItem(
+                        'Nomor Plat',
+                        currentUser!['vehicle_plate'],
+                        Icons.confirmation_number_rounded,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Work Info
+                  _buildInfoSection(
+                    title: 'Informasi Kerja',
+                    items: [
+                      _buildInfoItem(
+                        'Area Kerja',
+                        currentUser!['work_area'],
+                        Icons.location_on_rounded,
+                      ),
+                      _buildInfoItem(
+                        'Status',
+                        currentUser!['status'],
+                        Icons.work_rounded,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Contact Info
+                  _buildInfoSection(
+                    title: 'Informasi Kontak',
+                    items: [
+                      _buildInfoItem(
+                        'Email',
+                        currentUser!['email'],
+                        Icons.email_rounded,
+                      ),
+                      _buildInfoItem(
+                        'Nomor Telepon',
+                        currentUser!['phone'],
+                        Icons.phone_rounded,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Action Buttons
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // TODO: Edit profile
+                          },
+                          
+                          label: Text(
+                            'Edit Profil',
+                            style: whiteTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: semiBold,
+>>>>>>> eac7145c195d18a22a06f2238e6db7be46223a3f
                             ),
 
                             SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
@@ -502,12 +611,25 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                   currentUser!['work_area'] ?? 'Samarinda Kota',
                                   Icons.location_on_rounded,
                                 ),
+<<<<<<< HEAD
                                 _buildInfoItem(
                                   'Status',
                                   currentUser!['status'] ?? 'Aktif',
                                   Icons.verified_rounded,
                                 ),
                               ],
+=======
+                                (route) => false,
+                              );
+                            }
+                          },
+                         
+                          label: Text(
+                            'Logout',
+                            style: whiteTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: semiBold,
+>>>>>>> eac7145c195d18a22a06f2238e6db7be46223a3f
                             ),
 
                             SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
@@ -686,6 +808,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+<<<<<<< HEAD
           // Header
           Container(
             padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
@@ -708,6 +831,17 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                     color: greenColor,
                     size: ResponsiveHelper.getResponsiveIconSize(context, 20),
                   ),
+=======
+          Row(
+            children: [
+              
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: blackTextStyle.copyWith(
+                  fontSize: 18,
+                  fontWeight: semiBold,
+>>>>>>> eac7145c195d18a22a06f2238e6db7be46223a3f
                 ),
                 SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
                 Text(

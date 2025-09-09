@@ -1,118 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
-
-class StatisticCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final Color valueColor;
-  final IconData icon;
-
-  const StatisticCard({
-    Key? key,
-    required this.title,
-    required this.value,
-    required this.valueColor,
-    required this.icon,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFE4F9E8), // Light green background
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title and icon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: blackTextStyle.copyWith(
-                    fontSize: 14,
-                    fontWeight: medium,
-                  ),
-                ),
-                Icon(
-                  icon,
-                  color: valueColor,
-                  size: 18,
-                ),
-              ],
-            ),
-            
-            // Spacer
-            const Spacer(),
-            
-            // Value display
-            if (title == 'Waktu Aktif')
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: bold,
-                      color: const Color(0xFF3B82F6), // Blue
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    'jam',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: medium,
-                      color: const Color(0xFF3B82F6).withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              )
-            else if (title == 'Rating')
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: bold,
-                      color: const Color(0xFFFFD700), // Gold
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    '/5',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: medium,
-                      color: const Color(0xFFFFD700).withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              )
-            else
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: bold,
-                  color: valueColor,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+import 'package:bank_sha/ui/widgets/mitra/statistic_card.dart';
 
 class StatisticsGrid extends StatelessWidget {
   final VoidCallback onRefresh;
@@ -148,6 +36,7 @@ class StatisticsGrid extends StatelessWidget {
                     style: blackTextStyle.copyWith(
                       fontSize: 18,
                       fontWeight: semiBold,
+                      color: const Color(0xFF01A643),
                     ),
                   ),
                 ],
