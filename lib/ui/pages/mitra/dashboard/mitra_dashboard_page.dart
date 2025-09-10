@@ -4,6 +4,9 @@ import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets.dart';
+// import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets_improved.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/dashboard_components.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/detail_pickup_card.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';
@@ -279,20 +282,21 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
     );
   }
   
-  // Stat Card untuk statistik
+  // Stat Card untuk statistik - Redesign untuk mengatasi overflow
   Widget _buildStatCard({
     required String title,
     required String value,
     required Color backgroundColor,
     required Color valueColor,
+    required IconData icon,
   }) {
     final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
     
     return Container(
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 6 : 8)), // Padding lebih kecil
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -302,206 +306,48 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.center, // Posisikan elemen di tengah
         children: [
-          Text(
-            title,
-            style: blackTextStyle.copyWith(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 12 : 14),
-              fontWeight: medium,
-            ),
-          ),
-          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 30 : 36),
-              fontWeight: bold,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // Method untuk membangun kartu jadwal pengambilan
-  Widget _buildJadwalCard() {
-    final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
-    
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Status dan waktu pengambilan
+          // Icon di atas
           Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveHelper.getResponsiveSpacing(context, 16),
-              vertical: ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 10 : 12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: ResponsiveHelper.getResponsiveWidth(context, 20),
-                      height: ResponsiveHelper.getResponsiveHeight(context, 20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFD700), // Gold color for waiting
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white,
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.access_time_filled_rounded,
-                          color: Colors.white,
-                          size: ResponsiveHelper.getResponsiveIconSize(context, 12),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                    Text(
-                      '14:00 - 16:00',
-                      style: blackTextStyle.copyWith(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 14 : 16),
-                        fontWeight: medium,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12), 
-                    vertical: ResponsiveHelper.getResponsiveSpacing(context, 6)
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E0), // Light gold background
-                    borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 20)),
-                  ),
-                  child: Text(
-                    'Menunggu',
-                    style: TextStyle(
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                      fontWeight: medium,
-                      color: const Color(0xFFB58D00), // Darker gold text
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Divider
-          Divider(color: Colors.grey.shade200, height: 1),
-          
-          // Informasi pelanggan
-          Container(
-            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 3 : 4)),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9), // Light green background
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+              color: valueColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: valueColor,
+              size: ResponsiveHelper.getResponsiveIconSize(context, isSmallScreen ? 12 : 14),
+            ),
+          ),
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 2)), // Spacing lebih kecil
+          
+          // Value di tengah (lebih besar)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 18 : 22), // Font lebih kecil
+                fontWeight: bold,
+                color: valueColor,
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Nama pelanggan
-                Text(
-                  'Wahyu Indra',
-                  style: blackTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
-                    fontWeight: semiBold,
-                  ),
-                ),
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                
-                // Alamat
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: ResponsiveHelper.getResponsiveIconSize(context, 16),
-                      color: Colors.grey,
-                    ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
-                    Expanded(
-                      child: Text(
-                        'JL. Muso Salim B',
-                        style: greyTextStyle.copyWith(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
-                
-                // Tags
-                Row(
-                  children: [
-                    // Jenis sampah
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12),
-                        vertical: ResponsiveHelper.getResponsiveSpacing(context, 6),
-                      ),
-                      decoration: BoxDecoration(
-                        color: greenColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
-                      ),
-                      child: Text(
-                        'Organik',
-                        style: greentextstyle2.copyWith(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                          fontWeight: medium,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                    // Berat
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12),
-                        vertical: ResponsiveHelper.getResponsiveSpacing(context, 6),
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
-                      ),
-                      child: Text(
-                        '2 kg',
-                        style: greyTextStyle.copyWith(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                          fontWeight: medium,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          ),
+          
+          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 1)), // Spacing minimal
+          
+          // Title di bawah (lebih kecil)
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: blackTextStyle.copyWith(
+              fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 9 : 10), // Font lebih kecil
+              fontWeight: medium,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -613,7 +459,9 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                         ),
                         SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
                         Text(
-                          'KT 777 WAN',
+                          currentUser != null && currentUser!['vehicle'] != null
+                              ? currentUser!['vehicle']
+                              : 'KT 777 WAN',
                           style: whiteTextStyle.copyWith(
                             fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
                             fontWeight: medium,
@@ -627,13 +475,36 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                         ),
                         SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
                         Text(
-                          'DRV-KTM-214',
+                          currentUser != null && currentUser!['id'] != null
+                              ? 'DRV-${currentUser!['id']}'
+                              : 'DRV-KTM-214',
                           style: whiteTextStyle.copyWith(
                             fontSize: ResponsiveHelper.getResponsiveFontSize(context, 13),
                             fontWeight: medium,
                           ),
                         ),
                       ],
+                    ),
+                    
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 20)),
+                    
+                    // Greeting with name and date
+                    Text(
+                      'Selamat ${_getGreeting()},',
+                      style: whiteTextStyle.copyWith(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 20 : 22),
+                        fontWeight: semiBold,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                    Text(
+                      currentUser != null && currentUser!['name'] != null
+                          ? currentUser!['name'].split(' ')[0]
+                          : 'Mitra',
+                      style: whiteTextStyle.copyWith(
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 24 : 28),
+                        fontWeight: bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     // Statistik Hari Ini
@@ -682,32 +553,39 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                     SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
                     
                     // Quick Action buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildQuickAction(
-                          icon: Icons.location_on_outlined,
-                          label: 'Lokasi',
-                          onTap: () {},
-                        ),
-                        _buildQuickAction(
-                          icon: Icons.list_alt_outlined,
-                          label: 'Jadwal',
-                          onTap: () {
-                            _updateParentIndex(1);
-                          },
-                        ),
-                        _buildQuickAction(
-                          icon: Icons.credit_card_outlined,
-                          label: 'Bayar',
-                          onTap: () {},
-                        ),
-                        _buildQuickAction(
-                          icon: Icons.help_outline_outlined,
-                          label: 'Bantuan',
-                          onTap: () {},
-                        ),
-                      ],
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          QuickActionButton(
+                            icon: Icons.location_on_outlined,
+                            label: 'Lokasi',
+                            onTap: () {},
+                            color: greenColor,
+                          ),
+                          QuickActionButton(
+                            icon: Icons.list_alt_outlined,
+                            label: 'Jadwal',
+                            onTap: () {
+                              _updateParentIndex(1);
+                            },
+                            color: greenColor,
+                          ),
+                          QuickActionButton(
+                            icon: Icons.credit_card_outlined,
+                            label: 'Bayar',
+                            onTap: () {},
+                            color: greenColor,
+                          ),
+                          QuickActionButton(
+                            icon: Icons.help_outline_outlined,
+                            label: 'Bantuan',
+                            onTap: () {},
+                            color: greenColor,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -785,16 +663,16 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                 ),
               ),
 
-              // Responsive Grid Layout for Stats - 2x2 grid
+              // Responsive Grid Layout for Stats - 2x2 grid dengan layout baru
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20)),
                 child: GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: 2,
-                  crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                  mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                  childAspectRatio: 1.6,
+                  crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 8), // Jarak lebih kecil
+                  mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 8), // Jarak lebih kecil
+                  childAspectRatio: isSmallScreen ? 1.0 : 1.1, // Rasio yang lebih tinggi untuk vertical layout
                   children: [
                     // Pengambilan Selesai
                     _buildStatCard(
@@ -802,6 +680,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '12',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFF22C55E),
+                      icon: Icons.check_circle_outline,
                     ),
                     
                     // Rating
@@ -810,6 +689,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '4.8',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFFEAB308),
+                      icon: Icons.star_border_rounded,
                     ),
                     
                     // Waktu Aktif
@@ -818,6 +698,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '7j',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFF3B82F6),
+                      icon: Icons.access_time_outlined,
                     ),
                     
                     // Pengambilan Menunggu
@@ -826,6 +707,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                       value: '17',
                       backgroundColor: Colors.white,
                       valueColor: const Color(0xFFF97316),
+                      icon: Icons.hourglass_empty_rounded,
                     ),
                   ],
                 ),
@@ -839,57 +721,49 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              height: ResponsiveHelper.getResponsiveHeight(context, 24),
-                              width: ResponsiveHelper.getResponsiveWidth(context, 3),
-                              decoration: BoxDecoration(
-                                color: greenColor,
-                                borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 2)),
-                              ),
+                    DashboardSectionHeader(
+                      title: 'Jadwal Pengambilan',
+                      trailing: Row(
+                        children: [
+                          Container(
+                            width: ResponsiveHelper.getResponsiveWidth(context, 8),
+                            height: ResponsiveHelper.getResponsiveHeight(context, 8),
+                            decoration: BoxDecoration(
+                              color: greenColor,
+                              shape: BoxShape.circle,
                             ),
-                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
-                            Text(
-                              'Jadwal Pengambilan',
-                              style: blackTextStyle.copyWith(
-                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
-                                fontWeight: semiBold,
-                              ),
+                          ),
+                          SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 5)),
+                          Container(
+                            width: ResponsiveHelper.getResponsiveWidth(context, 8),
+                            height: ResponsiveHelper.getResponsiveHeight(context, 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              shape: BoxShape.circle,
                             ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Container(
-                              width: ResponsiveHelper.getResponsiveWidth(context, 8),
-                              height: ResponsiveHelper.getResponsiveHeight(context, 8),
-                              decoration: BoxDecoration(
-                                color: greenColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 5)),
-                            Container(
-                              width: ResponsiveHelper.getResponsiveWidth(context, 8),
-                              height: ResponsiveHelper.getResponsiveHeight(context, 8),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                     
                     SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
                     
-                    // Jadwal Card
-                    _buildJadwalCard(),
+                    // Jadwal Card dengan komponen detail pickup baru
+                    DetailPickupCard(
+                      customerName: 'Wahyu Indra',
+                      phoneNumber: '+62 812-3456-7890',
+                      address: 'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
+                      pickupTime: '14:00 - 16:00',
+                      wasteType: 'Organik',
+                      estimatedWeight: '2 kg',
+                      status: 'Menunggu',
+                      statusColor: const Color(0xFFFFB74D),
+                      onTap: () {
+                        // Handle tap action
+                      },
+                    ),
+                    // Backup jadwal card lama
+                    // _buildJadwalCard(),
                     
                     SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
                   ],
@@ -897,28 +771,10 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
               ),
 
               // Quick Actions - Responsive Design
-              Container(
-                margin: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20)),
-                child: Row(
-                  children: [
-                    Container(
-                      height: ResponsiveHelper.getResponsiveHeight(context, 32),
-                      width: ResponsiveHelper.getResponsiveWidth(context, 4),
-                      decoration: BoxDecoration(
-                        color: greenColor,
-                        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 2)),
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
-                    Text(
-                      'Aksi Cepat',
-                      style: blackTextStyle.copyWith(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
-                        fontWeight: semiBold,
-                      ),
-                    ),
-                  ],
+                child: DashboardSectionHeader(
+                  title: 'Aksi Cepat',
                 ),
               ),
 
