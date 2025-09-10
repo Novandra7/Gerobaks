@@ -5,7 +5,8 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()
+// Gunakan path absolut untuk menghindari masalah spasi di path
+val newBuildDir: Directory = layout.buildDirectory.dir("C:/FlutterBuild/Gerobaks_Build/android").get()
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {

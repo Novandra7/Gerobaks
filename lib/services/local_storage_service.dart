@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/models/user_model.dart';
+import 'package:logger/logger.dart';
 
 /// Service untuk mengelola penyimpanan lokal (SharedPreferences)
 /// Menangani data user, settings, chat, notifikasi, dll.
@@ -10,17 +11,16 @@ class LocalStorageService {
   static const String _notificationKey = 'notifications';
   static const String _subscriptionKey = 'user_subscription';
   static const String _userKey = 'user_data';
-  static const String _pointsKey = 'user_points';
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _lastLoginKey = 'last_login';
-  static const String _addressesKey = 'saved_addresses';
-  static const String _settingsKey = 'app_settings';
   static const String _credentialsKey = 'user_credentials';
   static const String _userRoleKey = 'user_role'; // Explicit key for role
   
+  final Logger _logger = Logger();
+  
   // Role constants
-  static const String ROLE_END_USER = 'end_user';
-  static const String ROLE_MITRA = 'mitra';
+  static const String roleEndUser = 'end_user';
+  static const String roleMitra = 'mitra';
   
   // Public getter for login key
   String getLoginKey() => _isLoggedInKey;
@@ -92,17 +92,17 @@ class LocalStorageService {
 
   // User Data Storage
   Future<void> saveUserData(Map<String, dynamic> userData) async {
-    print("📱 [STORAGE] Saving user data: ${userData['name']} with role: ${userData['role'] ?? 'unknown'}");
+    _logger.d("Saving user data: ${userData['name']} with role: ${userData['role'] ?? 'unknown'}");
     
     final String userJson = jsonEncode(userData);
     await _preferences!.setString(_userKey, userJson);
     
     // Jika ada role, simpan secara terpisah untuk memudahkan akses
     if (userData.containsKey('role')) {
-      print("📱 [STORAGE] Explicitly saving role: ${userData['role']}");
+      _logger.d("Explicitly saving role: ${userData['role']}");
       await saveString(_userRoleKey, userData['role']);
     } else {
-      print("📱 [STORAGE] WARNING: No role found in user data");
+      _logger.w("WARNING: No role found in user data");
     }
   }
 
@@ -148,7 +148,7 @@ class LocalStorageService {
     await saveBool(_isLoggedInKey, true);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
     
-    print("📱 [STORAGE] User saved: ${user.name} (${user.email}) with role: ${userData['role'] ?? 'unknown'}");
+    _logger.i("User saved: ${user.name} (${user.email}) with role: ${userData['role'] ?? 'unknown'}");
   }
   
   Future<UserModel?> getUser() async {
@@ -157,7 +157,7 @@ class LocalStorageService {
       try {
         return UserModel.fromJson(userData);
       } catch (e) {
-        print("Error parsing user data: $e");
+        _logger.e("Error parsing user data: $e");
         return null;
       }
     }
@@ -211,7 +211,7 @@ class LocalStorageService {
     // Save the logout timestamp but don't delete the user data
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
     
-    print("📱 [STORAGE] User logged out but data preserved for future auto-login");
+    _logger.i("User logged out but data preserved for future auto-login");
   }
   
   /// Melakukan full logout dengan menghapus semua data login
@@ -222,7 +222,7 @@ class LocalStorageService {
     await remove(_credentialsKey);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
     
-    print("📱 [STORAGE] User fully logged out with all data cleared");
+    _logger.i("User fully logged out with all data cleared");
   }
 
   // Generic storage methods
@@ -278,7 +278,7 @@ class LocalStorageService {
       'password': password,
     };
     await _preferences!.setString(_credentialsKey, jsonEncode(credentials));
-    print("📱 [STORAGE] Credentials saved for: $email");
+    _logger.d("Credentials saved for: $email");
   }
   
   Future<Map<String, String>?> getCredentials() async {
@@ -295,7 +295,7 @@ class LocalStorageService {
 
   Future<void> clearCredentials() async {
     await _preferences!.remove(_credentialsKey);
-    print("📱 [STORAGE] Credentials cleared");
+    _logger.d("Credentials cleared");
   }
 
   // Check if user has active subscription
