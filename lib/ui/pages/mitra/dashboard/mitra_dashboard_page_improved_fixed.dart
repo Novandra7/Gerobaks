@@ -2,8 +2,97 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page_fixed.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:flutter/material.dart';
+
+class MitraDashboardPageImproved extends StatefulWidget {
+  const MitraDashboardPageImproved({super.key});
+
+  @override
+  State<MitraDashboardPageImproved> createState() => _MitraDashboardPageImprovedState();
+}
+
+class _MitraDashboardPageImprovedState extends State<MitraDashboardPageImproved> {
+  int _currentIndex = 0;
+  Map<String, dynamic>? currentUser;
+
+  final List<Widget> _pages = [
+    const MitraDashboardContent(),
+    const JadwalMitraPage(),
+    const PengambilanListPage(),
+    const LaporanMitraPage(),
+    const ProfileMitraPage(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final localStorage = await LocalStorageService.getInstance();
+    final userData = await localStorage.getUserData();
+    if (userData != null) {
+      final user = UserDataMock.getUserByEmail(userData['email']);
+      setState(() {
+        currentUser = user;
+      });
+    }
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+        backgroundColor: Colors.white,
+        selectedItemColor: greenColor,
+        unselectedItemColor: greyColor,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
+            label: 'Jadwal',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt_outlined),
+            activeIcon: Icon(Icons.list_alt),
+            label: 'Pengambilan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
+            label: 'Laporan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class MitraDashboardContent extends StatefulWidget {
   const MitraDashboardContent({super.key});
