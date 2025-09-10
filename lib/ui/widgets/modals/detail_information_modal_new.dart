@@ -10,12 +10,12 @@ class DetailInformationModal extends StatefulWidget {
   final VoidCallback? onNext;
 
   const DetailInformationModal({
-    Key? key,
+    super.key,
     required this.information,
     this.currentIndex,
     this.onPrevious,
     this.onNext,
-  }) : super(key: key);
+  });
   
   @override
   State<DetailInformationModal> createState() => _DetailInformationModalState();

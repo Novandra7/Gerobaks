@@ -11,7 +11,7 @@ class CustomAppTrackingImproved extends StatelessWidget implements PreferredSize
   final String? titleIconAsset;
 
   const CustomAppTrackingImproved({
-    Key? key,
+    super.key,
     this.title = 'Lokasi',
     this.iconData,
     this.iconAsset,
@@ -19,7 +19,7 @@ class CustomAppTrackingImproved extends StatelessWidget implements PreferredSize
     this.actions,
     this.showIconWithTitle = false,
     this.titleIconAsset,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

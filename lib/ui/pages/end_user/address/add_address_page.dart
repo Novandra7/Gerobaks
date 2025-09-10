@@ -68,7 +68,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
                   ],
                 ),
                 child: DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -247,7 +247,7 @@ class _AddAddressPageState extends State<AddAddressPage> {
                       isDefaultAddress = value;
                     });
                   },
-                  activeColor: greenColor,
+                  activeThumbColor: greenColor,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
               ),

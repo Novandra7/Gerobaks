@@ -482,7 +482,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
           const SizedBox(height: 16),
           
           // Enhanced Status Filter Chips with better scrolling and visuals
-          Container(
+          SizedBox(
             height: 44, // Fixed height for consistency
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,

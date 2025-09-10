@@ -9,9 +9,9 @@ class ActivityDetailModal extends StatelessWidget {
   final ActivityModel activity;
 
   const ActivityDetailModal({
-    Key? key,
+    super.key,
     required this.activity,
-  }) : super(key: key);
+  });
   
   // Format datetime string dengan benar, menangani baik '\n' atau '\\n' sebagai separator
   String _formatDateTime(String dateTimeStr) {

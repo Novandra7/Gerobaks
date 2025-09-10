@@ -3,7 +3,7 @@ import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:bank_sha/ui/widgets/shared/custom_dialog.dart';
 
 class DialogExamplePage extends StatelessWidget {
-  const DialogExamplePage({Key? key}) : super(key: key);
+  const DialogExamplePage({super.key});
 
   @override
   Widget build(BuildContext context) {

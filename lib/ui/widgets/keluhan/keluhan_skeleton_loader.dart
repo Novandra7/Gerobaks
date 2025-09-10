@@ -5,9 +5,9 @@ class KeluhanSkeletonLoader extends StatelessWidget {
   final bool useGoldenRatio;
   
   const KeluhanSkeletonLoader({
-    Key? key, 
+    super.key, 
     this.useGoldenRatio = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

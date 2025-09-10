@@ -12,7 +12,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
   final String? titleIconAsset; // Ikon yang ditampilkan di sebelah judul
 
   const CustomAppHeaderImproved({
-    Key? key,
+    super.key,
     required this.title,
     this.imageAssetPath,
     this.iconData,
@@ -21,7 +21,7 @@ class CustomAppHeaderImproved extends StatelessWidget implements PreferredSizeWi
     this.bottom,
     this.showIconWithTitle = false,
     this.titleIconAsset,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

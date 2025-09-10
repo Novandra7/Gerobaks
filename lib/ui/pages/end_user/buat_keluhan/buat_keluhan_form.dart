@@ -444,7 +444,7 @@ class _BuatKeluhanFormState extends State<BuatKeluhanForm> {
             ],
           ),
           child: DropdownButtonFormField<String>(
-            value: value,
+            initialValue: value,
             decoration: InputDecoration(
               border: InputBorder.none,
               prefixIcon: Icon(icon, color: greenColor, size: 20),
