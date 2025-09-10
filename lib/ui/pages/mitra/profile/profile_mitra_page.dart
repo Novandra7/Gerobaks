@@ -262,12 +262,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           onPressed: () {
                             // TODO: Edit profile
                           },
-                          icon: Image.asset(
-                            'assets/ic_edit_profile.png',
-                            width: 20,
-                            height: 20,
-                            color: Colors.white,
-                          ),
+                          
                           label: Text(
                             'Edit Profil',
                             style: whiteTextStyle.copyWith(
@@ -330,12 +325,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               );
                             }
                           },
-                          icon: Image.asset(
-                            'assets/ic_logout.png',
-                            width: 20,
-                            height: 20,
-                            color: Colors.white,
-                          ),
+                         
                           label: Text(
                             'Logout',
                             style: whiteTextStyle.copyWith(
@@ -445,10 +435,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         children: [
           Row(
             children: [
-              Image.asset(
-                'assets/img_gerobakss.png',
-                height: 20,
-              ),
+              
               const SizedBox(width: 8),
               Text(
                 title,

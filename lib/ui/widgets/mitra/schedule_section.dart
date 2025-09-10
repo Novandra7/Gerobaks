@@ -34,22 +34,23 @@ class ScheduleCard extends StatelessWidget {
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)), // Mengurangi radius sudut
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
+              blurRadius: 6, // Mengurangi blur shadow
               offset: const Offset(0, 2),
             ),
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Memastikan kartu seefisien mungkin
           children: [
             // Time and status row
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: ResponsiveHelper.getResponsiveSpacing(context, 16),
-                vertical: ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 10 : 12),
+                horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12), // Mengurangi padding horizontal
+                vertical: ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 8 : 10), // Mengurangi padding vertical
               ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -68,29 +69,29 @@ class ScheduleCard extends StatelessWidget {
                     children: [
                       // Yellow circle for waiting status
                       Container(
-                        width: ResponsiveHelper.getResponsiveWidth(context, 20),
-                        height: ResponsiveHelper.getResponsiveHeight(context, 20),
+                        width: ResponsiveHelper.getResponsiveWidth(context, 18), // Mengurangi ukuran lingkaran
+                        height: ResponsiveHelper.getResponsiveHeight(context, 18), // Mengurangi ukuran lingkaran
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFD700), // Gold color for waiting
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: Colors.white,
-                            width: 2,
+                            width: 1.5, // Mengurangi lebar border
                           ),
                         ),
                         child: Center(
                           child: Icon(
                             Icons.access_time_filled_rounded,
                             color: Colors.white,
-                            size: ResponsiveHelper.getResponsiveIconSize(context, 12),
+                            size: ResponsiveHelper.getResponsiveIconSize(context, 10), // Mengurangi ukuran icon
                           ),
                         ),
                       ),
-                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)), // Mengurangi spacing
                       Text(
                         time,
                         style: blackTextStyle.copyWith(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 14 : 16),
+                          fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 12 : 14), // Mengurangi ukuran font
                           fontWeight: medium,
                         ),
                       ),
@@ -98,17 +99,17 @@ class ScheduleCard extends StatelessWidget {
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12), 
-                      vertical: ResponsiveHelper.getResponsiveSpacing(context, 6)
+                      horizontal: ResponsiveHelper.getResponsiveSpacing(context, 10), // Mengurangi padding horizontal
+                      vertical: ResponsiveHelper.getResponsiveSpacing(context, 4) // Mengurangi padding vertical
                     ),
                     decoration: BoxDecoration(
                       color: statusBackgroundColor,
-                      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 20)),
+                      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)), // Mengurangi radius
                     ),
                     child: Text(
                       status,
                       style: TextStyle(
-                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 11), // Mengurangi ukuran font
                         fontWeight: medium,
                         color: statusColor,
                       ),
@@ -124,7 +125,7 @@ class ScheduleCard extends StatelessWidget {
             // Customer info
             Container(
               width: double.infinity,
-              padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+              padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)), // Mengurangi padding
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFFE4F9E8), Color(0xFFE8F5E9)],
@@ -132,7 +133,7 @@ class ScheduleCard extends StatelessWidget {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+                  bottom: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)), // Mengurangi radius
                 ),
               ),
               child: Column(
@@ -142,11 +143,11 @@ class ScheduleCard extends StatelessWidget {
                   Text(
                     name,
                     style: blackTextStyle.copyWith(
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 14 : 16), // Mengurangi ukuran font
                       fontWeight: semiBold,
                     ),
                   ),
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 6)), // Mengurangi spacing
                   
                   // Address
                   Row(
@@ -154,21 +155,23 @@ class ScheduleCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.location_on_outlined,
-                        size: ResponsiveHelper.getResponsiveIconSize(context, 16),
+                        size: ResponsiveHelper.getResponsiveIconSize(context, 14), // Mengurangi ukuran icon
                         color: Colors.grey,
                       ),
-                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                      SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)), // Mengurangi spacing
                       Expanded(
                         child: Text(
                           address,
                           style: greyTextStyle.copyWith(
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12), // Mengurangi ukuran font
                           ),
+                          maxLines: 2, // Membatasi jumlah baris
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                  SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)), // Mengurangi spacing
                   
                   // Tags
                   Row(
@@ -177,17 +180,17 @@ class ScheduleCard extends StatelessWidget {
                         padding: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 8)),
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12),
-                            vertical: ResponsiveHelper.getResponsiveSpacing(context, 6),
+                            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 8), // Mengurangi padding horizontal
+                            vertical: ResponsiveHelper.getResponsiveSpacing(context, 4), // Mengurangi padding vertical
                           ),
                           decoration: BoxDecoration(
                             color: tag.backgroundColor,
-                            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 12)),
+                            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)), // Mengurangi radius
                           ),
                           child: Text(
                             tag.label,
                             style: TextStyle(
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 10), // Mengurangi ukuran font tag
                               fontWeight: medium,
                               color: tag.textColor,
                             ),
@@ -241,18 +244,18 @@ class ScheduleSection extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    height: ResponsiveHelper.getResponsiveHeight(context, 24),
+                    height: ResponsiveHelper.getResponsiveHeight(context, 20), // Mengurangi tinggi indikator
                     width: ResponsiveHelper.getResponsiveWidth(context, 3),
                     decoration: const BoxDecoration(
                       color: Color(0xFF01A643),
                       borderRadius: BorderRadius.all(Radius.circular(2)),
                     ),
                   ),
-                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)), // Mengurangi spacing
                   Text(
                     'Jadwal Pengambilan',
                     style: blackTextStyle.copyWith(
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 14 : 16), // Mengurangi ukuran font
                       fontWeight: semiBold,
                     ),
                   ),
@@ -283,7 +286,7 @@ class ScheduleSection extends StatelessWidget {
           ),
         ),
         
-        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+        SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)), // Mengurangi spacing
         
         if (scheduleCards.isNotEmpty)
           Padding(
@@ -294,7 +297,7 @@ class ScheduleSection extends StatelessWidget {
               itemCount: scheduleCards.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                  padding: EdgeInsets.only(bottom: ResponsiveHelper.getResponsiveSpacing(context, 12)), // Mengurangi spacing antar kartu
                   child: scheduleCards[index],
                 );
               },
