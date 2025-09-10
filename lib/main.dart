@@ -13,8 +13,8 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_success_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
-import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_fixed.dart';
-import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_improved_fixed.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart';
 import 'package:bank_sha/services/notification_service.dart';
@@ -133,7 +133,7 @@ class MyApp extends StatelessWidget {
         '/sign-up-success': (context) => SignUpSuccessPage(),
         '/home': (context) => HomePage(),
         '/mitra-dashboard': (context) => const MitraDashboardPage(),
-        '/mitra-dashboard-new': (context) => const MitraDashboardPageImproved(),
+        '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
         '/notif': (context) => const NotificationPage(),
         '/chat': (context) => ChatListPage(),
         '/subscription-plans': (context) => SubscriptionPlansPage(),

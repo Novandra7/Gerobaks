@@ -11,8 +11,11 @@ class LocalStorageService {
   static const String _notificationKey = 'notifications';
   static const String _subscriptionKey = 'user_subscription';
   static const String _userKey = 'user_data';
+  static const String _pointsKey = 'user_points';
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _lastLoginKey = 'last_login';
+  static const String _addressesKey = 'saved_addresses';
+  static const String _settingsKey = 'app_settings';
   static const String _credentialsKey = 'user_credentials';
   static const String _userRoleKey = 'user_role'; // Explicit key for role
   
