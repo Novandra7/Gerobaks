@@ -1,4 +1,5 @@
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter/material.dart';
 
 class SignUpBatch2Page extends StatefulWidget {
@@ -39,78 +40,11 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
 
   @override
   void dispose() {
-    _timer?.cancel();
-    for (var controller in _otpControllers) {
-      controller.dispose();
-    }
-    for (var node in _otpFocusNodes) {
-      node.dispose();
-    }
     super.dispose();
-  }
-
-  void _startTimer() {
-    _canResend = false;
-    _countDown = 120;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countDown > 0) {
-          _countDown--;
-        } else {
-          _canResend = true;
-          timer.cancel();
-        }
-      });
-    });
-  }
-
-  String get _formattedTime {
-    int minutes = _countDown ~/ 60;
-    int seconds = _countDown % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-  
-  // Send OTP via notification
-  Future<void> _sendOTP(String phoneNumber) async {
-    if (phoneNumber.isEmpty) {
-      return;
-    }
-    
-    try {
-      await _otpService.sendOTP(phoneNumber);
-      
-      // Show a toast or snackbar
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Kode OTP telah dikirim ke $phoneNumber',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Gagal mengirim OTP: ${e.toString()}',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final phone = arguments?['phone'] ?? '';
-
     return Scaffold(
       backgroundColor: whiteColor,
       body: SafeArea(

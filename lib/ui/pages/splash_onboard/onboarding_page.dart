@@ -88,32 +88,6 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
           SafeArea(
             child: Column(
               children: [
-                // Progress indicator di bagian atas
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 32.0 : 24.0, 
-                    vertical: isTablet ? 20.0 : 16.0
-                  ),
-                  child: Row(
-                    children: List.generate(
-                      onboardingData.length,
-                      (index) => Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(
-                            right: index < onboardingData.length - 1 ? 8.0 : 0,
-                          ),
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: index <= currentIndex 
-                              ? greenColor 
-                              : Colors.grey.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 
                 // Carousel untuk gambar
                 Expanded(

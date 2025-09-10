@@ -21,35 +21,30 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   UserService? _userService;
 
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
+    _initLocalStorage();
+  }
+
+  Future<void> _initLocalStorage() async {
+    _localStorageService = await LocalStorageService.getInstance();
+    _loadCredentials();
+  }
+
+  Future<void> _loadCredentials() async {
+    final credentials = await _localStorageService.getCredentials();
+    if (credentials != null) {
+      setState(() {
+        _emailController.text = credentials['email']!;
+        _passwordController.text = credentials['password']!;
+      });
+=======
     _initializeServices();
-
-    // Handle auto-fill credentials from sign up
-    Future.delayed(Duration.zero, () {
-      if (!mounted) return;
-
-      final args =
-          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-      if (args != null &&
-          args.containsKey('email') &&
-          args.containsKey('password')) {
-        setState(() {
-          _emailController.text = args['email'];
-          _passwordController.text = args['password'];
-        });
-
-        // Show auto-fill notification
-        ToastHelper.showToast(
-          context: context,
-          message: 'Kredensial login telah diisi otomatis',
-          isSuccess: true,
-        );
-      }
-    });
   }
 
   Future<void> _initializeServices() async {
@@ -76,6 +71,7 @@ class _SignInPageState extends State<SignInPage> {
       }
     } catch (e) {
       print("Error initializing services: $e");
+>>>>>>> c3c3211 (feat: Implement auto-fill for sign-in credentials and improve password visibility handling)
     }
   }
 
@@ -85,6 +81,8 @@ class _SignInPageState extends State<SignInPage> {
     _passwordController.dispose();
     super.dispose();
   }
+
+
 
   // Handle sign in
   Future<void> _handleSignIn() async {
@@ -183,13 +181,14 @@ class _SignInPageState extends State<SignInPage> {
     }
   }
 
+>>>>>>> c3c3211 (feat: Implement auto-fill for sign-in credentials and improve password visibility handling)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: whiteColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 26.0),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -254,34 +253,27 @@ class _SignInPageState extends State<SignInPage> {
 
                   const SizedBox(height: 24),
 
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        // Email Input menggunakan CustomFormField
-                        CustomFormField(
-                          title: 'Email Address',
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Email tidak boleh kosong';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Email tidak valid';
-                            }
-                            return null;
-                          },
-                        ),
+                  // Email Input menggunakan CustomFormField
+                  CustomFormField(
+                    title: 'Email Address',
+                    keyboardType: TextInputType.emailAddress,
+                    controller: _emailController,
+                  ),
 
-                        const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
+<<<<<<< HEAD
+                  // Password Input menggunakan CustomFormField
+                  CustomFormField(
+                    title: 'Password',
+                    obscureText: true,
+                    controller: _passwordController,
+=======
                         // Password Input menggunakan CustomFormField
                         CustomFormField(
                           title: 'Password',
                           controller: _passwordController,
-                          obscureText:
-                              true, // Gunakan default password handling dari CustomFormField
+                          obscureText: !_isPasswordVisible,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Password tidak boleh kosong';
@@ -294,6 +286,7 @@ class _SignInPageState extends State<SignInPage> {
                         ),
                       ],
                     ),
+>>>>>>> c3c3211 (feat: Implement auto-fill for sign-in credentials and improve password visibility handling)
                   ),
 
                   // Forgot Password Link
@@ -313,14 +306,60 @@ class _SignInPageState extends State<SignInPage> {
 
                   const SizedBox(height: 24),
 
-                  // Sign In Button with loading state
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : CustomFilledButton(
-                          title: 'Sign In',
-                          height: 48,
-                          onPressed: _handleSignIn,
-                        ),
+                  // Sign In Button - menggunakan CustomFilledButton
+                  CustomFilledButton(
+                    title: 'Sign In',
+                    height: 48,
+                    onPressed: () async {
+                      final email = _emailController.text;
+                      final password = _passwordController.text;
+
+                      if (email.isNotEmpty && password.isNotEmpty) {
+                        final user = UserDataMock.getUserByEmail(email);
+
+                        if (user != null && user['password'] == password) {
+                          // Save user data to local storage
+                          await _localStorageService.saveUserData(user);
+                          await _localStorageService.saveCredentials(email, password);
+
+                          // Menampilkan notifikasi login berhasil
+                          await NotificationService().showNotification(
+                            id: DateTime.now().millisecond,
+                            title: 'Login Berhasil',
+                            body: 'Selamat datang di Gerobaks, ${user['name']}!',
+                          );
+
+                          // Menampilkan toast login berhasil
+                          ToastHelper.showToast(
+                            context: context,
+                            message: 'Login berhasil!',
+                            isSuccess: true,
+                          );
+
+                          // Navigasi ke halaman home
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/home',
+                            (route) => false,
+                          );
+                        } else {
+                          // Menampilkan toast jika kredensial salah
+                          ToastHelper.showToast(
+                            context: context,
+                            message: 'Email atau password salah',
+                            isSuccess: false,
+                          );
+                        }
+                      } else {
+                        // Menampilkan toast jika email atau password kosong
+                        ToastHelper.showToast(
+                          context: context,
+                          message: 'Email dan password harus diisi',
+                          isSuccess: false,
+                        );
+                      }
+                    },
+                  ),
 
                   const SizedBox(height: 12),
 

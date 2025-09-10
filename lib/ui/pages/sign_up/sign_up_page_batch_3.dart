@@ -49,7 +49,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
       backgroundColor: whiteColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 26.0),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -67,7 +67,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
 
                     // Logo GEROBAKS
                     Container(
-                      width: 200,
+                      width: 250,
                       height: 60,
                       margin: const EdgeInsets.symmetric(horizontal: 24),
                       child: Image.asset(
@@ -116,7 +116,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                       style: greyTextStyle.copyWith(fontSize: 14),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     Text(
                       'Buat password yang kuat untuk mengamankan akun Anda',
@@ -337,6 +337,8 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                     // Continue Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           // Navigate to batch 4 with all previous data plus password

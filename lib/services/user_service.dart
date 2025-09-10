@@ -299,6 +299,13 @@ class UserService {
     return await _localStorage.getUserPoints();
   }
   
+  // Update user data directly
+  Future<UserModel> updateUserData(UserModel user) async {
+    await _localStorage.saveUser(user);
+    _notifyUserChange(user);
+    return user;
+  }
+  
   // Request OTP for phone verification
   Future<String> requestPhoneVerification(String phoneNumber) async {
     // In a real app, this would call an API to send SMS

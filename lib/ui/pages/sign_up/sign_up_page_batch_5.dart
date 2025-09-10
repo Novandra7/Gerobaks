@@ -1,7 +1,11 @@
+
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+<<<<<<< HEAD
+=======
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
 import 'package:flutter/material.dart';
 
 class SignUpBatch5Page extends StatefulWidget {
@@ -57,7 +61,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
       backgroundColor: whiteColor,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 26.0),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -89,7 +93,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
 
                   // Logo GEROBAKS
                   Container(
-                    width: 200,
+                    width: 250,
                     height: 60,
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     child: Image.asset(
@@ -397,6 +401,16 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                   CustomFilledButton(
                     title: 'Langganan Sekarang',
                     onPressed: () {
+<<<<<<< HEAD
+                      // Navigate to payment method
+                      Navigator.pushNamed(
+                        context,
+                        '/payment-method',
+                        arguments: {
+                          ...?arguments,
+                          'selectedPlan': _selectedPlan,
+                          'planDetails': _subscriptionPlans.firstWhere((plan) => plan['id'] == _selectedPlan),
+=======
                       // Show alpha version message
                       ToastHelper.showToast(
                         context: context,
@@ -415,6 +429,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         onPressed: () {
                           Navigator.pop(context); // Close dialog
                           _completeRegistration(); // Complete registration
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                         },
                       );
                     },
@@ -472,6 +487,61 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
     );
   }
 
+<<<<<<< HEAD
+  void _completeRegistration() {
+    // Show success dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: greenColor,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Selamat Datang!',
+              style: blackTextStyle.copyWith(
+                fontSize: 20,
+                fontWeight: bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Akun Anda telah berhasil dibuat.\nSelamat berbelanja di GEROBAKS!',
+              textAlign: TextAlign.center,
+              style: greyTextStyle.copyWith(
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: CustomFilledButton(
+                title: 'Mulai Belanja',
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Navigate to home page
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/sign-up-success',
+                    (route) => false,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+=======
   void _completeRegistration() async {
     try {
       // Get user data from arguments
@@ -499,5 +569,6 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
         message: 'Terjadi kesalahan saat melanjutkan registrasi: ${e.toString()}',
       );
     }
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
   }
 }

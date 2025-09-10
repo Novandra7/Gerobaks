@@ -2,6 +2,16 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+import 'package:bank_sha/utils/toast_helper.dart';
+=======
+>>>>>>> 02b957d (feat: adding & improve sign up)
+=======
+>>>>>>> 31182ad (feat: Enhance user data management by implementing LocalStorageService for profile and home content)
+=======
+>>>>>>> acba58a040fb6da781db35c748178afc5837a3f6
 import 'package:flutter/material.dart';
 
 class SignUpBatch1Page extends StatefulWidget {
@@ -227,18 +237,35 @@ class _SignUpBatch1PageState extends State<SignUpBatch1Page> {
                     // Next Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // Langsung ke batch 3 (lewati verifikasi OTP)
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+                          // Menampilkan toast validasi berhasil
+                          ToastHelper.showToast(
+                            context: context,
+                            message: 'Data pribadi valid!',
+                            isSuccess: true,
+                          );
+                          
+=======
+>>>>>>> 02b957d (feat: adding & improve sign up)
+=======
+>>>>>>> acba58a040fb6da781db35c748178afc5837a3f6
+                          // Pass data to next page
+=======
+                          // Ke batch 2 (langkah 2 dari alur sign-up)
+>>>>>>> fef3eca6e643bc33c01547823ba332b867597d34
                           Navigator.pushNamed(
                             context,
-                            '/sign-up-batch-3',
+                            '/sign-up-batch-2',
                             arguments: {
                               'fullName': _fullNameController.text,
                               'email': _emailController.text,
                               'phone': _phoneController.text,
-                              // Tambahkan dummy otpCode untuk kompatibilitas
-                              'otpCode': 'skip_verification',
                             },
                           );
                         }
