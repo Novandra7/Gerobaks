@@ -7,6 +7,8 @@ class CustomFilledButton extends StatelessWidget {
   final double? height;
   final VoidCallback? onPressed;
   final bool isLoading;
+  final bool showIcon;
+  final IconData? icon;
 
   const CustomFilledButton({
     super.key,
@@ -15,6 +17,8 @@ class CustomFilledButton extends StatelessWidget {
     this.height = 50,
     this.onPressed,
     this.isLoading = false,
+    this.showIcon = false,
+    this.icon,
   });
 
   @override
@@ -41,9 +45,25 @@ class CustomFilledButton extends StatelessWidget {
                 strokeWidth: 2,
               ),
             )
-          : Text(
-              title,
-              style: whiteTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
+          : showIcon && icon != null
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      color: whiteColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: whiteTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
+                    ),
+                  ],
+                )
+              : Text(
+                  title,
+                  style: whiteTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
             ),
       ),
     );

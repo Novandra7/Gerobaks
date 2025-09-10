@@ -2,7 +2,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
-import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page_fixed.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';

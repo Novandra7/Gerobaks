@@ -1,4 +1,5 @@
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter/material.dart';
 
 class SignUpBatch2Page extends StatefulWidget {
@@ -9,6 +10,8 @@ class SignUpBatch2Page extends StatefulWidget {
 }
 
 class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
+  final _formKey = GlobalKey<FormState>();
+  
   @override
   void initState() {
     super.initState();
@@ -33,6 +36,11 @@ class _SignUpBatch2PageState extends State<SignUpBatch2Page> {
         }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override

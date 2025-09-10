@@ -227,18 +227,18 @@ class _SignUpBatch1PageState extends State<SignUpBatch1Page> {
                     // Next Button
                     CustomFilledButton(
                       title: 'Lanjutkan',
+                      showIcon: true,
+                      icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                          // Langsung ke batch 3 (lewati verifikasi OTP)
+                          // Ke batch 2 (langkah 2 dari alur sign-up)
                           Navigator.pushNamed(
                             context,
-                            '/sign-up-batch-3',
+                            '/sign-up-batch-2',
                             arguments: {
                               'fullName': _fullNameController.text,
                               'email': _emailController.text,
                               'phone': _phoneController.text,
-                              // Tambahkan dummy otpCode untuk kompatibilitas
-                              'otpCode': 'skip_verification',
                             },
                           );
                         }

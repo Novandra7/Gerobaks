@@ -364,6 +364,61 @@ class _MyprofileState extends State<Myprofile> {
             const SizedBox(height: 32),
 
             // Info Tambahan
+            
+            // Badge Status Berlangganan
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Status Langganan',
+                  style: blackTextStyle.copyWith(fontSize: 14),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    if (_user?.isSubscribed != true) {
+                      Navigator.pushNamed(context, '/subscription-plans');
+                    } else {
+                      Navigator.pushNamed(context, '/my-subscription');
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _user?.isSubscribed == true 
+                        ? greenColor 
+                        : Colors.orange,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _user?.isSubscribed == true 
+                            ? Icons.verified 
+                            : Icons.info_outline,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _user?.isSubscribed == true 
+                            ? 'Sudah Berlangganan ${_user?.subscriptionType != null ? '(${_user?.subscriptionType})' : ''}' 
+                            : 'Belum Berlangganan',
+                          style: whiteTextStyle.copyWith(
+                            fontSize: 10,
+                            fontWeight: medium,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Status Verifikasi Telepon
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

@@ -10,6 +10,8 @@ class UserModel {
   final int points;
   final bool isVerified;
   final bool isPhoneVerified;
+  final bool isSubscribed; // Tambahkan properti isSubscribed
+  final String? subscriptionType; // Tipe langganan (basic, premium, pro)
   final List<String>? savedAddresses;
   final DateTime createdAt;
   final DateTime? lastLogin;
@@ -26,6 +28,8 @@ class UserModel {
     this.points = 15, // New users start with 15 points
     this.isVerified = false,
     this.isPhoneVerified = false,
+    this.isSubscribed = false, // Default tidak berlangganan
+    this.subscriptionType, 
     this.savedAddresses,
     required this.createdAt,
     this.lastLogin,
@@ -46,6 +50,8 @@ class UserModel {
       points: json['points'] ?? 15,
       isVerified: json['isVerified'] ?? false,
       isPhoneVerified: json['isPhoneVerified'] ?? false,
+      isSubscribed: json['isSubscribed'] ?? false,
+      subscriptionType: json['subscriptionType'],
       savedAddresses: json['savedAddresses'] != null 
           ? List<String>.from(json['savedAddresses']) 
           : null,
@@ -72,6 +78,8 @@ class UserModel {
       'points': points,
       'isVerified': isVerified,
       'isPhoneVerified': isPhoneVerified,
+      'isSubscribed': isSubscribed,
+      'subscriptionType': subscriptionType,
       'savedAddresses': savedAddresses,
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
@@ -91,6 +99,8 @@ class UserModel {
     int? points,
     bool? isVerified,
     bool? isPhoneVerified,
+    bool? isSubscribed,
+    String? subscriptionType,
     List<String>? savedAddresses,
     DateTime? createdAt,
     DateTime? lastLogin,
@@ -107,6 +117,8 @@ class UserModel {
       points: points ?? this.points,
       isVerified: isVerified ?? this.isVerified,
       isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
+      isSubscribed: isSubscribed ?? this.isSubscribed,
+      subscriptionType: subscriptionType ?? this.subscriptionType,
       savedAddresses: savedAddresses ?? this.savedAddresses,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
