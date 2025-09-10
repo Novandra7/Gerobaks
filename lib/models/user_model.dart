@@ -9,6 +9,7 @@ class UserModel {
   final String? profilePicUrl;
   final int points;
   final bool isVerified;
+  final bool isPhoneVerified;
   final List<String>? savedAddresses;
   final DateTime createdAt;
   final DateTime? lastLogin;
@@ -24,6 +25,7 @@ class UserModel {
     this.profilePicUrl,
     this.points = 15, // New users start with 15 points
     this.isVerified = false,
+    this.isPhoneVerified = false,
     this.savedAddresses,
     required this.createdAt,
     this.lastLogin,
@@ -43,6 +45,7 @@ class UserModel {
       profilePicUrl: json['profilePicUrl'] ?? json['profile_picture'],
       points: json['points'] ?? 15,
       isVerified: json['isVerified'] ?? false,
+      isPhoneVerified: json['isPhoneVerified'] ?? false,
       savedAddresses: json['savedAddresses'] != null 
           ? List<String>.from(json['savedAddresses']) 
           : null,
@@ -68,6 +71,7 @@ class UserModel {
       'profilePicUrl': profilePicUrl,
       'points': points,
       'isVerified': isVerified,
+      'isPhoneVerified': isPhoneVerified,
       'savedAddresses': savedAddresses,
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin?.toIso8601String(),
@@ -86,6 +90,7 @@ class UserModel {
     String? profilePicUrl,
     int? points,
     bool? isVerified,
+    bool? isPhoneVerified,
     List<String>? savedAddresses,
     DateTime? createdAt,
     DateTime? lastLogin,
@@ -101,6 +106,7 @@ class UserModel {
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
       points: points ?? this.points,
       isVerified: isVerified ?? this.isVerified,
+      isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
       savedAddresses: savedAddresses ?? this.savedAddresses,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,

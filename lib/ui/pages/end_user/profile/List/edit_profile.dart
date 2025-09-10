@@ -21,6 +21,12 @@ class _EditProfileState extends State<EditProfile> {
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   
+  // Controllers untuk dialog verifikasi telepon
+  final TextEditingController _otpController = TextEditingController();
+  bool _isVerificationInProgress = false;
+  bool _isOtpSent = false;
+  String? _generatedOtp;
+  
   bool _isLoading = true;
   bool _isSaving = false;
   UserModel? _user;
@@ -77,7 +83,227 @@ class _EditProfileState extends State<EditProfile> {
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _otpController.dispose();
     super.dispose();
+  }
+  
+  Future<void> _showPhoneVerificationDialog() async {
+    // Pre-fill dengan nomor telepon yang sudah ada
+    _phoneController.text = _phoneController.text.isNotEmpty 
+      ? _phoneController.text 
+      : (_user?.phone ?? '');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                _isOtpSent ? 'Verifikasi OTP' : 'Verifikasi Nomor Telepon',
+                style: blackTextStyle.copyWith(
+                  fontSize: 18,
+                  fontWeight: semiBold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!_isOtpSent) ...[
+                      // Form nomor telepon
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan nomor telepon',
+                          labelText: 'Nomor Telepon',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          prefixIcon: const Icon(Icons.phone),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Kami akan mengirimkan kode verifikasi ke nomor telepon Anda.',
+                        style: greyTextStyle.copyWith(fontSize: 12),
+                      ),
+                    ] else ...[
+                      // Form OTP
+                      Text(
+                        'Kode OTP telah dikirim ke ${_phoneController.text}',
+                        style: greyTextStyle.copyWith(fontSize: 12),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _otpController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan kode OTP',
+                          labelText: 'Kode OTP',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          counterText: '',
+                        ),
+                      ),
+                    ],
+                    if (_isVerificationInProgress) ...[
+                      const SizedBox(height: 16),
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    // Reset state
+                    _isOtpSent = false;
+                    _isVerificationInProgress = false;
+                    _otpController.clear();
+                  },
+                  child: Text(
+                    'Batal',
+                    style: greyTextStyle,
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: greenColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: _isVerificationInProgress
+                      ? null
+                      : () async {
+                          if (!_isOtpSent) {
+                            // Kirim OTP
+                            if (_phoneController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Nomor telepon tidak boleh kosong'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _isVerificationInProgress = true;
+                            });
+
+                            try {
+                              // Dalam aplikasi sebenarnya, ini akan mengirim OTP via SMS
+                              // Untuk demo, kita hanya generate OTP di UserService
+                              _generatedOtp = await _userService.requestPhoneVerification(_phoneController.text);
+                              
+                              setState(() {
+                                _isOtpSent = true;
+                                _isVerificationInProgress = false;
+                              });
+                              
+                              // Untuk demo, tampilkan OTP (dalam produksi, ini akan dikirim via SMS)
+                              if (_generatedOtp != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('OTP Demo: $_generatedOtp'),
+                                    duration: const Duration(seconds: 10),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setState(() {
+                                _isVerificationInProgress = false;
+                              });
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                ),
+                              );
+                            }
+                          } else {
+                            // Verifikasi OTP
+                            if (_otpController.text.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Kode OTP tidak boleh kosong'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _isVerificationInProgress = true;
+                            });
+
+                            try {
+                              final isVerified = await _userService.verifyPhoneWithOTP(
+                                _phoneController.text,
+                                _otpController.text,
+                              );
+
+                              if (isVerified) {
+                                // Refresh data user
+                                await _loadUserData();
+                                
+                                Navigator.of(context).pop();
+                                
+                                // Reset state
+                                _isOtpSent = false;
+                                _isVerificationInProgress = false;
+                                _otpController.clear();
+                                
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Nomor telepon berhasil diverifikasi'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                setState(() {
+                                  _isVerificationInProgress = false;
+                                });
+                                
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Kode OTP tidak valid'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setState(() {
+                                _isVerificationInProgress = false;
+                              });
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: Text(
+                    _isOtpSent ? 'Verifikasi' : 'Kirim OTP',
+                    style: whiteTextStyle,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -189,16 +415,98 @@ class _EditProfileState extends State<EditProfile> {
               ),
               const SizedBox(height: 16),
 
-              _buildFormField(
-                title: 'No. Telepon',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nomor telepon tidak boleh kosong';
-                  }
-                  return null;
-                },
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'No. Telepon',
+                        style: blackTextStyle.copyWith(
+                          fontSize: 14,
+                          fontWeight: medium,
+                        ),
+                      ),
+                      if (_user != null) 
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: _user!.isPhoneVerified ? greenColor : Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _user!.isPhoneVerified
+                                  ? Icons.check_circle_outline 
+                                  : Icons.info_outline,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _user!.isPhoneVerified 
+                                  ? 'Terverifikasi' 
+                                  : 'Belum Verifikasi',
+                                style: whiteTextStyle.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: medium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      hintText: 'Masukkan nomor telepon',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 15,
+                      ),
+                      suffixIcon: _user != null && !_user!.isPhoneVerified 
+                        ? GestureDetector(
+                            onTap: () => _showPhoneVerificationDialog(),
+                            child: Container(
+                              margin: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: greenColor,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  'Verifikasi',
+                                  style: whiteTextStyle.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: medium,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nomor telepon tidak boleh kosong';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 

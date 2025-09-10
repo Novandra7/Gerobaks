@@ -202,6 +202,46 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                   Text(
                     _user?.email ?? 'email@gerobaks.com',
                     style: greyTextStyle.copyWith(
+                      fontSize: isTablet ? 14 : 12,
+                    ),
+                  ),
+                  if (_user != null) ...[
+                    const SizedBox(height: 8),
+                    // Badge verifikasi telepon
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _user!.isPhoneVerified ? greenColor : Colors.red,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _user!.isPhoneVerified 
+                              ? Icons.check_circle_outline 
+                              : Icons.info_outline,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _user!.isPhoneVerified 
+                              ? 'Telepon Terverifikasi' 
+                              : 'Telepon Belum Terverifikasi',
+                            style: whiteTextStyle.copyWith(
+                              fontSize: 10,
+                              fontWeight: medium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    _user?.email ?? 'email@gerobaks.com',
+                    style: greyTextStyle.copyWith(
                       fontSize: isTablet ? 15 : 14,
                       fontWeight: regular,
                     ),

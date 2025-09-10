@@ -31,8 +31,12 @@ class ToastHelper {
           ),
         ),
         backgroundColor: isSuccess ? greenColor : redcolor,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
+        behavior: SnackBarBehavior.fixed,
+        margin: EdgeInsets.only(
+          left: 16, 
+          right: 16, 
+          bottom: 80 // Memberikan ruang untuk FAB
+        ),
         duration: duration,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
