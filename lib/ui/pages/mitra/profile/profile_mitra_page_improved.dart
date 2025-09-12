@@ -40,7 +40,7 @@ class _ProfileMitraPageImprovedState extends State<ProfileMitraPageImproved> {
   
   // Dummy data - in real app, this would come from API or provider
   final Map<String, dynamic> _userData = {
-    'name': 'Ahmad Sobari',
+    'name': 'Ahmad Sahroni',
     'email': 'ahmad.sobari@gmail.com',
     'id': 'MITRA-12345',
     'role': 'Mitra Premium',

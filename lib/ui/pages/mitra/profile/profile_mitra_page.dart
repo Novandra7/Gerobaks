@@ -44,8 +44,8 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
   
   // Dummy data - in real app, this would come from API or provider
   final Map<String, dynamic> _userData = {
-    'name': 'Ahmad Sobari',
-    'email': 'ahmad.sobari@gmail.com',
+    'name': 'Ahmad Sahroni',
+    'email': 'ahmad.sahroni@gmail.com',
     'id': 'MITRA-12345',
     'role': 'Mitra Premium',
     'phone': '+62 812 3456 7890',

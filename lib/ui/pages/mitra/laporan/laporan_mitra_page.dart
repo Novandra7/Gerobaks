@@ -386,28 +386,23 @@ class _LaporanMitraPageState extends State<LaporanMitraPage> {
     final activity = activities[index];
     Color statusColor;
     IconData statusIcon;
-    String statusText;
 
     switch (activity['status']) {
       case 'completed':
         statusColor = greenColor;
         statusIcon = Icons.check_circle_rounded;
-        statusText = 'Selesai';
         break;
       case 'in_progress':
         statusColor = Colors.blue;
         statusIcon = Icons.access_time_rounded;
-        statusText = 'Proses';
         break;
       case 'break':
         statusColor = Colors.orange;
         statusIcon = Icons.coffee_rounded;
-        statusText = 'Istirahat';
         break;
       default:
         statusColor = greyColor;
         statusIcon = Icons.help_outline_rounded;
-        statusText = 'Lainnya';
     }
 
     return Container(

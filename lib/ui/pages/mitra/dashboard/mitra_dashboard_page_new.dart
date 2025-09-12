@@ -4,6 +4,7 @@ import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/chat/mitra_chat_list_page.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
@@ -31,6 +32,7 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
     const MitraDashboardContentNew(),
     const JadwalMitraPage(),
     const PengambilanListPage(),
+    const MitraChatListPage(),
     const LaporanMitraPage(),
     const ProfileMitraPage(),
   ];

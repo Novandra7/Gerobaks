@@ -4,9 +4,11 @@ import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/chat/mitra_chat_list_page.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';
+import 'package:bank_sha/services/chat_service.dart';
+import 'package:bank_sha/ui/widgets/mitra/custom_bottom_navbar.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
 
@@ -147,7 +149,7 @@ class _MitraDashboardPageState extends State<MitraDashboardPage> {
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         ),
-        child: CustomBottomNavBarMitra(
+        child: CustomBottomNavBarMitraNew(
           currentIndex: _currentIndex,
           onTabTapped: (index) {
             setState(() {
@@ -184,6 +186,8 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
   Map<String, dynamic>? currentUser;
   final GlobalKey<RefreshIndicatorState> _refreshKey = GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
+  final ChatService _chatService = ChatService();
+  int _unreadCount = 0;
   
   // Metode untuk update parent state
   void _updateParentIndex(int index) {
@@ -199,6 +203,50 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
   void initState() {
     super.initState();
     _loadCurrentUser();
+    _initChatService();
+  }
+  
+  Future<void> _initChatService() async {
+    try {
+      await _chatService.initializeData();
+      _updateUnreadCount();
+      
+      // Listen for changes in conversations
+      _chatService.conversationsStream.listen((_) {
+        _updateUnreadCount();
+      });
+    } catch (e) {
+      print('Error initializing chat service: $e');
+      // Don't rethrow so the UI can still load
+    }
+  }
+  
+  void _updateUnreadCount() {
+    final unreadCount = _chatService.getTotalUnreadCount();
+    if (mounted && unreadCount != _unreadCount) {
+      setState(() {
+        _unreadCount = unreadCount;
+      });
+    }
+  }
+  
+  void _navigateToChat(BuildContext context) {
+    try {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const MitraChatListPage(),
+        ),
+      );
+    } catch (e) {
+      print("Error navigating to chat: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to open chat: ${e.toString()}'),
+          backgroundColor: redcolor,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
   
   @override
@@ -601,18 +649,29 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                         ),
                         Row(
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                // Implementasi untuk chat
+                            GestureDetector(
+                              onTap: () {
+                                _navigateToChat(context);
                               },
-                              icon: Icon(
-                                Icons.chat_outlined,
-                                color: Colors.white,
-                                size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                              child: Container(
+                                margin: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                                ),
+                                padding: const EdgeInsets.all(8),
+                                child: Badge(
+                                  isLabelVisible: _unreadCount > 0,
+                                  label: Text(_unreadCount > 99 ? "99+" : _unreadCount.toString()),
+                                  backgroundColor: redcolor,
+                                  child: Icon(
+                                    Icons.chat_bubble_outline,
+                                    color: Colors.white,
+                                    size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                                  ),
+                                ),
                               ),
-                              tooltip: 'Chat',
-                              iconSize: ResponsiveHelper.getResponsiveIconSize(context, 24),
-                              padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)),
                             ),
                             IconButton(
                               onPressed: () {

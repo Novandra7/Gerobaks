@@ -244,190 +244,51 @@ class ChatService {
   }
 
   // Mark conversation as read
-  Future<void> markConversationAsRead(String conversationId) async {
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
-    if (conversationIndex != -1) {
-      final conversation = _conversations[conversationIndex];
-      
-      if (conversation.isUnread) {
-        _conversations[conversationIndex] = ChatConversation(
-          id: conversation.id,
-          title: conversation.title,
-          lastMessage: conversation.lastMessage,
-          lastMessageTime: conversation.lastMessageTime,
-          isUnread: false,
-          unreadCount: 0,
-          adminName: conversation.adminName,
-          adminAvatar: conversation.adminAvatar,
-          messages: conversation.messages,
-        );
-        
-        _conversationsController.add(_conversations);
-        await _saveConversationsToStorage();
-      }
-    }
-  }
-  
-  // For backward compatibility
   Future<void> markAsRead(String conversationId) async {
-    return markConversationAsRead(conversationId);
-  }
-  
-  // Clear conversation (delete all messages)
-  Future<void> clearConversation(String conversationId) async {
     final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      
-      final initialMessage = ChatMessage(
-        id: _generateId(),
-        message: 'Riwayat chat telah dihapus',
-        timestamp: DateTime.now(),
-        isFromUser: false,
-        type: MessageType.system,
-      );
-      
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
-        lastMessage: 'Riwayat chat telah dihapus',
-        lastMessageTime: DateTime.now(),
+        lastMessage: conversation.lastMessage,
+        lastMessageTime: conversation.lastMessageTime,
         isUnread: false,
         unreadCount: 0,
         adminName: conversation.adminName,
         adminAvatar: conversation.adminAvatar,
-        messages: [initialMessage],
+        messages: conversation.messages,
       );
-      
-      _currentMessages = [initialMessage];
-      _messagesController.add(_currentMessages);
-      _conversationsController.add(_conversations);
-      await _saveConversationsToStorage();
-    }
-  }
-  
-  // Simulate admin response
-  Future<void> simulateAdminResponse(String conversationId) async {
-    final adminResponses = [
-      'Terima kasih atas pertanyaannya. Tim admin Gerobaks siap membantu Anda!',
-      'Mohon tunggu sebentar, kami sedang memeriksa informasi terkait pertanyaan Anda.',
-      'Kami sudah menerima pesan Anda dan akan menindaklanjuti segera.',
-      'Apakah ada informasi tambahan yang dapat Anda berikan?',
-      'Untuk mempercepat proses, mohon sertakan ID transaksi jika ada.',
-      'Kami akan segera menghubungi tim lapangan untuk menindaklanjuti laporan Anda.'
-    ];
-    
-    final randomResponse = adminResponses[Random().nextInt(adminResponses.length)];
-    
-    final adminMessage = ChatMessage(
-      id: _generateId(),
-      message: randomResponse,
-      timestamp: DateTime.now(),
-      isFromUser: false,
-    );
-    
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
-    if (conversationIndex != -1) {
-      final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(adminMessage);
-      
-      _conversations[conversationIndex] = ChatConversation(
-        id: conversation.id,
-        title: conversation.title,
-        lastMessage: randomResponse,
-        lastMessageTime: DateTime.now(),
-        isUnread: true,
-        unreadCount: conversation.unreadCount + 1,
-        adminName: conversation.adminName,
-        adminAvatar: conversation.adminAvatar,
-        messages: updatedMessages,
-      );
-      
-      _currentMessages = updatedMessages;
-      _messagesController.add(_currentMessages);
-      _conversationsController.add(_conversations);
-      await _saveConversationsToStorage();
-    }
-  }
-  
-  // Simulate user response
-  Future<void> simulateUserResponse(String conversationId) async {
-    final userResponses = [
-      'Terima kasih informasinya. Saya akan menunggu pengambilan sampah sesuai jadwal.',
-      'Kapan jadwal pengambilan sampah di lokasi saya?',
-      'Saya mengalami masalah dengan aplikasi, bisa dibantu?',
-      'Sampah saya belum diambil sesuai jadwal, bagaimana tindak lanjutnya?',
-      'Saya ingin memberikan masukan untuk pelayanan Gerobaks.',
-      'Mohon bantuan untuk konfirmasi pembayaran saya.'
-    ];
-    
-    final randomResponse = userResponses[Random().nextInt(userResponses.length)];
-    
-    final userMessage = ChatMessage(
-      id: _generateId(),
-      message: randomResponse,
-      timestamp: DateTime.now(),
-      isFromUser: false,
-    );
-    
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
-    if (conversationIndex != -1) {
-      final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(userMessage);
-      
-      _conversations[conversationIndex] = ChatConversation(
-        id: conversation.id,
-        title: conversation.title,
-        lastMessage: randomResponse,
-        lastMessageTime: DateTime.now(),
-        isUnread: true,
-        unreadCount: conversation.unreadCount + 1,
-        adminName: conversation.adminName,
-        adminAvatar: conversation.adminAvatar,
-        messages: updatedMessages,
-      );
-      
-      _currentMessages = updatedMessages;
-      _messagesController.add(_currentMessages);
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
     }
   }
 
   // Create new conversation
-  Future<String> createNewConversation({
-    String title = 'Chat dengan Customer Service',
-    String adminName = 'Customer Service',
-    String? adminAvatar,
-  }) async {
-    final String conversationId = _generateId();
-    final now = DateTime.now();
-    
-    final initialMessage = ChatMessage(
-      id: _generateId(),
-      message: 'Halo, selamat datang di Gerobaks!',
-      timestamp: now,
-      isFromUser: false,
-      type: MessageType.system,
-    );
-
+  Future<String> createNewConversation() async {
     final newConversation = ChatConversation(
-      id: conversationId,
-      title: title,
-      lastMessage: 'Halo, selamat datang di Gerobaks!',
-      lastMessageTime: now,
+      id: _generateId(),
+      title: 'Chat Baru',
+      lastMessage: 'Chat dimulai',
+      lastMessageTime: DateTime.now(),
       isUnread: false,
       unreadCount: 0,
-      adminName: adminName,
-      adminAvatar: adminAvatar,
-      messages: [initialMessage],
+      adminName: 'CS Gerobaks',
+      messages: [
+        ChatMessage(
+          id: _generateId(),
+          message: 'Halo! Ada yang bisa kami bantu hari ini?',
+          timestamp: DateTime.now(),
+          isFromUser: false,
+          type: MessageType.system,
+        ),
+      ],
     );
 
-    _conversations.add(newConversation);
+    _conversations.insert(0, newConversation);
     _conversationsController.add(_conversations);
     await _saveConversationsToStorage();
-
-    return conversationId;
+    return newConversation.id;
   }
 
   // Get total unread count

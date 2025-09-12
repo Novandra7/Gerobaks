@@ -5,10 +5,16 @@ import 'package:bank_sha/services/subscription_service.dart';
 
 class ChatIconWithBadge extends StatefulWidget {
   final VoidCallback? onTap;
+  final Color? iconColor;
+  final double iconSize;
+  final bool forHeader;
 
   const ChatIconWithBadge({
     super.key,
     this.onTap,
+    this.iconColor,
+    this.iconSize = 24.0,
+    this.forHeader = false,
   });
 
   @override
@@ -101,6 +107,7 @@ class _ChatIconWithBadgeState extends State<ChatIconWithBadge> {
   @override
   Widget build(BuildContext context) {
     final subscriptionText = _getSubscriptionText();
+    final Color iconColor = widget.iconColor ?? (widget.forHeader ? Colors.white : blackColor);
     
     Widget chatIcon = GestureDetector(
       onTap: widget.onTap,
@@ -110,37 +117,38 @@ class _ChatIconWithBadgeState extends State<ChatIconWithBadge> {
             padding: const EdgeInsets.all(6),
             child: Icon(
               Icons.chat_bubble_outline,
-              color: blackColor,
-              size: 24,
+              color: iconColor,
+              size: widget.iconSize,
             ),
           ),
           // Subscription badge (top-left)
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: _getSubscriptionColor(),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1),
-              ),
-              child: Center(
-                child: Text(
-                  _getSubscriptionBadge(),
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: _subscriptionStatus.toLowerCase() == 'none' 
-                        ? Colors.white 
-                        : Colors.black,
-                    fontWeight: FontWeight.bold,
+          if (!widget.forHeader)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _getSubscriptionColor(),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: Center(
+                  child: Text(
+                    _getSubscriptionBadge(),
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: _subscriptionStatus.toLowerCase() == 'none' 
+                          ? Colors.white 
+                          : Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-          ),
           // Unread message badge (top-right)
           if (_unreadCount > 0)
             Positioned(
@@ -171,7 +179,7 @@ class _ChatIconWithBadgeState extends State<ChatIconWithBadge> {
     );
 
     // Wrap with Tooltip if user hasn't subscribed
-    if (subscriptionText != null) {
+    if (subscriptionText != null && !widget.forHeader) {
       return Tooltip(
         message: subscriptionText,
         child: chatIcon,

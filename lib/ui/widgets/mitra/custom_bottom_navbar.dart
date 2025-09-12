@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
+import 'package:bank_sha/services/chat_service.dart';
 
-class CustomBottomNavBarMitraNew extends StatelessWidget {
+class CustomBottomNavBarMitraNew extends StatefulWidget {
   final int currentIndex;
   final Function(int) onTabTapped;
   final bool isOnline;
@@ -14,6 +15,39 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
     this.isOnline = false,
     this.onPowerToggle,
   }) : super(key: key);
+
+  @override
+  State<CustomBottomNavBarMitraNew> createState() => _CustomBottomNavBarMitraNewState();
+}
+
+class _CustomBottomNavBarMitraNewState extends State<CustomBottomNavBarMitraNew> {
+  final ChatService _chatService = ChatService();
+  int _unreadCount = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _initChatService();
+  }
+  
+  Future<void> _initChatService() async {
+    await _chatService.initializeData();
+    _updateUnreadCount();
+    
+    // Listen for changes in conversations
+    _chatService.conversationsStream.listen((_) {
+      _updateUnreadCount();
+    });
+  }
+  
+  void _updateUnreadCount() {
+    final unreadCount = _chatService.getTotalUnreadCount();
+    if (mounted && unreadCount != _unreadCount) {
+      setState(() {
+        _unreadCount = unreadCount;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,8 +117,8 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
           offset: const Offset(0, -30),
           child: GestureDetector(
             onTap: () {
-              if (onPowerToggle != null) {
-                onPowerToggle!(!isOnline);
+              if (widget.onPowerToggle != null) {
+                widget.onPowerToggle!(!widget.isOnline);
               }
             },
             child: Container(
@@ -92,7 +126,7 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
               height: ResponsiveHelper.getResponsiveHeight(context, 60),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: isOnline 
+                gradient: widget.isOnline 
                   ? const LinearGradient(
                       colors: [Color(0xFF37DE7A), Color(0xFF00A643)],
                       begin: Alignment.topLeft,
@@ -101,14 +135,14 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
                       transform: GradientRotation(0.2),
                     )
                   : null,
-                color: isOnline ? null : const Color(0xFFE0E0E0),
+                color: widget.isOnline ? null : const Color(0xFFE0E0E0),
                 border: Border.all(
                   color: Colors.white,
                   width: 4,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: isOnline 
+                    color: widget.isOnline 
                       ? const Color(0xFF01A643).withOpacity(0.3) 
                       : Colors.black.withOpacity(0.1),
                     blurRadius: 15,
@@ -120,7 +154,7 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
               child: Center(
                 child: Icon(
                   Icons.power_settings_new_rounded,
-                  color: isOnline ? Colors.white : Colors.grey[400],
+                  color: widget.isOnline ? Colors.white : Colors.grey[400],
                   size: ResponsiveHelper.getResponsiveIconSize(context, 30),
                 ),
               ),
@@ -137,22 +171,53 @@ class CustomBottomNavBarMitraNew extends StatelessWidget {
     required IconData activeIcon,
     required String label,
     required int index,
+    int? badge,
   }) {
-    final bool isSelected = currentIndex == index;
+    final bool isSelected = widget.currentIndex == index;
     final Color inactiveColor = const Color(0xFFBDBDBD);
     
     return Expanded(
       child: InkWell(
-        onTap: () => onTabTapped(index),
+        onTap: () => widget.onTabTapped(index),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 10)),
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? const Color(0xFF01A643) : inactiveColor,
-              size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? activeIcon : icon,
+                  color: isSelected ? const Color(0xFF01A643) : inactiveColor,
+                  size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                ),
+                if (badge != null && badge > 0)
+                  Positioned(
+                    top: -8,
+                    right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF3B30),
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        badge > 9 ? '9+' : '$badge',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
             Text(

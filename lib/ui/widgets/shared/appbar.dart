@@ -73,11 +73,13 @@ class CustomAppHeader extends StatelessWidget implements PreferredSizeWidget {
 class CustomAppNotif extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBackButton;
+  final List<Widget>? actions;
 
   const CustomAppNotif({
     super.key,
     required this.title,
     this.showBackButton = false,
+    this.actions,
   });
 
   @override
@@ -86,6 +88,7 @@ class CustomAppNotif extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: uicolor,
       elevation: 0,
       automaticallyImplyLeading: false,
+      actions: actions,
       flexibleSpace: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 5, 24, 15),
