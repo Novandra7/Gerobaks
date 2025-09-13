@@ -435,6 +435,42 @@ class ChatService {
     return _conversations.fold(0, (sum, conversation) => sum + conversation.unreadCount);
   }
 
+  // Send image message
+  Future<void> sendImageMessage(String conversationId, String imageUrl) async {
+    final newMessage = ChatMessage(
+      id: _generateId(),
+      message: 'Image sent',
+      timestamp: DateTime.now(),
+      isFromUser: true,
+      imageUrl: imageUrl,
+      type: MessageType.image,
+    );
+
+    // Add to conversation
+    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    if (conversationIndex != -1) {
+      final conversation = _conversations[conversationIndex];
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(newMessage);
+      
+      _conversations[conversationIndex] = ChatConversation(
+        id: conversation.id,
+        title: conversation.title,
+        lastMessage: 'Sent an image',
+        lastMessageTime: DateTime.now(),
+        isUnread: conversation.isUnread,
+        unreadCount: conversation.unreadCount,
+        adminName: conversation.adminName,
+        adminAvatar: conversation.adminAvatar,
+        messages: updatedMessages,
+      );
+
+      _currentMessages = updatedMessages;
+      _messagesController.add(_currentMessages);
+      _conversationsController.add(_conversations);
+      await _saveConversationsToStorage();
+    }
+  }
+
   String _generateId() {
     return DateTime.now().millisecondsSinceEpoch.toString();
   }

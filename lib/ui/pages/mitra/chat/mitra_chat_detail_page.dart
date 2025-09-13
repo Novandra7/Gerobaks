@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/models/chat_model.dart';
 import 'package:bank_sha/services/chat_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
 
 class MitraChatDetailPage extends StatefulWidget {
@@ -22,9 +25,11 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final ImagePicker _imagePicker = ImagePicker();
   List<ChatMessage> _messages = [];
   bool _isSending = false;
   ChatConversation? _conversation;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -73,6 +78,185 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  Future<void> _requestPermissions() async {
+    // Request camera and storage permissions
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.camera,
+      Permission.storage,
+      Permission.photos,
+    ].request();
+    
+    if (statuses[Permission.camera] != PermissionStatus.granted ||
+        (statuses[Permission.storage] != PermissionStatus.granted && 
+         statuses[Permission.photos] != PermissionStatus.granted)) {
+      // Show dialog explaining why permissions are needed
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Izin diperlukan'),
+            content: const Text(
+              'Untuk mengirim gambar dalam chat, aplikasi memerlukan izin akses kamera dan penyimpanan. '
+              'Silakan berikan izin melalui pengaturan aplikasi.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Tutup'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  openAppSettings();
+                },
+                child: const Text('Buka Pengaturan'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedImage = await _imagePicker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1024,
+      );
+      
+      if (pickedImage != null) {
+        setState(() {
+          _selectedImage = File(pickedImage.path);
+        });
+        
+        // Send the image
+        await _sendImageMessage(pickedImage);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
+    }
+  }
+  
+  Future<void> _sendImageMessage(XFile imageFile) async {
+    setState(() {
+      _isSending = true;
+    });
+    
+    try {
+      // In a real app, upload the image to a server and get a URL
+      // Here we'll simulate it with a local path
+      final String imageUrl = imageFile.path;
+      await _chatService.sendImageMessage(widget.conversationId, imageUrl);
+      
+      setState(() {
+        _selectedImage = null;
+      });
+      
+      // Simulate response after delay
+      if (_conversation?.title.toLowerCase().contains('admin') ?? false) {
+        Future.delayed(const Duration(seconds: 2), () {
+          _chatService.simulateAdminResponse(widget.conversationId);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send image: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+  
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Kirim Media',
+              style: blackTextStyle.copyWith(
+                fontSize: 18,
+                fontWeight: semiBold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildAttachmentOption(
+                  icon: Icons.camera_alt,
+                  label: 'Kamera',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _requestPermissions().then((_) => _pickImage(ImageSource.camera));
+                  },
+                ),
+                _buildAttachmentOption(
+                  icon: Icons.photo_library,
+                  label: 'Galeri',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _requestPermissions().then((_) => _pickImage(ImageSource.gallery));
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildAttachmentOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: greenColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: greenColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: blackTextStyle.copyWith(
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _sendMessage() async {
@@ -328,21 +512,37 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
               if (message.imageUrl != null) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    message.imageUrl!,
-                    width: double.infinity,
-                    height: 150,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: double.infinity,
-                      height: 150,
-                      color: greyColor.withOpacity(0.1),
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: greyColor,
-                      ),
-                    ),
-                  ),
+                  child: message.imageUrl!.startsWith('http')
+                      ? Image.network(
+                          message.imageUrl!,
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: double.infinity,
+                            height: 150,
+                            color: greyColor.withOpacity(0.1),
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: greyColor,
+                            ),
+                          ),
+                        )
+                      : Image.file(
+                          File(message.imageUrl!),
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            width: double.infinity,
+                            height: 150,
+                            color: greyColor.withOpacity(0.1),
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: greyColor,
+                            ),
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -414,12 +614,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                     borderRadius: BorderRadius.circular(24),
                     borderSide: BorderSide.none,
                   ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   filled: true,
                   fillColor: lightBackgroundColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
                 ),
                 minLines: 1,
                 maxLines: 5,
@@ -430,37 +630,29 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
             const SizedBox(width: 12),
             
             // Send button
-            Container(
-              decoration: BoxDecoration(
-                color: greenColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: greenColor.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: IconButton(
-                onPressed: _isSending ? null : _sendMessage,
-                icon: _isSending
+            InkWell(
+              onTap: _isSending ? null : _sendMessage,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: greenColor,
+                  shape: BoxShape.circle,
+                ),
+                child: _isSending
                     ? SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 24,
+                        height: 24,
                         child: CircularProgressIndicator(
                           color: whiteColor,
                           strokeWidth: 2,
                         ),
                       )
                     : Icon(
-                        Icons.send_rounded,
+                        Icons.send,
                         color: whiteColor,
+                        size: 24,
                       ),
-                constraints: const BoxConstraints(
-                  minWidth: 48,
-                  minHeight: 48,
-                ),
               ),
             ),
           ],
@@ -472,11 +664,11 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   Widget _buildEmptyChat() {
     return Center(
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.chat_bubble_outline,
-            size: 64,
+            size: 80,
             color: greyColor.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
@@ -497,97 +689,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       ),
     );
   }
-
-  void _showAttachmentOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Tambahkan Lampiran',
-              style: blackTextStyle.copyWith(
-                fontSize: 18,
-                fontWeight: semiBold,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildAttachmentOption(
-                  icon: Icons.photo,
-                  label: 'Galeri',
-                  color: greenColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Implementasi upload gambar dari galeri
-                  },
-                ),
-                _buildAttachmentOption(
-                  icon: Icons.camera_alt,
-                  label: 'Kamera',
-                  color: blueColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Implementasi ambil foto dengan kamera
-                  },
-                ),
-                _buildAttachmentOption(
-                  icon: Icons.insert_drive_file,
-                  label: 'Dokumen',
-                  color: purpleColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Implementasi upload dokumen
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: blackTextStyle.copyWith(fontSize: 13),
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   void _showChatOptions() {
     showModalBottomSheet(
       context: context,
@@ -639,7 +741,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       ),
     );
   }
-
+  
   Widget _buildChatOption({
     required IconData icon,
     required String label,
@@ -655,7 +757,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       onTap: onTap,
     );
   }
-
+  
   void _showDeleteConfirmation() {
     showDialog(
       context: context,

@@ -32,7 +32,6 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
     const MitraDashboardContentNew(),
     const JadwalMitraPage(),
     const PengambilanListPage(),
-    const MitraChatListPage(),
     const LaporanMitraPage(),
     const ProfileMitraPage(),
   ];
@@ -462,10 +461,22 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                   vehicleNumber: 'KT 777 WAN',
                   driverId: 'DRV-KTM-214',
                   onChatPressed: () {
-                    // Chat functionality
+                    // Navigate to Chat page
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const MitraChatListPage(),
+                      ),
+                    );
                   },
                   onNotificationPressed: () {
-                    // Notification functionality
+                    // Navigate to Notification page
+                    // TODO: Replace with actual notification page when available
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Halaman notifikasi akan segera tersedia'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
                   },
                   quickActions: quickActions,
                 ),

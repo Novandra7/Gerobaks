@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
+import 'package:bank_sha/ui/widgets/shared/chat_icon_with_badge.dart';
 
 class DashboardHeader extends StatelessWidget {
   final String name;
@@ -77,30 +78,45 @@ class DashboardHeader extends StatelessWidget {
               ),
               Row(
                 children: [
-                  IconButton(
-                    onPressed: onChatPressed,
-                    icon: Icon(
-                      Icons.chat_outlined,
-                      color: Colors.white,
-                      size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                  // Chat icon with badge
+                  Container(
+                    margin: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                     ),
-                    tooltip: 'Chat',
-                    iconSize: ResponsiveHelper.getResponsiveIconSize(context, 24),
-                    padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    child: ChatIconWithBadge(
+                      onTap: onChatPressed,
+                      iconColor: Colors.white,
+                      forHeader: true,
+                      iconSize: ResponsiveHelper.getResponsiveIconSize(context, 22),
+                    ),
                   ),
                   SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                  IconButton(
-                    onPressed: onNotificationPressed,
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: Colors.white,
-                      size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                  // Notification icon
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                     ),
-                    tooltip: 'Notifikasi',
-                    iconSize: ResponsiveHelper.getResponsiveIconSize(context, 24),
-                    padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(4),
+                    child: IconButton(
+                      onPressed: onNotificationPressed,
+                      icon: Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                        size: ResponsiveHelper.getResponsiveIconSize(context, 22),
+                      ),
+                      tooltip: 'Notifikasi',
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(
+                        minWidth: ResponsiveHelper.getResponsiveIconSize(context, 36),
+                        minHeight: ResponsiveHelper.getResponsiveIconSize(context, 36),
+                      ),
+                    ),
                   ),
                 ],
               ),
