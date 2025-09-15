@@ -45,16 +45,20 @@ dependencies:
   geolocator: ^11.0.0
   flutter_bloc: ^9.1.1
   geocoding: ^2.2.0
+  
+  # Audio recording and playback
+  record: ^5.0.4
+  audioplayers: ^6.0.0
+  path_provider: ^2.1.5
+  permission_handler: ^11.3.0
 
   lucide_icons_flutter: ^3.0.7
   shared_preferences: ^2.5.3
-  permission_handler: ^11.2.0
   flutter_local_notifications: ^17.0.0
   google_generative_ai: ^0.4.3
   url_launcher: ^6.3.2
   shimmer: ^3.0.0
   flutter_svg: ^2.0.10+1
-  path_provider: ^2.1.5
   uuid: ^4.3.5
   logger: ^2.0.2+1
 

@@ -4,6 +4,8 @@ class ChatMessage {
   final DateTime timestamp;
   final bool isFromUser; // true jika dari user, false jika dari admin/CS
   final String? imageUrl;
+  final String? voiceUrl;  // Add voiceUrl field
+  final int? voiceDuration;  // Add voice duration in seconds
   final MessageType type;
 
   ChatMessage({
@@ -12,6 +14,8 @@ class ChatMessage {
     required this.timestamp,
     required this.isFromUser,
     this.imageUrl,
+    this.voiceUrl,  // Add voiceUrl parameter
+    this.voiceDuration,  // Add voiceDuration parameter
     this.type = MessageType.text,
   });
 
@@ -22,6 +26,8 @@ class ChatMessage {
       timestamp: DateTime.parse(json['timestamp']),
       isFromUser: json['isFromUser'],
       imageUrl: json['imageUrl'],
+      voiceUrl: json['voiceUrl'],  // Add voiceUrl from JSON
+      voiceDuration: json['voiceDuration'],  // Add voiceDuration from JSON
       type: MessageType.values.firstWhere(
         (e) => e.toString() == 'MessageType.${json['type']}',
         orElse: () => MessageType.text,
@@ -36,6 +42,8 @@ class ChatMessage {
       'timestamp': timestamp.toIso8601String(),
       'isFromUser': isFromUser,
       'imageUrl': imageUrl,
+      'voiceUrl': voiceUrl,  // Add voiceUrl to JSON
+      'voiceDuration': voiceDuration,  // Add voiceDuration to JSON
       'type': type.toString().split('.').last,
     };
   }
@@ -99,5 +107,6 @@ enum MessageType {
   text,
   image,
   document,
+  voice,  // Tambahkan voice message type
   system,
 }

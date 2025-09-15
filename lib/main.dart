@@ -46,65 +46,71 @@ import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
-  await initializeDateFormatting('id_ID', null);
-  
-  // Inisialisasi LocalStorage Service
   try {
-    await LocalStorageService.getInstance();
-    print("LocalStorage berhasil diinisialisasi");
+    // Ensure Flutter is initialized before doing anything
+    WidgetsFlutterBinding.ensureInitialized();
+    await dotenv.load();
+    await initializeDateFormatting('id_ID', null);
     
-    // Inisialisasi SubscriptionService setelah LocalStorage
-    await SubscriptionService().initialize();
-    print("SubscriptionService berhasil diinisialisasi");
-    
-    // Initialize User Service and Profile Controller
-    final userService = await UserService.getInstance();
-    await userService.init();
-    print("UserService berhasil diinisialisasi");
-    
-    // Initialize Profile Controller
-    final profileController = await ProfileController.getInstance();
-    await profileController.init();
-    print("ProfileController berhasil diinisialisasi");
-  } catch (e) {
-    print("Error saat inisialisasi services: $e");
-  }
-  
-  // Inisialisasi layanan notifikasi secara eksplisit
-  try {
-    await NotificationService().initialize();
-    print("Notifikasi berhasil diinisialisasi");
-    
-    // Pastikan notifikasi pantun berjalan
+    // Inisialisasi LocalStorage Service
     try {
-      await fixPantunNotifications();
-      print("Pantun notifications berhasil diperbaiki");
+      await LocalStorageService.getInstance();
+      print("LocalStorage berhasil diinisialisasi");
+      
+      // Inisialisasi SubscriptionService setelah LocalStorage
+      await SubscriptionService().initialize();
+      print("SubscriptionService berhasil diinisialisasi");
+      
+      // Initialize User Service and Profile Controller
+      final userService = await UserService.getInstance();
+      await userService.init();
+      print("UserService berhasil diinisialisasi");
+      
+      // Initialize Profile Controller
+      final profileController = await ProfileController.getInstance();
+      await profileController.init();
+      print("ProfileController berhasil diinisialisasi");
     } catch (e) {
-      print("Error saat memperbaiki pantun notifications: $e");
+      print("Error saat inisialisasi services: $e");
     }
-  } catch (e) {
-    print("Error saat inisialisasi notifikasi: $e");
-  }
-  
-  // Inisialisasi layanan OTP
-  try {
-    await OTPService().initialize();
-    print("OTP Service berhasil diinisialisasi");
-  } catch (e) {
-    print("Error saat inisialisasi OTP Service: $e");
-  }
+    
+    // Inisialisasi layanan notifikasi secara eksplisit
+    try {
+      await NotificationService().initialize();
+      print("Notifikasi berhasil diinisialisasi");
+      
+      // Pastikan notifikasi pantun berjalan
+      try {
+        await fixPantunNotifications();
+        print("Pantun notifications berhasil diperbaiki");
+      } catch (e) {
+        print("Error saat memperbaiki pantun notifications: $e");
+      }
+    } catch (e) {
+      print("Error saat inisialisasi notifikasi: $e");
+    }
+    
+    // Inisialisasi layanan OTP
+    try {
+      await OTPService().initialize();
+      print("OTP Service berhasil diinisialisasi");
+    } catch (e) {
+      print("Error saat inisialisasi OTP Service: $e");
+    }
 
-  // Inisialisasi layanan AI Gemini
-  try {
-    await GeminiAIService().initialize();
-    print("Gemini AI berhasil diinisialisasi");
+    // Inisialisasi layanan AI Gemini
+    try {
+      await GeminiAIService().initialize();
+      print("Gemini AI berhasil diinisialisasi");
+    } catch (e) {
+      print("Error saat inisialisasi Gemini AI: $e");
+    }
+    
+    print('[DEBUG] ORS_API_KEY: ${dotenv.env['ORS_API_KEY']}');
   } catch (e) {
-    print("Error saat inisialisasi Gemini AI: $e");
+    print("Error fatal saat inisialisasi aplikasi: $e");
   }
   
-  print('[DEBUG] ORS_API_KEY: ${dotenv.env['ORS_API_KEY']}');
   runApp(const MyApp());
 }
 
