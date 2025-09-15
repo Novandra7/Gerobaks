@@ -109,4 +109,5 @@ enum MessageType {
   document,
   voice,  // Tambahkan voice message type
   system,
+  typing,  // Add typing indicator message type
 }

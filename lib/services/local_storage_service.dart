@@ -116,6 +116,11 @@ class LocalStorageService {
     }
     return null;
   }
+
+  // Method to get raw user data as Map for direct field access
+  Future<Map<String, dynamic>?> getRawUser() async {
+    return getUserData();
+  }
   
   /// Mendapatkan role pengguna yang tersimpan
   Future<String?> getUserRole() async {

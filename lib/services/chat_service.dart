@@ -103,13 +103,19 @@ class ChatService {
     return _currentMessages;
   }
 
-  // Send message
+  // Send message with user role awareness
   Future<void> sendMessage(String conversationId, String message) async {
+    // Get current user role
+    final localStorage = await LocalStorageService.getInstance();
+    final userRole = await localStorage.getUserRole() ?? 'end_user';
+    
+    final bool isMitraUser = userRole == 'mitra';
+    
     final newMessage = ChatMessage(
       id: _generateId(),
       message: message,
       timestamp: DateTime.now(),
-      isFromUser: true,
+      isFromUser: !isMitraUser, // For mitra, they are representing the system/admin side
     );
 
     // Add to conversation
@@ -118,6 +124,22 @@ class ChatService {
       final conversation = _conversations[conversationIndex];
       final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(newMessage);
       
+      String adminName = conversation.adminName;
+      String? adminAvatar = conversation.adminAvatar;
+      
+      // Update admin info if this is a mitra user
+      if (isMitraUser) {
+        try {
+          final rawUserData = await localStorage.getRawUser();
+          if (rawUserData != null) {
+            adminName = rawUserData['name'] ?? 'Mitra Gerobaks';
+            adminAvatar = rawUserData['profilePicUrl'] ?? conversation.adminAvatar;
+          }
+        } catch (e) {
+          print('Error getting user data for chat: $e');
+        }
+      }
+      
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -125,8 +147,8 @@ class ChatService {
         lastMessageTime: DateTime.now(),
         isUnread: conversation.isUnread,
         unreadCount: conversation.unreadCount,
-        adminName: conversation.adminName,
-        adminAvatar: conversation.adminAvatar,
+        adminName: adminName,
+        adminAvatar: adminAvatar,
         messages: updatedMessages,
       );
 
@@ -135,10 +157,12 @@ class ChatService {
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
 
-      // Generate AI response using conversation history
-      Timer(const Duration(seconds: 1), () {
-        _generateAIResponse(conversationId, message);
-      });
+      // Generate AI response only if user is end_user (not mitra)
+      if (!isMitraUser) {
+        Timer(const Duration(seconds: 1), () {
+          _generateAIResponse(conversationId, message);
+        });
+      }
     }
   }
 
@@ -152,17 +176,74 @@ class ChatService {
       if (conversationIndex == -1) return;
       
       final conversation = _conversations[conversationIndex];
+      
+      // First show typing indicator
+      final typingMessage = ChatMessage(
+        id: _generateId(),
+        message: "${conversation.adminName} is typing...",
+        timestamp: DateTime.now(),
+        isFromUser: false,
+        type: MessageType.typing,
+      );
+      
+      final updatedMessagesWithTyping = List<ChatMessage>.from(conversation.messages)..add(typingMessage);
+      
+      _conversations[conversationIndex] = ChatConversation(
+        id: conversation.id,
+        title: conversation.title,
+        lastMessage: conversation.lastMessage,
+        lastMessageTime: conversation.lastMessageTime,
+        isUnread: conversation.isUnread,
+        unreadCount: conversation.unreadCount,
+        adminName: conversation.adminName,
+        adminAvatar: conversation.adminAvatar,
+        messages: updatedMessagesWithTyping,
+      );
+      
+      _currentMessages = updatedMessagesWithTyping;
+      _messagesController.add(_currentMessages);
+      
+      // Get context for AI
       final recentMessages = conversation.messages
           .where((m) => m.type == MessageType.text)
           .take(10)
           .map((m) => '${m.isFromUser ? "User" : "Admin"}: ${m.message}')
           .toList();
       
-      // Generate AI response
+      // Create a more personalized prompt
+      String prompt = '''
+      You are a helpful customer service agent named ${conversation.adminName} for Gerobaks, a waste management service app in Indonesia.
+      Be friendly, informative, and speak in Bahasa Indonesia with occasional Indonesian slang for a natural conversation flow.
+      Keep responses concise (2-3 sentences max). Use emoji occasionally 😊.
+      
+      Provide helpful information about:
+      - Waste collection schedules and tracking
+      - Subscription plans and payment options
+      - Technical issues with the app
+      - Reward points and redemption
+      - Recycling and waste management tips
+      
+      Here's the recent conversation history:
+      ${recentMessages.join('\n')}
+      
+      User's latest message: $userMessage
+      
+      Respond as ${conversation.adminName}:
+      ''';
+      
+      // Generate AI response with realistic typing delay
+      final baseTypingDelay = 1000 + (userMessage.length * 15).clamp(0, 3000);
+      await Future.delayed(Duration(milliseconds: baseTypingDelay));
+      
       final aiResponse = await geminiService.generateResponse(
-        userMessage,
+        prompt,
         conversationHistory: recentMessages,
       );
+      
+      // Remove typing indicator and add actual response
+      final filteredMessages = List<ChatMessage>.from(conversation.messages)
+          .where((m) => m.type != MessageType.typing)
+          .toList();
       
       final adminMessage = ChatMessage(
         id: _generateId(),
@@ -172,7 +253,7 @@ class ChatService {
       );
 
       // Add AI response to conversation
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(adminMessage);
+      final updatedMessages = List<ChatMessage>.from(filteredMessages)..add(adminMessage);
       
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
@@ -208,9 +289,54 @@ class ChatService {
       'Mohon tunggu sebentar, saya akan cek informasinya untuk Anda.',
       'Ada yang bisa saya bantu terkait layanan Gerobaks hari ini?',
       'Tim Gerobaks selalu siap memberikan solusi terbaik untuk pengelolaan sampah Anda.',
+      'Maaf, saya perlu waktu untuk memeriksa informasi tersebut. Boleh tunggu sebentar?',
+      'Terima kasih sudah menghubungi Gerobaks. Kami akan segera memproses permintaan Anda.',
+      'Siap! Akan saya bantu selesaikan masalah Anda segera.',
+      'Kami sangat menghargai masukan Anda untuk layanan Gerobaks yang lebih baik.',
+      'Mohon maaf atas ketidaknyamanannya. Kami akan berusaha menyelesaikan masalah ini secepatnya.'
     ];
 
+    // Get conversation
+    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    if (conversationIndex == -1) return;
+    
+    final conversation = _conversations[conversationIndex];
+    
+    // First show typing indicator
+    final typingMessage = ChatMessage(
+      id: _generateId(),
+      message: "${conversation.adminName} is typing...",
+      timestamp: DateTime.now(),
+      isFromUser: false,
+      type: MessageType.typing,
+    );
+    
+    final updatedMessagesWithTyping = List<ChatMessage>.from(conversation.messages)..add(typingMessage);
+    
+    _conversations[conversationIndex] = ChatConversation(
+      id: conversation.id,
+      title: conversation.title,
+      lastMessage: conversation.lastMessage,
+      lastMessageTime: conversation.lastMessageTime,
+      isUnread: conversation.isUnread,
+      unreadCount: conversation.unreadCount,
+      adminName: conversation.adminName,
+      adminAvatar: conversation.adminAvatar,
+      messages: updatedMessagesWithTyping,
+    );
+    
+    _currentMessages = updatedMessagesWithTyping;
+    _messagesController.add(_currentMessages);
+    
+    // Add a small delay to simulate typing
+    await Future.delayed(Duration(milliseconds: 800 + Random().nextInt(1500)));
+    
     final randomResponse = responses[Random().nextInt(responses.length)];
+    
+    // Remove typing indicator and add actual response
+    final filteredMessages = List<ChatMessage>.from(conversation.messages)
+        .where((m) => m.type != MessageType.typing)
+        .toList();
     
     final adminMessage = ChatMessage(
       id: _generateId(),
@@ -219,28 +345,24 @@ class ChatService {
       isFromUser: false,
     );
 
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
-    if (conversationIndex != -1) {
-      final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(adminMessage);
-      
-      _conversations[conversationIndex] = ChatConversation(
-        id: conversation.id,
-        title: conversation.title,
-        lastMessage: randomResponse,
-        lastMessageTime: DateTime.now(),
-        isUnread: true,
-        unreadCount: conversation.unreadCount + 1,
-        adminName: conversation.adminName,
-        adminAvatar: conversation.adminAvatar,
-        messages: updatedMessages,
-      );
+    final updatedMessages = List<ChatMessage>.from(filteredMessages)..add(adminMessage);
+    
+    _conversations[conversationIndex] = ChatConversation(
+      id: conversation.id,
+      title: conversation.title,
+      lastMessage: randomResponse,
+      lastMessageTime: DateTime.now(),
+      isUnread: true,
+      unreadCount: conversation.unreadCount + 1,
+      adminName: conversation.adminName,
+      adminAvatar: conversation.adminAvatar,
+      messages: updatedMessages,
+    );
 
-      _currentMessages = updatedMessages;
-      _messagesController.add(_currentMessages);
-      _conversationsController.add(_conversations);
-      await _saveConversationsToStorage();
-    }
+    _currentMessages = updatedMessages;
+    _messagesController.add(_currentMessages);
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
   }
 
   // Mark conversation as read

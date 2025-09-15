@@ -436,7 +436,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isFromUser;
     final isSystem = message.type == MessageType.system;
+    final isTyping = message.type == MessageType.typing;
 
+    // Handle system messages (centered grey bubble)
     if (isSystem) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -453,6 +455,66 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               textAlign: TextAlign.center,
             ),
           ),
+        ),
+      );
+    }
+    
+    // Handle typing indicator
+    if (isTyping) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: greenColor.withOpacity(0.1),
+              child: Icon(
+                Icons.support_agent,
+                color: greenColor,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: lightBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: greenColor,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: greenColor.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: greenColor.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       );
     }
