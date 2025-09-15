@@ -9,7 +9,7 @@ class VoiceMessageBubble extends StatefulWidget {
   final int durationInSeconds;
   final bool isFromUser;
   final DateTime timestamp;
-  final AudioPlayerService audioPlayerService;
+  final AudioPlayerService? audioPlayerService;
 
   const VoiceMessageBubble({
     Key? key,
@@ -17,7 +17,7 @@ class VoiceMessageBubble extends StatefulWidget {
     required this.durationInSeconds,
     required this.isFromUser,
     required this.timestamp,
-    required this.audioPlayerService,
+    this.audioPlayerService,
   }) : super(key: key);
 
   @override
@@ -28,29 +28,37 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   bool _isPlaying = false;
   int _currentPosition = 0;
   late String _durationText;
+  late AudioPlayerService _audioPlayerService;
   
   @override
   void initState() {
     super.initState();
     _durationText = _formatDuration(widget.durationInSeconds);
     
+    // Menggunakan audioPlayerService dari widget jika tersedia, jika tidak ambil dari manager
+    _audioPlayerService = widget.audioPlayerService ?? AudioServiceManager().getAudioPlayerService();
+    
+    _setupAudioPlayerListeners();
+  }
+  
+  void _setupAudioPlayerListeners() {
     try {
-      widget.audioPlayerService.onPlayerStateChanged.listen((state) {
+      _audioPlayerService.onPlayerStateChanged.listen((state) {
         if (mounted) {
           setState(() {
             _isPlaying = state == PlayerState.playing && 
-                        widget.audioPlayerService.currentlyPlayingUrl == widget.voiceUrl;
+                        _audioPlayerService.currentlyPlayingUrl == widget.voiceUrl;
             
             if (state == PlayerState.completed && 
-                widget.audioPlayerService.currentlyPlayingUrl == widget.voiceUrl) {
+                _audioPlayerService.currentlyPlayingUrl == widget.voiceUrl) {
               _currentPosition = 0;
             }
           });
         }
       });
       
-      widget.audioPlayerService.onPositionChanged.listen((position) {
-        if (mounted && widget.audioPlayerService.currentlyPlayingUrl == widget.voiceUrl) {
+      _audioPlayerService.onPositionChanged.listen((position) {
+        if (mounted && _audioPlayerService.currentlyPlayingUrl == widget.voiceUrl) {
           setState(() {
             _currentPosition = position.inSeconds;
           });
@@ -73,7 +81,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   
   void _togglePlay() async {
     try {
-      await widget.audioPlayerService.play(widget.voiceUrl);
+      await _audioPlayerService.play(widget.voiceUrl);
     } catch (e) {
       debugPrint('Error playing voice message: $e');
     }

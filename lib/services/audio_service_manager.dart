@@ -1,8 +1,8 @@
-// Fungsi ini akan digunakan untuk membuat lazy loading pada audio service
+import 'package:flutter/foundation.dart';
 import 'package:bank_sha/services/audio_player_service.dart';
 import 'package:bank_sha/services/audio_recorder_service.dart';
 
-// Singleton untuk audio player service
+// Singleton untuk audio service (hanya untuk mobile platform)
 class AudioServiceManager {
   static final AudioServiceManager _instance = AudioServiceManager._internal();
   AudioPlayerService? _audioPlayerService;
@@ -15,19 +15,46 @@ class AudioServiceManager {
   AudioServiceManager._internal();
 
   AudioPlayerService getAudioPlayerService() {
-    _audioPlayerService ??= AudioPlayerService();
-    return _audioPlayerService!;
+    try {
+      if (_audioPlayerService == null) {
+        _audioPlayerService = AudioPlayerService();
+      }
+      return _audioPlayerService!;
+    } catch (e) {
+      debugPrint('Error initializing AudioPlayerService: $e');
+      // Fallback dengan membuat instance baru
+      _audioPlayerService = AudioPlayerService();
+      return _audioPlayerService!;
+    }
   }
 
   AudioRecorderService getAudioRecorderService() {
-    _audioRecorderService ??= AudioRecorderService();
-    return _audioRecorderService!;
+    try {
+      if (_audioRecorderService == null) {
+        _audioRecorderService = AudioRecorderService();
+      }
+      return _audioRecorderService!;
+    } catch (e) {
+      debugPrint('Error initializing AudioRecorderService: $e');
+      // Fallback dengan membuat instance baru
+      _audioRecorderService = AudioRecorderService();
+      return _audioRecorderService!;
+    }
   }
 
   void dispose() {
-    _audioPlayerService?.dispose();
-    _audioRecorderService?.dispose();
-    _audioPlayerService = null;
-    _audioRecorderService = null;
+    try {
+      if (_audioPlayerService != null) {
+        _audioPlayerService!.dispose();
+        _audioPlayerService = null;
+      }
+      
+      if (_audioRecorderService != null) {
+        _audioRecorderService!.dispose();
+        _audioRecorderService = null;
+      }
+    } catch (e) {
+      debugPrint('Error disposing audio services: $e');
+    }
   }
 }

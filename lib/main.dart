@@ -49,6 +49,14 @@ Future<void> main() async {
   try {
     // Ensure Flutter is initialized before doing anything
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Menangani error global
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      print('Uncaught Flutter error: ${details.exception}');
+      print('Stack trace: ${details.stack}');
+    };
+    
     await dotenv.load();
     await initializeDateFormatting('id_ID', null);
     

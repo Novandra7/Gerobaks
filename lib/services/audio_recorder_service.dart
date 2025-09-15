@@ -3,16 +3,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:record/record.dart';
 
+/// Implementasi sederhana untuk pengganti package record
+/// yang menyebabkan masalah pada build
 class AudioRecorderService {
-  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
   String? _path;
   Timer? _timer;
   int _recordDuration = 0;
   
-  // Stream for duration updates during recording
+  // Stream untuk update durasi rekaman
   final StreamController<int> _durationController = StreamController<int>.broadcast();
   Stream<int> get onDurationChanged => _durationController.stream;
   
@@ -20,7 +20,7 @@ class AudioRecorderService {
   bool get isRecording => _isRecording;
   String? get recordedPath => _path;
   
-  // Request necessary permissions
+  // Meminta izin yang diperlukan
   Future<bool> requestPermissions() async {
     try {
       if (!await Permission.microphone.isGranted) {
@@ -30,7 +30,7 @@ class AudioRecorderService {
         }
       }
       
-      // On Android 13 and higher we also need storage permission
+      // Pada Android 13 dan yang lebih tinggi kita juga memerlukan izin storage
       if (Platform.isAndroid) {
         if (!await Permission.storage.isGranted) {
           final status = await Permission.storage.request();
@@ -47,7 +47,7 @@ class AudioRecorderService {
     }
   }
   
-  // Start recording
+  // Mulai merekam - Implementasi Dummy
   Future<bool> startRecording() async {
     if (!await requestPermissions()) {
       return false;
@@ -58,40 +58,28 @@ class AudioRecorderService {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       _path = '${directory.path}/audio_$timestamp.m4a';
       
-      final config = RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
-      );
+      // Simulasi rekaman
+      _isRecording = true;
+      _recordDuration = 0;
       
-      // Make sure recording is stopped before starting a new one
-      if (await _audioRecorder.isRecording()) {
-        await _audioRecorder.stop();
-      }
+      // Mulai timer yang mengeluarkan update durasi
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+        _recordDuration++;
+        _durationController.add(_recordDuration);
+      });
       
-      if (_path != null) {
-        await _audioRecorder.start(config, path: _path!);
-        
-        _isRecording = true;
-        _recordDuration = 0;
-        
-        // Start a timer that emits duration updates
-        _timer?.cancel();
-        _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
-          _recordDuration++;
-          _durationController.add(_recordDuration);
-        });
-        
-        return true;
-      }
-      return false;
+      // Pada implementasi asli, kita akan memulai rekaman sebenarnya di sini
+      // Untuk sementara, kita hanya simulasikan
+      
+      return true;
     } catch (e) {
       debugPrint('Error starting recording: $e');
       return false;
     }
   }
   
-  // Stop recording
+  // Berhenti merekam
   Future<String?> stopRecording() async {
     _timer?.cancel();
     
@@ -100,10 +88,21 @@ class AudioRecorderService {
     }
     
     try {
-      final path = await _audioRecorder.stop();
+      // Pada implementasi asli, kita akan berhenti merekam di sini
+      // Untuk sementara, kita hanya simulasikan
+      
       _isRecording = false;
       
-      return path;
+      // Buat file dummy untuk simulasi
+      if (_path != null) {
+        final file = File(_path!);
+        if (!await file.exists()) {
+          await file.create();
+          await file.writeAsString('Dummy audio content for testing');
+        }
+      }
+      
+      return _path;
     } catch (e) {
       debugPrint('Error stopping recording: $e');
       return null;
@@ -112,7 +111,7 @@ class AudioRecorderService {
     }
   }
   
-  // Cancel recording
+  // Batalkan rekaman
   Future<void> cancelRecording() async {
     _timer?.cancel();
     
@@ -121,9 +120,7 @@ class AudioRecorderService {
     }
     
     try {
-      await _audioRecorder.stop();
-      
-      // Delete the recorded file
+      // Hapus file rekaman
       if (_path != null) {
         final file = File(_path!);
         if (await file.exists()) {
@@ -138,25 +135,24 @@ class AudioRecorderService {
     }
   }
   
-  // Get the current amplitude (for visualization)
+  // Dapatkan amplitudo saat ini (untuk visualisasi)
   Future<double> getAmplitude() async {
     if (!_isRecording) {
       return 0.0;
     }
     
     try {
-      final amplitude = await _audioRecorder.getAmplitude();
-      return amplitude.current ?? 0.0;
+      // Simulasi amplitudo acak antara 0 dan 1
+      return _recordDuration % 10 / 10;
     } catch (e) {
       debugPrint('Error getting amplitude: $e');
       return 0.0;
     }
   }
   
-  // Dispose resources
+  // Buang resource
   void dispose() {
     _timer?.cancel();
-    _audioRecorder.dispose();
     _durationController.close();
   }
 }

@@ -3,7 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 
 class AudioPlayerService {
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  AudioPlayer? _audioPlayer;
   String? _currentlyPlayingUrl;
   
   final StreamController<PlayerState> _playerStateController = StreamController<PlayerState>.broadcast();
@@ -13,22 +13,33 @@ class AudioPlayerService {
   Stream<Duration> get onPositionChanged => _positionController.stream;
   
   AudioPlayerService() {
-    _initStreams();
+    _initPlayer();
+  }
+  
+  void _initPlayer() {
+    try {
+      _audioPlayer = AudioPlayer();
+      _initStreams();
+    } catch (e) {
+      debugPrint('Error initializing audio player: $e');
+    }
   }
   
   void _initStreams() {
     try {
-      _audioPlayer.onPlayerStateChanged.listen((state) {
-        _playerStateController.add(state);
+      if (_audioPlayer != null) {
+        _audioPlayer!.onPlayerStateChanged.listen((state) {
+          _playerStateController.add(state);
+          
+          if (state == PlayerState.completed) {
+            _currentlyPlayingUrl = null;
+          }
+        });
         
-        if (state == PlayerState.completed) {
-          _currentlyPlayingUrl = null;
-        }
-      });
-      
-      _audioPlayer.onPositionChanged.listen((position) {
-        _positionController.add(position);
-      });
+        _audioPlayer!.onPositionChanged.listen((position) {
+          _positionController.add(position);
+        });
+      }
     } catch (e) {
       debugPrint('Error initializing audio player streams: $e');
     }
@@ -37,12 +48,21 @@ class AudioPlayerService {
   String? get currentlyPlayingUrl => _currentlyPlayingUrl;
   
   Future<void> play(String url) async {
+    if (_audioPlayer == null) {
+      _initPlayer();
+      if (_audioPlayer == null) return;
+    }
+    
     if (_currentlyPlayingUrl == url) {
       // Same URL, toggle play/pause
-      if (await _audioPlayer.state == PlayerState.playing) {
-        await pause();
-      } else {
-        await resume();
+      try {
+        if (await _audioPlayer!.state == PlayerState.playing) {
+          await pause();
+        } else {
+          await resume();
+        }
+      } catch (e) {
+        debugPrint('Error toggling play/pause: $e');
       }
       return;
     }
@@ -53,7 +73,7 @@ class AudioPlayerService {
     }
     
     try {
-      await _audioPlayer.play(
+      await _audioPlayer!.play(
         url.startsWith('http') ? UrlSource(url) : DeviceFileSource(url),
         mode: PlayerMode.lowLatency,
       );
@@ -64,24 +84,30 @@ class AudioPlayerService {
   }
   
   Future<void> pause() async {
+    if (_audioPlayer == null) return;
+    
     try {
-      await _audioPlayer.pause();
+      await _audioPlayer!.pause();
     } catch (e) {
       debugPrint('Error pausing audio: $e');
     }
   }
   
   Future<void> resume() async {
+    if (_audioPlayer == null) return;
+    
     try {
-      await _audioPlayer.resume();
+      await _audioPlayer!.resume();
     } catch (e) {
       debugPrint('Error resuming audio: $e');
     }
   }
   
   Future<void> stop() async {
+    if (_audioPlayer == null) return;
+    
     try {
-      await _audioPlayer.stop();
+      await _audioPlayer!.stop();
       _currentlyPlayingUrl = null;
     } catch (e) {
       debugPrint('Error stopping audio: $e');
@@ -89,16 +115,20 @@ class AudioPlayerService {
   }
   
   Future<void> seek(Duration position) async {
+    if (_audioPlayer == null) return;
+    
     try {
-      await _audioPlayer.seek(position);
+      await _audioPlayer!.seek(position);
     } catch (e) {
       debugPrint('Error seeking audio: $e');
     }
   }
   
   Future<Duration?> getDuration() async {
+    if (_audioPlayer == null) return null;
+    
     try {
-      return await _audioPlayer.getDuration();
+      return await _audioPlayer!.getDuration();
     } catch (e) {
       debugPrint('Error getting duration: $e');
       return null;
@@ -107,7 +137,10 @@ class AudioPlayerService {
   
   void dispose() {
     try {
-      _audioPlayer.dispose();
+      if (_audioPlayer != null) {
+        _audioPlayer!.dispose();
+        _audioPlayer = null;
+      }
       _playerStateController.close();
       _positionController.close();
     } catch (e) {
