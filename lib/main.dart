@@ -15,6 +15,9 @@ import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
+import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
+import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart';
 import 'package:bank_sha/services/notification_service.dart';
@@ -127,9 +130,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      routes: {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => TrackingBloc()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        routes: {
         '/': (context) => const SplashPage(),
         '/onboarding': (context) => OnboardingPage(),
         '/sign-in': (context) => SignInPage(),
@@ -157,6 +164,7 @@ class MyApp extends StatelessWidget {
         '/jadwal': (context) => const UserSchedulesPageNew(),
         '/tracking': (context) => const TrackingPage(),
         '/wilayah': (context) => const WilayahPage(),
+        '/mitra-wilayah': (context) => const MitraLokasiPage(),
         '/reward': (context) => const RewardPage(),
         '/tracking_full': (context) => const TrackingFullScreen(),
         '/buatKeluhan': (context) => const BuatKeluhanPage(),
@@ -182,6 +190,7 @@ class MyApp extends StatelessWidget {
         '/checkout': (context) => const CheckoutPage(),
         '/payment-methods': (context) => const PaymentMethodsPage(),
       },
+      ),
     );
   }
 }

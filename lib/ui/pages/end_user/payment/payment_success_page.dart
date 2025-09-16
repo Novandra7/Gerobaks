@@ -56,7 +56,7 @@ class PaymentSuccessPage extends StatelessWidget {
               // Amount
               Text(
                 _formatAmount(amount),
-                style: greeTextStyle.copyWith(
+                style: greenTextStyle.copyWith(
                   fontSize: 28,
                   fontWeight: bold,
                 ),

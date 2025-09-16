@@ -225,7 +225,7 @@ class _SignInPageState extends State<SignInPage> {
                             const SizedBox(width: 8),
                             Text(
                               'GEROBAKS',
-                              style: greeTextStyle.copyWith(
+                              style: greenTextStyle.copyWith(
                                 fontSize: 28,
                                 fontWeight: bold,
                                 letterSpacing: 1.2,
@@ -338,7 +338,7 @@ class _SignInPageState extends State<SignInPage> {
                         },
                         child: Text(
                           'Sign Up',
-                          style: greeTextStyle.copyWith(
+                          style: greenTextStyle.copyWith(
                             fontSize: 14,
                             fontWeight: semiBold,
                           ),

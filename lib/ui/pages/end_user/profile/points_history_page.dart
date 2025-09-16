@@ -154,7 +154,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                             const SizedBox(width: 8),
                             Text(
                               '${_user?.points ?? 0}',
-                              style: greeTextStyle.copyWith(
+                              style: greenTextStyle.copyWith(
                                 fontSize: 28,
                                 fontWeight: bold,
                               ),
@@ -261,7 +261,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                                   Text(
                                     '${isEarned ? '+' : '-'}${item['amount']}',
                                     style: isEarned
-                                        ? greeTextStyle.copyWith(
+                                        ? greenTextStyle.copyWith(
                                             fontWeight: semiBold,
                                           )
                                         : TextStyle(

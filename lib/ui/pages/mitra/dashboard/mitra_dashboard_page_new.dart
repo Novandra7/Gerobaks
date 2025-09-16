@@ -407,9 +407,10 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
     final List<QuickActionItem> quickActions = [
       QuickActionItem(
         icon: Icons.location_on_outlined,
-        label: 'Lokasi',
+        label: 'Wilayah',
         onTap: () {
           // Navigate to location page
+          Navigator.pushNamed(context, '/mitra-wilayah');
         },
       ),
       QuickActionItem(

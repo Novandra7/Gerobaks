@@ -434,9 +434,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    // For mitra chat, the isFromUser logic is inverted
-    // Here, messages from admin are considered from "me" (mitra admin)
-    final isFromMe = !message.isFromUser;
+    // For mitra view, mitra/admin messages should appear on the right (as "me")
+    // and user messages should appear on the left
+    final isFromMe = message.isFromUser == false; // Messages from admin (isFromUser=false) are from "me" as mitra
     final isSystem = message.type == MessageType.system;
     final isTyping = message.type == MessageType.typing;
 
@@ -465,6 +465,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
+          // Show typing indicator on the left (from customer)
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -525,7 +526,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       return VoiceMessageBubble(
         voiceUrl: message.voiceUrl!,
         durationInSeconds: message.voiceDuration ?? 0,
-        isFromUser: isFromMe, // Inverted for mitra
+        isFromUser: isFromMe, // Use our corrected isFromMe value
         timestamp: message.timestamp,
         audioPlayerService: _audioPlayerService,
       );
@@ -547,7 +548,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
               radius: 16,
               backgroundColor: greenColor.withOpacity(0.1),
               child: Icon(
-                Icons.person,
+                Icons.person, // Customer icon
                 color: greenColor,
                 size: 16,
               ),

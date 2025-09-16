@@ -22,9 +22,9 @@ TextStyle whiteTextStyle = GoogleFonts.poppins(color: whiteColor);
 
 TextStyle greyTextStyle = GoogleFonts.poppins(color: greyColor);
 
-TextStyle blueTextStyke = GoogleFonts.poppins(color: blueColor);
+TextStyle blueTextStyle = GoogleFonts.poppins(color: blueColor);
 
-TextStyle greeTextStyle = GoogleFonts.poppins(color: greenColor);
+TextStyle greenTextStyle = GoogleFonts.poppins(color: greenColor);
 
 TextStyle greentextstyle2 = GoogleFonts.poppins(color: greentext);
 

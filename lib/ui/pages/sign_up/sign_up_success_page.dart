@@ -53,7 +53,7 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage> with AppDialogMix
                   const SizedBox(width: 12),
                   Text(
                     '+15 Poin',
-                    style: greeTextStyle.copyWith(
+                    style: greenTextStyle.copyWith(
                       fontSize: 18,
                       fontWeight: semiBold,
                     ),

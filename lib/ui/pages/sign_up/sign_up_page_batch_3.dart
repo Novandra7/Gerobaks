@@ -86,7 +86,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                               const SizedBox(width: 8),
                               Text(
                                 'GEROBAKS',
-                                style: greeTextStyle.copyWith(
+                                style: greenTextStyle.copyWith(
                                   fontSize: 28,
                                   fontWeight: bold,
                                   letterSpacing: 1.2,
@@ -370,7 +370,7 @@ class _SignUpBatch3PageState extends State<SignUpBatch3Page> {
                           },
                           child: Text(
                             'Sign In',
-                            style: greeTextStyle.copyWith(
+                            style: greenTextStyle.copyWith(
                               fontSize: 14,
                               fontWeight: semiBold,
                             ),

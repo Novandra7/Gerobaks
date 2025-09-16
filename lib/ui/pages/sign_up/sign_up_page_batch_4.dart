@@ -91,7 +91,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                               const SizedBox(width: 8),
                               Text(
                                 'GEROBAKS',
-                                style: greeTextStyle.copyWith(
+                                style: greenTextStyle.copyWith(
                                   fontSize: 28,
                                   fontWeight: bold,
                                   letterSpacing: 1.2,
@@ -264,7 +264,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                       children: [
                                         Text(
                                           'Pilih Lokasi di Peta',
-                                          style: (_selectedLocation != null ? greeTextStyle : blackTextStyle).copyWith(
+                                          style: (_selectedLocation != null ? greenTextStyle : blackTextStyle).copyWith(
                                             fontSize: 16,
                                             fontWeight: semiBold,
                                           ),
@@ -326,7 +326,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                           const SizedBox(width: 8),
                                           Text(
                                             'Lokasi Terpilih',
-                                            style: greeTextStyle.copyWith(
+                                            style: greenTextStyle.copyWith(
                                               fontSize: 14,
                                               fontWeight: semiBold,
                                             ),
@@ -510,7 +510,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                           },
                           child: Text(
                             'Sign In',
-                            style: greeTextStyle.copyWith(
+                            style: greenTextStyle.copyWith(
                               fontSize: 14,
                               fontWeight: semiBold,
                             ),

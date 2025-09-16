@@ -289,7 +289,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           ),
                           Text(
                             _formatAmount(_amount),
-                            style: greeTextStyle.copyWith(
+                            style: greenTextStyle.copyWith(
                               fontSize: 16,
                               fontWeight: semiBold,
                             ),
@@ -315,7 +315,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           onPressed: _selectPaymentMethod,
                           child: Text(
                             'Ubah',
-                            style: greeTextStyle.copyWith(
+                            style: greenTextStyle.copyWith(
                               fontSize: 14,
                               fontWeight: semiBold,
                             ),
@@ -421,7 +421,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                       Text(
                         _formatAmount(_amount),
-                        style: greeTextStyle.copyWith(
+                        style: greenTextStyle.copyWith(
                           fontSize: 16,
                           fontWeight: semiBold,
                         ),

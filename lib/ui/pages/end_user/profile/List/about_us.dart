@@ -106,7 +106,7 @@ class AboutUs extends StatelessWidget {
             // Call to action
             Text(
               'Mari ubah sampah menjadi berkah.\nBersama Gerobaku, wujudkan lingkungan yang lestari!',
-              style: greeTextStyle.copyWith(fontSize: 14, fontWeight: medium),
+              style: greenTextStyle.copyWith(fontSize: 14, fontWeight: medium),
               textAlign: TextAlign.center,
             ),
           ],
