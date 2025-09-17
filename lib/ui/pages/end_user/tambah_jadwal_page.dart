@@ -4,6 +4,7 @@ import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:bank_sha/ui/widgets/shared/map_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -325,6 +326,106 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Lokasi Penjemputan header
+                          Row(
+                            children: [
+                              Icon(Icons.location_on, color: greenColor),
+                              SizedBox(width: 8),
+                              Text(
+                                'Lokasi Penjemputan',
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: semiBold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          
+                          // Lokasi saya saat ini field
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(Icons.my_location, color: greenColor),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Lokasi saya saat ini',
+                                    style: blackTextStyle.copyWith(fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          
+                          // Peta Lokasi button
+                          GestureDetector(
+                            onTap: () {
+                              // Navigasi ke halaman MapPicker
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MapPickerPage(
+                                    initialLocation: _currentCenter,
+                                    onLocationSelected: (address, lat, lng) {
+                                      setState(() {
+                                        _addressController.text = address;
+                                        _currentCenter = LatLng(lat, lng);
+                                      });
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.map,
+                                    size: 40,
+                                    color: greenColor,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Peta Lokasi',
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 14,
+                                      fontWeight: medium,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Tekan untuk memilih lokasi di peta',
+                                    style: greyTextStyle.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),

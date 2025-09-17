@@ -1,19 +1,18 @@
-﻿import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 
-class JadwalMitraPage extends StatefulWidget {
-  const JadwalMitraPage({super.key});
+class JadwalMitraPageNew extends StatefulWidget {
+  const JadwalMitraPageNew({super.key});
 
   @override
-  State<JadwalMitraPage> createState() => _JadwalMitraPageNewState();
+  State<JadwalMitraPageNew> createState() => _JadwalMitraPageNewState();
 }
 
-class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProviderStateMixin {
+class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   String? _driverId;
   bool _isLoading = false;
@@ -150,17 +149,19 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
 
   @override
   Widget build(BuildContext context) {
-    // Get screen width and height for responsive layout
+    // Get screen width for responsive layout
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
     
     return Scaffold(
       backgroundColor: lightBackgroundColor,
       body: Column(
         children: [
-          // Custom Header matching the design
+          // Header with just logo and icons
           _buildHeader(context, isSmallScreen),
+          
+          // Title and stats section
+          _buildJadwalTitle(context, isSmallScreen),
           
           // Body content
           Expanded(
@@ -177,16 +178,88 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF37DE7A), Color(0xFF00A643)],
+        gradient: LinearGradient(
+          colors: [
+            greenColor,
+            const Color(0xFF37DE7A),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          stops: [0.0, 1.0],
-          transform: GradientRotation(0.2),
         ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: greenColor.withOpacity(0.2),
+            offset: const Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 10,
+        bottom: 10,
+        left: 16,
+        right: 16,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Logo
+          Image.asset(
+            'assets/img_gerobakss.png',
+            height: isSmallScreen ? 28 : 32,
+          ),
+          
+          // Message and notification icons
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                margin: const EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.message_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildJadwalTitle(BuildContext context, bool isSmallScreen) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            greenColor,
+            greenLight,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(30),
         ),
         boxShadow: [
           BoxShadow(
@@ -196,121 +269,63 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
           ),
         ],
       ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 16,
-        bottom: 20,
-        left: 20,
-        right: 20,
+      padding: const EdgeInsets.symmetric(
+        vertical: 20,
+        horizontal: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Top bar with logo and notifications
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Logo
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/ic_truck.png',
-                    width: isSmallScreen ? 24 : 32,
-                    height: isSmallScreen ? 24 : 32,
-                    color: Colors.white,
-                  ),
-                  SizedBox(width: isSmallScreen ? 4 : 8),
-                  Text(
-                    'GEROBAKS',
-                    style: whiteTextStyle.copyWith(
-                      fontSize: isSmallScreen ? 16 : 18,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Notification and chat icons
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to chat
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.chat_bubble_outline,
-                        color: Colors.white,
-                        size: isSmallScreen ? 16 : 20,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: isSmallScreen ? 8 : 12),
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to notifications
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(isSmallScreen ? 6 : 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.notifications_none,
-                        color: Colors.white,
-                        size: isSmallScreen ? 16 : 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          
-          SizedBox(height: isSmallScreen ? 12 : 16),
-          
           // Jadwal Pengambilan Text
           Text(
             'Jadwal Pengambilan',
             style: whiteTextStyle.copyWith(
-              fontSize: isSmallScreen ? 20 : 24,
-              fontWeight: FontWeight.bold,
+              fontSize: isSmallScreen ? 22 : 24,
+              fontWeight: semiBold,
+              letterSpacing: 0.5,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.15),
+                  offset: const Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
             ),
           ),
           
-          SizedBox(height: isSmallScreen ? 16 : 20),
+          const SizedBox(height: 20),
           
-          // Stats cards - responsive layout for different screen sizes
-          FittedBox(
-            fit: BoxFit.scaleDown,
+          // Stats cards with FittedBox to prevent overflow
+          SizedBox(
+            height: isSmallScreen ? 80 : 90,  // Reduced height for small screens
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatCard(
-                  icon: Icons.location_on_outlined,
-                  label: 'Lokasi',
-                  count: _locationCount,
-                  isSmallScreen: isSmallScreen,
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.location_on_outlined,
+                    label: 'Lokasi',
+                    count: _locationCount,
+                    isSmallScreen: isSmallScreen,
+                  ),
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
-                _buildStatCard(
-                  icon: Icons.people_outline,
-                  label: 'Menunggu',
-                  count: _pendingCount,
-                  isSmallScreen: isSmallScreen,
+                const SizedBox(width: 15),
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.people_outline,
+                    label: 'Menunggu',
+                    count: _pendingCount,
+                    isSmallScreen: isSmallScreen,
+                  ),
                 ),
-                SizedBox(width: isSmallScreen ? 8 : 12),
-                _buildStatCard(
-                  icon: Icons.check_circle_outline,
-                  label: 'Selesai',
-                  count: _completedCount,
-                  isSmallScreen: isSmallScreen,
+                const SizedBox(width: 15),
+                Expanded(
+                  child: _buildStatCard(
+                    icon: Icons.check_circle_outline,
+                    label: 'Selesai',
+                    count: _completedCount,
+                    isSmallScreen: isSmallScreen,
+                  ),
                 ),
               ],
             ),
@@ -327,33 +342,60 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
     required bool isSmallScreen,
   }) {
     return Container(
-      width: isSmallScreen ? 70 : 80,
-      height: isSmallScreen ? 80 : 90,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      padding: EdgeInsets.all(isSmallScreen ? 8 : 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: 5, 
+        vertical: isSmallScreen ? 6 : 8
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
             color: Colors.white,
             size: isSmallScreen ? 20 : 24,
           ),
-          SizedBox(height: isSmallScreen ? 6 : 8),
-          Text(
-            count.toString(),
-            style: whiteTextStyle.copyWith(
-              fontSize: isSmallScreen ? 18 : 20,
-              fontWeight: FontWeight.bold,
+          SizedBox(height: isSmallScreen ? 4 : 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              count.toString(),
+              style: whiteTextStyle.copyWith(
+                fontSize: isSmallScreen ? 16 : 18,
+                fontWeight: bold,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.2),
+                    offset: const Offset(0, 1),
+                    blurRadius: 1,
+                  ),
+                ],
+              ),
             ),
           ),
-          Text(
-            label,
-            style: whiteTextStyle.copyWith(
-              fontSize: isSmallScreen ? 10 : 12,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: whiteTextStyle.copyWith(
+                fontSize: isSmallScreen ? 10 : 11,
+                letterSpacing: 0.3,
+              ),
             ),
           ),
         ],
@@ -368,7 +410,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         Container(
           margin: EdgeInsets.symmetric(
             horizontal: isSmallScreen ? 12 : 16, 
-            vertical: isSmallScreen ? 6 : 8
+            vertical: isSmallScreen ? 4 : 6
           ),
           child: Row(
             children: [
@@ -380,7 +422,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                   });
                 }, isSmallScreen),
               ),
-              SizedBox(width: isSmallScreen ? 6 : 8),
+              SizedBox(width: isSmallScreen ? 4 : 8),
               Expanded(
                 child: _buildFilterTab("Menunggu", _selectedFilter == "pending", () {
                   setState(() {
@@ -389,7 +431,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                   });
                 }, isSmallScreen),
               ),
-              SizedBox(width: isSmallScreen ? 6 : 8),
+              SizedBox(width: isSmallScreen ? 4 : 8),
               Expanded(
                 child: _buildFilterTab("Diproses", _selectedFilter == "in_progress", () {
                   setState(() {
@@ -398,7 +440,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                   });
                 }, isSmallScreen),
               ),
-              SizedBox(width: isSmallScreen ? 6 : 8),
+              SizedBox(width: isSmallScreen ? 4 : 8),
               Expanded(
                 child: _buildFilterTab("Selesai", _selectedFilter == "completed", () {
                   setState(() {
@@ -411,19 +453,19 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
           ),
         ),
         
-        // Prioritas Terdekat heading
+        // Section indicators based on selected filter
         Padding(
           padding: EdgeInsets.fromLTRB(
             isSmallScreen ? 12 : 16, 
+            isSmallScreen ? 8 : 12, 
             isSmallScreen ? 12 : 16, 
-            isSmallScreen ? 12 : 16, 
-            isSmallScreen ? 6 : 8
+            isSmallScreen ? 4 : 6
           ),
           child: Row(
             children: [
               Container(
                 width: 4,
-                height: 20,
+                height: 16,
                 decoration: BoxDecoration(
                   color: greenColor,
                   borderRadius: BorderRadius.circular(2),
@@ -431,10 +473,13 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
               ),
               SizedBox(width: 8),
               Text(
-                'Prioritas Terdekat',
+                _selectedFilter == "semua" ? 'Prioritas Terdekat' :
+                _selectedFilter == "pending" ? 'Terjadwal' :
+                _selectedFilter == "in_progress" ? 'Dalam Proses' :
+                'Pengambilan Selesai',
                 style: blackTextStyle.copyWith(
-                  fontSize: isSmallScreen ? 14 : 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: isSmallScreen ? 12 : 14,
+                  fontWeight: bold,
                 ),
               ),
               Spacer(),
@@ -442,8 +487,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                 onTap: _openMapView,
                 child: Container(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isSmallScreen ? 10 : 12, 
-                    vertical: isSmallScreen ? 4 : 6
+                    horizontal: isSmallScreen ? 8 : 10, 
+                    vertical: isSmallScreen ? 3 : 5
                   ),
                   decoration: BoxDecoration(
                     color: greenColor,
@@ -455,13 +500,13 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                       Icon(
                         Icons.map,
                         color: Colors.white,
-                        size: isSmallScreen ? 14 : 16,
+                        size: isSmallScreen ? 12 : 14,
                       ),
                       SizedBox(width: 4),
                       Text(
                         "Lihat Peta",
                         style: whiteTextStyle.copyWith(
-                          fontSize: isSmallScreen ? 10 : 12,
+                          fontSize: isSmallScreen ? 9 : 11,
                           fontWeight: semiBold,
                         ),
                       ),
@@ -492,7 +537,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 6 : 8),
+        padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 4 : 6),
         decoration: BoxDecoration(
           color: isSelected ? greenColor : Color(0xFFEAFBEF),
           borderRadius: BorderRadius.circular(8),
@@ -501,7 +546,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         child: Text(
           label,
           style: (isSelected ? whiteTextStyle : greenTextStyle).copyWith(
-            fontSize: isSmallScreen ? 11 : 13,
+            fontSize: isSmallScreen ? 10 : 12,
           ),
         ),
       ),
@@ -509,8 +554,6 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
   }
   
   Widget _buildScheduleCard(Map<String, dynamic> schedule, int index, bool isSmallScreen) {
-    bool isEven = index % 2 == 0;
-    
     return GestureDetector(
       onTap: () {
         // Navigate to detail page
@@ -524,14 +567,15 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: isSmallScreen ? 10 : 12),
+        margin: EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
               offset: Offset(0, 2),
+              spreadRadius: 0,
             ),
           ],
         ),
@@ -539,12 +583,12 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
           children: [
             // Time and status
             Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isSmallScreen ? 12 : 16, 
-                vertical: isSmallScreen ? 10 : 12
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16, 
+                vertical: 12
               ),
               decoration: BoxDecoration(
-                color: Color(0xFFF5F5F5),
+                color: Colors.grey[50],
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
@@ -556,35 +600,35 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                   Row(
                     children: [
                       Icon(
-                        Icons.access_time,
-                        size: isSmallScreen ? 14 : 16,
+                        Icons.access_time_rounded,
+                        size: 16,
                         color: Colors.grey[600],
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Text(
                         schedule["time"],
                         style: blackTextStyle.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: isSmallScreen ? 12 : 14,
+                          fontWeight: bold,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSmallScreen ? 10 : 12, 
-                      vertical: isSmallScreen ? 3 : 4
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12, 
+                      vertical: 5
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(schedule["status"]).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: _getStatusColor(schedule["status"]).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
                       _getStatusText(schedule["status"]),
                       style: TextStyle(
                         color: _getStatusColor(schedule["status"]),
-                        fontWeight: FontWeight.bold,
-                        fontSize: isSmallScreen ? 10 : 12,
+                        fontWeight: semiBold,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -593,17 +637,17 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
             ),
             // Customer info
             Container(
-              padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    isEven ? Color(0xFF76DE8D) : Color(0xFF76DE8D).withOpacity(0.8),
-                    greenColor,
+                    const Color(0xFF37DE7A), 
+                    const Color(0xFF00A643),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
@@ -616,47 +660,72 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
                       Text(
                         schedule["customer_name"],
                         style: whiteTextStyle.copyWith(
-                          fontSize: isSmallScreen ? 14 : 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: bold,
                         ),
                       ),
-                      Spacer(),
-                      // Add distance indicator
-                      Text(
-                        schedule["estimatedDistance"],
-                        style: whiteTextStyle.copyWith(
-                          fontSize: isSmallScreen ? 10 : 12,
-                          fontWeight: medium,
-                        ),
+                      const Spacer(),
+                      // Distance and time indicators with icons
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.directions_walk,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            schedule["estimatedDistance"],
+                            style: whiteTextStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: medium,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(
+                            Icons.access_time,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            schedule["estimatedTime"],
+                            style: whiteTextStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: medium,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
-                        Icons.location_on,
+                        Icons.location_on_rounded,
                         color: Colors.white,
-                        size: isSmallScreen ? 14 : 16,
+                        size: 16,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           schedule["address"],
                           style: whiteTextStyle.copyWith(
-                            fontSize: isSmallScreen ? 12 : 14
+                            fontSize: 14
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       _buildWasteTypeChip(schedule["waste_type"], isSmallScreen),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       _buildWasteWeightChip(schedule["waste_weight"], isSmallScreen),
                     ],
                   ),
@@ -672,17 +741,18 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
   Widget _buildWasteTypeChip(String wasteType, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 10 : 12, 
+        horizontal: isSmallScreen ? 8 : 12, 
         vertical: isSmallScreen ? 4 : 6
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Text(
         wasteType,
         style: whiteTextStyle.copyWith(
-          fontSize: isSmallScreen ? 10 : 12
+          fontSize: isSmallScreen ? 10 : 12,
+          fontWeight: medium,
         ),
       ),
     );
@@ -691,17 +761,18 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
   Widget _buildWasteWeightChip(String wasteWeight, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 10 : 12, 
+        horizontal: isSmallScreen ? 8 : 12, 
         vertical: isSmallScreen ? 4 : 6
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(50),
       ),
       child: Text(
         wasteWeight,
         style: whiteTextStyle.copyWith(
-          fontSize: isSmallScreen ? 10 : 12
+          fontSize: isSmallScreen ? 10 : 12,
+          fontWeight: medium
         ),
       ),
     );
@@ -744,7 +815,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         "waste_type": "Organik",
         "waste_weight": "3 kg",
         "status": "pending",
-        "estimatedDistance": "500m • 10 menit",
+        "estimatedDistance": "500m",
+        "estimatedTime": "10 menit",
         "priority": 1,
       },
       {
@@ -755,7 +827,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         "waste_type": "Anorganik",
         "waste_weight": "1.5 kg",
         "status": "completed",
-        "estimatedDistance": "800m • 15 menit",
+        "estimatedDistance": "800m",
+        "estimatedTime": "15 menit",
         "priority": 3,
       },
       {
@@ -766,7 +839,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         "waste_type": "Organik",
         "waste_weight": "3 kg",
         "status": "in_progress",
-        "estimatedDistance": "1.2km • 20 menit",
+        "estimatedDistance": "1.2km",
+        "estimatedTime": "20 menit",
         "priority": 2,
       },
       {
@@ -777,7 +851,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage> with TickerProvide
         "waste_type": "Organik",
         "waste_weight": "2 kg",
         "status": "pending",
-        "estimatedDistance": "1.5km • 25 menit",
+        "estimatedDistance": "1.5km",
+        "estimatedTime": "25 menit",
         "priority": 4,
       },
     ];
@@ -812,5 +887,3 @@ final TextStyle greenTextStyle = TextStyle(
   color: Color(0xFF00A643),
   fontFamily: 'Inter',
 );
-
-// Font weight constants

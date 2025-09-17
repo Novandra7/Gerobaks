@@ -52,4 +52,28 @@ class MapUtils {
   static void openMapView(BuildContext context, LatLng location, {Function(String, double, double)? onLocationSelected}) {
     // Implementation will depend on your app's map widget
   }
+  
+  /// Opens navigation to the specified location using the default maps application
+  static Future<bool> openMapsNavigation({required double latitude, required double longitude, String? destinationName}) async {
+    String destination = '$latitude,$longitude';
+    
+    if (destinationName != null && destinationName.isNotEmpty) {
+      // Use destination name if provided (URL encoded)
+      destination = Uri.encodeComponent(destinationName);
+    }
+    
+    // Google Maps navigation URL with navigation mode
+    final String googleMapsNavUrl = 'https://www.google.com/maps/dir/?api=1&destination=$destination&travelmode=driving';
+    final Uri uri = Uri.parse(googleMapsNavUrl);
+    
+    try {
+      return await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      debugPrint('Error opening navigation: $e');
+      return false;
+    }
+  }
 }

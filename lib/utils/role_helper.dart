@@ -13,7 +13,7 @@ class RoleHelper {
   static String getDefaultRouteForRole(String role) {
     switch (role) {
       case mitra:
-        return '/mitra-dashboard';
+        return '/mitra-dashboard-new';
       case endUser:
       default:
         return '/home';

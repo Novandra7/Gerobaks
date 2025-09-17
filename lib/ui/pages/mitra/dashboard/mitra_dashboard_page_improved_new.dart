@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
@@ -23,7 +23,7 @@ class _MitraDashboardPageState extends State<MitraDashboardPage> {
 
   final List<Widget> _pages = [
     const MitraDashboardContent(),
-    const JadwalMitraPage(),
+    const JadwalMitraPageNew(),
     const PengambilanListPage(),
     const LaporanMitraPage(),
     const ProfileMitraPage(),
@@ -968,7 +968,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const JadwalMitraPage(),
+                              builder: (context) => const JadwalMitraPageNew(),
                             ),
                           );
                         },
