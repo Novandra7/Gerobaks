@@ -245,54 +245,56 @@ class _MapPickerPageState extends State<MapPickerPage> {
         centerTitle: true,
         iconTheme: IconThemeData(color: blackColor),
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: whiteColor,
-        elevation: 8,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    foregroundColor: whiteColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+      bottomNavigationBar: SafeArea(
+        child: BottomAppBar(
+          color: whiteColor,
+          elevation: 8,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      foregroundColor: whiteColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                  ),
-                  onPressed: _selectedAddress.isNotEmpty 
-                    ? () {
-                        widget.onLocationSelected(
-                          _selectedAddress,
-                          _selectedLat,
-                          _selectedLng,
-                        );
-                        Navigator.pop(context);
-                      }
-                    : null,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 20,
-                        color: whiteColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Konfirmasi Lokasi',
-                        style: whiteTextStyle.copyWith(
-                          fontWeight: semiBold,
-                          fontSize: 16,
+                    onPressed: _selectedAddress.isNotEmpty 
+                      ? () {
+                          widget.onLocationSelected(
+                            _selectedAddress,
+                            _selectedLat,
+                            _selectedLng,
+                          );
+                          Navigator.pop(context);
+                        }
+                      : null,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 20,
+                          color: whiteColor,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          'Konfirmasi Lokasi',
+                          style: whiteTextStyle.copyWith(
+                            fontWeight: semiBold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

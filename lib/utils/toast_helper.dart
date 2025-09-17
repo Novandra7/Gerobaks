@@ -31,7 +31,7 @@ class ToastHelper {
           ),
         ),
         backgroundColor: isSuccess ? greenColor : redcolor,
-        behavior: SnackBarBehavior.fixed,
+        behavior: SnackBarBehavior.floating,  // Changed from fixed to floating to allow margin
         margin: EdgeInsets.only(
           left: 16, 
           right: 16, 
