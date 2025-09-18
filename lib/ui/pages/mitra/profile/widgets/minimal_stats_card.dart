@@ -142,7 +142,7 @@ class MinimalStatsCard extends StatelessWidget {
                         Text(
                           '${trendPercentage!.toStringAsFixed(1)}%',
                           style: isPositive
-                              ? greeTextStyle.copyWith(fontSize: subtitleFontSize, fontWeight: semiBold)
+                              ? greenTextStyle.copyWith(fontSize: subtitleFontSize, fontWeight: semiBold)
                               : blackTextStyle.copyWith(
                                   fontSize: subtitleFontSize,
                                   fontWeight: semiBold,

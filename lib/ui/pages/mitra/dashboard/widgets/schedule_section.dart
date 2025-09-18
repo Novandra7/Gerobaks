@@ -25,7 +25,7 @@ class ScheduleSection extends StatelessWidget {
                 onPressed: () {},
                 child: Text(
                   'Lihat Semua',
-                  style: greeTextStyle.copyWith(
+                  style: greenTextStyle.copyWith(
                     fontSize: 14,
                   ),
                 ),

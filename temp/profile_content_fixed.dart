@@ -246,7 +246,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                           SizedBox(width: isTablet ? 10 : 8),
                           Text(
                             '${_user?.points ?? 0} Poin',
-                            style: greeTextStyle.copyWith(
+                            style: greenTextStyle.copyWith(
                               fontWeight: semiBold,
                               fontSize: isTablet ? 16 : 14,
                             ),

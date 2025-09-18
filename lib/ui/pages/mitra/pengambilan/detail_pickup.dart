@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 
 class DetailPickupPage extends StatefulWidget {
   final String scheduleId;
@@ -13,6 +14,7 @@ class DetailPickupPage extends StatefulWidget {
 class _DetailPickupPageState extends State<DetailPickupPage> {
   bool isLoading = true;
   Map<String, dynamic>? scheduleData;
+  bool isSmallScreen = false;
 
   @override
   void initState() {
@@ -44,12 +46,16 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Detail Pengambilan',
           style: blackTextStyle.copyWith(
-            fontSize: 18,
+            fontSize: isSmallScreen ? 16 : 18,
             fontWeight: semiBold,
           ),
         ),
@@ -79,167 +85,211 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
     }
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 14 : 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Status indicator
+          Container(
+            width: double.infinity,
+            margin: EdgeInsets.only(bottom: isSmallScreen ? 14 : 16),
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: BoxDecoration(
+              color: _getStatusColor(scheduleData!['status']).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _getStatusColor(scheduleData!['status']).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _getStatusIcon(scheduleData!['status']),
+                  color: _getStatusColor(scheduleData!['status']),
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Status: ${_getStatusText(scheduleData!['status'])}',
+                  style: TextStyle(
+                    color: _getStatusColor(scheduleData!['status']),
+                    fontWeight: semiBold,
+                    fontSize: isSmallScreen ? 13 : 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
           // Customer info card
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Informasi Pelanggan',
-                  style: blackTextStyle.copyWith(
-                    fontSize: 16,
-                    fontWeight: semiBold,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline, 
+                      size: isSmallScreen ? 16 : 18,
+                      color: greenColor,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Informasi Pelanggan',
+                      style: blackTextStyle.copyWith(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: semiBold,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                _buildInfoRow('Nama', scheduleData!['customer_name']),
-                _buildInfoRow('No. Telepon', scheduleData!['phone']),
-                _buildInfoRow('Alamat', scheduleData!['address']),
+                SizedBox(height: isSmallScreen ? 12 : 16),
+                _buildInfoRow('Nama', scheduleData!['customer_name'], isSmallScreen),
+                _buildInfoRow('No. Telepon', scheduleData!['phone'], isSmallScreen),
+                _buildInfoRow('Alamat', scheduleData!['address'], isSmallScreen),
               ],
             ),
           ),
           
-          SizedBox(height: 16),
+          SizedBox(height: isSmallScreen ? 12 : 16),
           
           // Pickup details card
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Detail Pengambilan',
-                  style: blackTextStyle.copyWith(
-                    fontSize: 16,
-                    fontWeight: semiBold,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline, 
+                      size: isSmallScreen ? 16 : 18,
+                      color: greenColor,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Detail Pengambilan',
+                      style: blackTextStyle.copyWith(
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: semiBold,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                _buildInfoRow('ID Jadwal', scheduleData!['id']),
-                _buildInfoRow('Waktu', scheduleData!['time']),
-                _buildInfoRow('Jenis Sampah', scheduleData!['waste_type']),
-                _buildInfoRow('Berat Sampah', scheduleData!['waste_weight']),
-                _buildInfoRow('Status', _getStatusText(scheduleData!['status'])),
+                SizedBox(height: isSmallScreen ? 12 : 16),
+                _buildInfoRow('ID Jadwal', scheduleData!['id'], isSmallScreen),
+                _buildInfoRow('Waktu', scheduleData!['time'], isSmallScreen),
+                _buildInfoRow('Jenis Sampah', scheduleData!['waste_type'], isSmallScreen),
+                _buildInfoRow('Berat Sampah', scheduleData!['waste_weight'], isSmallScreen),
+                _buildInfoRow('Status', _getStatusText(scheduleData!['status']), isSmallScreen),
                 if (scheduleData!['notes'] != null && scheduleData!['notes'].isNotEmpty)
-                  _buildInfoRow('Catatan', scheduleData!['notes']),
+                  _buildInfoRow('Catatan', scheduleData!['notes'], isSmallScreen),
               ],
             ),
           ),
           
-          SizedBox(height: 24),
+          SizedBox(height: isSmallScreen ? 20 : 24),
           
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle navigation to location
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+          // Action button
+          Container(
+            width: double.infinity,
+            height: isSmallScreen ? 50 : 56,
+            child: ElevatedButton(
+              onPressed: () {
+                // Navigate to JadwalMitraMapView
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => JadwalMitraMapView(),
                   ),
-                  child: Text(
-                    'Menuju Lokasi',
-                    style: whiteTextStyle.copyWith(
-                      fontSize: 16,
-                      fontWeight: semiBold,
-                    ),
-                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                foregroundColor: Colors.white,
+                elevation: 2,
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle start pickup
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.play_circle_outline, 
+                    size: isSmallScreen ? 18 : 20,
                   ),
-                  child: Text(
+                  SizedBox(width: 8),
+                  Text(
                     'Mulai Pengambilan',
                     style: whiteTextStyle.copyWith(
-                      fontSize: 16,
+                      fontSize: isSmallScreen ? 14 : 16,
                       fontWeight: semiBold,
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, bool isSmallScreen) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: isSmallScreen ? 8 : 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: isSmallScreen ? 90 : 100,
             child: Text(
               label,
               style: blackTextStyle.copyWith(
-                fontSize: 14,
+                fontSize: isSmallScreen ? 12 : 14,
               ),
             ),
           ),
           Text(
             ': ',
             style: blackTextStyle.copyWith(
-              fontSize: 14,
+              fontSize: isSmallScreen ? 12 : 14,
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: blackTextStyle.copyWith(
-                fontSize: 14,
+                fontSize: isSmallScreen ? 12 : 14,
                 fontWeight: medium,
               ),
             ),
@@ -259,6 +309,32 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
         return 'Selesai';
       default:
         return status;
+    }
+  }
+  
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'in_progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+  
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'pending':
+        return Icons.hourglass_empty;
+      case 'in_progress':
+        return Icons.directions_run;
+      case 'completed':
+        return Icons.check_circle_outline;
+      default:
+        return Icons.help_outline;
     }
   }
 }

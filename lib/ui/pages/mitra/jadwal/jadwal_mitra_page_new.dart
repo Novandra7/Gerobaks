@@ -177,6 +177,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
   Widget _buildHeader(BuildContext context, bool isSmallScreen) {
     return Container(
       width: double.infinity,
+      height: isSmallScreen ? 60 : 66, // Kontrol ketinggian header yang lebih presisi
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -195,48 +196,57 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
         ],
       ),
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 10,
-        bottom: 10,
-        left: 16,
-        right: 16,
+        top: MediaQuery.of(context).padding.top + (isSmallScreen ? 6 : 8),
+        bottom: isSmallScreen ? 6 : 8,
+        left: isSmallScreen ? 12 : 16,
+        right: isSmallScreen ? 12 : 16,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Logo
-          Image.asset(
-            'assets/img_gerobakss.png',
-            height: isSmallScreen ? 28 : 32,
+          // Logo Gerobaks (white version)
+          Padding(
+            padding: const EdgeInsets.only(left: 4.0),
+            child: ColorFiltered(
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/img_gerobakss.png',
+                height: isSmallScreen ? 22 : 26,
+              ),
+            ),
           ),
           
           // Message and notification icons
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
-                margin: const EdgeInsets.only(right: 16),
+                width: isSmallScreen ? 32 : 36,
+                height: isSmallScreen ? 32 : 36,
+                margin: EdgeInsets.only(right: isSmallScreen ? 10 : 12),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.message_rounded,
                   color: Colors.white,
-                  size: 22,
+                  size: isSmallScreen ? 18 : 20,
                 ),
               ),
               Container(
-                width: 40,
-                height: 40,
+                width: isSmallScreen ? 32 : 36,
+                height: isSmallScreen ? 32 : 36,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.notifications_outlined,
                   color: Colors.white,
-                  size: 22,
+                  size: isSmallScreen ? 18 : 20,
                 ),
               ),
             ],
@@ -259,19 +269,19 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
           end: Alignment.bottomRight,
         ),
         borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(30),
+          bottom: Radius.circular(24),
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00A643).withOpacity(0.25),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF00A643).withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(
-        vertical: 20,
-        horizontal: 20,
+      padding: EdgeInsets.symmetric(
+        vertical: isSmallScreen ? 16 : 18,
+        horizontal: isSmallScreen ? 16 : 18,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -280,9 +290,10 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
           Text(
             'Jadwal Pengambilan',
             style: whiteTextStyle.copyWith(
-              fontSize: isSmallScreen ? 22 : 24,
+              fontSize: isSmallScreen ? 20 : 22,
               fontWeight: semiBold,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
+              height: 1.2,
               shadows: [
                 Shadow(
                   color: Colors.black.withOpacity(0.15),
@@ -293,11 +304,11 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
             ),
           ),
           
-          const SizedBox(height: 20),
+          SizedBox(height: isSmallScreen ? 14 : 16),
           
           // Stats cards with FittedBox to prevent overflow
           SizedBox(
-            height: isSmallScreen ? 80 : 90,  // Reduced height for small screens
+            height: isSmallScreen ? 70 : 80,  // Further reduced height for better fit
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -309,7 +320,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                     isSmallScreen: isSmallScreen,
                   ),
                 ),
-                const SizedBox(width: 15),
+                SizedBox(width: isSmallScreen ? 10 : 12),
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.people_outline,
@@ -318,7 +329,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                     isSmallScreen: isSmallScreen,
                   ),
                 ),
-                const SizedBox(width: 15),
+                SizedBox(width: isSmallScreen ? 10 : 12),
                 Expanded(
                   child: _buildStatCard(
                     icon: Icons.check_circle_outline,
@@ -344,7 +355,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Colors.white.withOpacity(0.1),
           width: 1,
@@ -352,14 +363,14 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: 5, 
-        vertical: isSmallScreen ? 6 : 8
+        horizontal: 4, 
+        vertical: isSmallScreen ? 5 : 6
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -368,15 +379,15 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
           Icon(
             icon,
             color: Colors.white,
-            size: isSmallScreen ? 20 : 24,
+            size: isSmallScreen ? 18 : 20,
           ),
-          SizedBox(height: isSmallScreen ? 4 : 6),
+          SizedBox(height: isSmallScreen ? 2 : 3),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               count.toString(),
               style: whiteTextStyle.copyWith(
-                fontSize: isSmallScreen ? 16 : 18,
+                fontSize: isSmallScreen ? 14 : 16,
                 fontWeight: bold,
                 shadows: [
                   Shadow(
@@ -388,13 +399,14 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
               ),
             ),
           ),
+          SizedBox(height: 1),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               label,
               style: whiteTextStyle.copyWith(
-                fontSize: isSmallScreen ? 10 : 11,
-                letterSpacing: 0.3,
+                fontSize: isSmallScreen ? 9 : 10,
+                letterSpacing: 0.2,
               ),
             ),
           ),
@@ -567,14 +579,14 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 6),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: Offset(0, 1),
               spreadRadius: 0,
             ),
           ],
@@ -583,15 +595,15 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
           children: [
             // Time and status
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16, 
-                vertical: 12
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallScreen ? 10 : 12, 
+                vertical: isSmallScreen ? 6 : 8
               ),
               decoration: BoxDecoration(
                 color: Colors.grey[50],
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
                 ),
               ),
               child: Row(
@@ -601,34 +613,34 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                     children: [
                       Icon(
                         Icons.access_time_rounded,
-                        size: 16,
+                        size: isSmallScreen ? 12 : 14,
                         color: Colors.grey[600],
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: isSmallScreen ? 3 : 4),
                       Text(
                         schedule["time"],
                         style: blackTextStyle.copyWith(
                           fontWeight: bold,
-                          fontSize: 14,
+                          fontSize: isSmallScreen ? 10 : 12,
                         ),
                       ),
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12, 
-                      vertical: 5
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallScreen ? 6 : 8, 
+                      vertical: isSmallScreen ? 3 : 4
                     ),
                     decoration: BoxDecoration(
                       color: _getStatusColor(schedule["status"]).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(50),
+                      borderRadius: BorderRadius.circular(40),
                     ),
                     child: Text(
                       _getStatusText(schedule["status"]),
                       style: TextStyle(
                         color: _getStatusColor(schedule["status"]),
                         fontWeight: semiBold,
-                        fontSize: 12,
+                        fontSize: isSmallScreen ? 9 : 10,
                       ),
                     ),
                   ),
@@ -637,7 +649,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
             ),
             // Customer info
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isSmallScreen ? 10 : 12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -647,9 +659,9 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
                 ),
               ),
               child: Column(
@@ -657,41 +669,44 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                 children: [
                   Row(
                     children: [
-                      Text(
-                        schedule["customer_name"],
-                        style: whiteTextStyle.copyWith(
-                          fontSize: 16,
-                          fontWeight: bold,
+                      Expanded(
+                        child: Text(
+                          schedule["customer_name"],
+                          style: whiteTextStyle.copyWith(
+                            fontSize: isSmallScreen ? 13 : 15,
+                            fontWeight: bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
                       // Distance and time indicators with icons
                       Row(
                         children: [
                           Icon(
                             Icons.directions_walk,
                             color: Colors.white,
-                            size: 14,
+                            size: isSmallScreen ? 10 : 12,
                           ),
-                          SizedBox(width: 4),
+                          SizedBox(width: 2),
                           Text(
                             schedule["estimatedDistance"],
                             style: whiteTextStyle.copyWith(
-                              fontSize: 12,
+                              fontSize: isSmallScreen ? 9 : 10,
                               fontWeight: medium,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          SizedBox(width: 4),
                           Icon(
                             Icons.access_time,
                             color: Colors.white,
-                            size: 14,
+                            size: isSmallScreen ? 10 : 12,
                           ),
-                          SizedBox(width: 4),
+                          SizedBox(width: 2),
                           Text(
                             schedule["estimatedTime"],
                             style: whiteTextStyle.copyWith(
-                              fontSize: 12,
+                              fontSize: isSmallScreen ? 9 : 10,
                               fontWeight: medium,
                             ),
                           ),
@@ -699,21 +714,21 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: isSmallScreen ? 4 : 6),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.location_on_rounded,
                         color: Colors.white,
-                        size: 16,
+                        size: isSmallScreen ? 12 : 14,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: isSmallScreen ? 3 : 4),
                       Expanded(
                         child: Text(
                           schedule["address"],
                           style: whiteTextStyle.copyWith(
-                            fontSize: 14
+                            fontSize: isSmallScreen ? 11 : 12,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -721,11 +736,11 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: isSmallScreen ? 6 : 8),
                   Row(
                     children: [
                       _buildWasteTypeChip(schedule["waste_type"], isSmallScreen),
-                      const SizedBox(width: 8),
+                      SizedBox(width: isSmallScreen ? 6 : 8),
                       _buildWasteWeightChip(schedule["waste_weight"], isSmallScreen),
                     ],
                   ),
@@ -741,17 +756,17 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
   Widget _buildWasteTypeChip(String wasteType, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 8 : 12, 
-        vertical: isSmallScreen ? 4 : 6
+        horizontal: isSmallScreen ? 5 : 7, 
+        vertical: isSmallScreen ? 2 : 3
       ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(40),
       ),
       child: Text(
         wasteType,
         style: whiteTextStyle.copyWith(
-          fontSize: isSmallScreen ? 10 : 12,
+          fontSize: isSmallScreen ? 8 : 9,
           fontWeight: medium,
         ),
       ),
@@ -761,17 +776,17 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew> with TickerProv
   Widget _buildWasteWeightChip(String wasteWeight, bool isSmallScreen) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 8 : 12, 
-        vertical: isSmallScreen ? 4 : 6
+        horizontal: isSmallScreen ? 5 : 7, 
+        vertical: isSmallScreen ? 2 : 3
       ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(40),
       ),
       child: Text(
         wasteWeight,
         style: whiteTextStyle.copyWith(
-          fontSize: isSmallScreen ? 10 : 12,
+          fontSize: isSmallScreen ? 8 : 9,
           fontWeight: medium
         ),
       ),

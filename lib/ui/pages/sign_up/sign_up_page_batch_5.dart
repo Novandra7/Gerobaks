@@ -108,7 +108,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                             const SizedBox(width: 8),
                             Text(
                               'GEROBAKS',
-                              style: greeTextStyle.copyWith(
+                               style: greenTextStyle.copyWith(
                                 fontSize: 28,
                                 fontWeight: bold,
                                 letterSpacing: 1.2,
@@ -222,7 +222,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                                                 children: [
                                                   Text(
                                                     plan['price'],
-                                                    style: greeTextStyle.copyWith(
+                                                    style: greenTextStyle.copyWith(
                                                       fontSize: 24,
                                                       fontWeight: bold,
                                                     ),
@@ -372,7 +372,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         const SizedBox(height: 8),
                         Text(
                           'Penawaran Terbatas!',
-                          style: greeTextStyle.copyWith(
+                          style: greenTextStyle.copyWith(
                             fontSize: 16,
                             fontWeight: bold,
                           ),

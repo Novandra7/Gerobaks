@@ -82,7 +82,7 @@ class CustomBottomNavbar extends StatelessWidget {
           Text(
             label,
             style: isSelected 
-                ? greeTextStyle.copyWith(
+                ? greenTextStyle.copyWith(
                     fontSize: 12,
                     fontWeight: medium,
                   )
