@@ -68,6 +68,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
   flutter_map_cache: ^2.0.0+1
+  http_cache_file_store: ^2.0.1
+  dio_cache_interceptor: ^4.0.3
 
 dev_dependencies:
   flutter_test:
