@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map_cache/flutter_map_cache.dart';
+import 'package:dio_cache_interceptor/dio_cache_interceptor.dart';
 
 class TileProviderService {
   static TileProviderService? _instance;
@@ -17,7 +18,9 @@ class TileProviderService {
   // Initialize the cached tile provider
   Future<void> initialize() async {
     try {
-      final store = await FlutterMapCache.instance.getCacheStore();
+      // Use memory cache for simplicity
+      final store = MemCacheStore();
+
       _cachedTileProvider = CachedTileProvider(
         maxStale: const Duration(days: 30),
         store: store,
