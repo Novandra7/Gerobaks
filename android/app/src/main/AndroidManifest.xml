@@ -17,6 +17,43 @@
         <package android:name="com.gojek.app" />
         <!-- For DANA -->
         <package android:name="id.dana" />
+        
+        <!-- For Google Maps -->
+        <package android:name="com.google.android.apps.maps" />
+        <!-- For Waze -->
+        <package android:name="com.waze" />
+        <!-- For HERE Maps -->
+        <package android:name="com.here.app.maps" />
+        
+        <!-- For navigation schemes -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="google.navigation" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="maps.google.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="waze.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="wego.here.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="www.google.com" android:pathPattern="/maps.*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" android:host="www.openstreetmap.org" />
+        </intent>
     </queries>
     
     <application

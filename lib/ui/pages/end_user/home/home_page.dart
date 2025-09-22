@@ -8,7 +8,6 @@ import 'package:bank_sha/ui/pages/end_user/activity/activity_page_improved.dart'
 import 'package:bank_sha/ui/pages/end_user/profile/profile_page.dart';
 import 'package:bank_sha/ui/pages/end_user/home/home_content.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar.dart';
-import 'package:bank_sha/ui/pages/end_user/address/select_address_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -53,11 +52,14 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.only(top: 30),
         child: FloatingActionButton(
           onPressed: () async {
-            final hasSubscription = await SubscriptionGuard.checkSubscriptionAndShowDialog(context);
+            final hasSubscription =
+                await SubscriptionGuard.checkSubscriptionAndShowDialog(context);
             if (hasSubscription && mounted) {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddSchedulePage()),
+                MaterialPageRoute(
+                  builder: (context) => const AddSchedulePage(),
+                ),
               );
             }
           },
@@ -68,11 +70,7 @@ class _HomePageState extends State<HomePage> {
             side: BorderSide(color: Colors.white, width: 3),
           ),
           backgroundColor: greenColor,
-          child: Icon(
-            Icons.add_rounded,
-            color: whiteColor,
-            size: 32,
-          ),
+          child: Icon(Icons.add_rounded, color: whiteColor, size: 32),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

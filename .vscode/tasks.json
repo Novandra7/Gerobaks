@@ -6,13 +6,72 @@
 			"type": "shell",
 			"command": "flutter",
 			"args": [
-				"run"
+				"run",
+				"--verbose"
 			],
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": true,
+				"panel": "dedicated",
+				"showReuseMessage": true,
+				"clear": true
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: Clean",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"clean"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Flutter: Pub Get",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"get"
+			],
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Run Flutter App",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"run",
+				"--enable-software-rendering",
+				"--dart-flags=--no-disable-service-port-fallback",
+				"--no-dds"
+			],
 			"isBackground": true,
 			"problemMatcher": [
-				"$flutter"
-			]
+				"$flutter-verbose"
+			],
+			"group": "build"
 		}
 	]
 }

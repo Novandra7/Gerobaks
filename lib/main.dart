@@ -23,6 +23,9 @@ import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/otp_service.dart';
 import 'package:bank_sha/utils/pantun_helper.dart';
+import 'package:bank_sha/utils/navigation_helper.dart';
+import 'package:bank_sha/utils/debug_helper.dart';
+import 'package:bank_sha/services/tile_provider_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -52,31 +55,39 @@ Future<void> main() async {
   try {
     // Ensure Flutter is initialized before doing anything
     WidgetsFlutterBinding.ensureInitialized();
-    
+
+    // Debug console test
+    print('===== DEBUG CONSOLE TEST =====');
+    print('If you see this message in the debug console, it is working!');
+    print('==============================');
+
+    // Use our debug helper
+    DebugHelper.testDebugConsole();
+
     // Menangani error global
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
       print('Uncaught Flutter error: ${details.exception}');
       print('Stack trace: ${details.stack}');
     };
-    
+
     await dotenv.load();
     await initializeDateFormatting('id_ID', null);
-    
+
     // Inisialisasi LocalStorage Service
     try {
       await LocalStorageService.getInstance();
       print("LocalStorage berhasil diinisialisasi");
-      
+
       // Inisialisasi SubscriptionService setelah LocalStorage
       await SubscriptionService().initialize();
       print("SubscriptionService berhasil diinisialisasi");
-      
+
       // Initialize User Service and Profile Controller
       final userService = await UserService.getInstance();
       await userService.init();
       print("UserService berhasil diinisialisasi");
-      
+
       // Initialize Profile Controller
       final profileController = await ProfileController.getInstance();
       await profileController.init();
@@ -84,12 +95,12 @@ Future<void> main() async {
     } catch (e) {
       print("Error saat inisialisasi services: $e");
     }
-    
+
     // Inisialisasi layanan notifikasi secara eksplisit
     try {
       await NotificationService().initialize();
       print("Notifikasi berhasil diinisialisasi");
-      
+
       // Pastikan notifikasi pantun berjalan
       try {
         await fixPantunNotifications();
@@ -100,7 +111,7 @@ Future<void> main() async {
     } catch (e) {
       print("Error saat inisialisasi notifikasi: $e");
     }
-    
+
     // Inisialisasi layanan OTP
     try {
       await OTPService().initialize();
@@ -116,80 +127,126 @@ Future<void> main() async {
     } catch (e) {
       print("Error saat inisialisasi Gemini AI: $e");
     }
-    
+
+    // Initialize the tile provider service for maps
+    try {
+      await TileProviderService().initialize();
+      print("Tile Provider Service berhasil diinisialisasi");
+    } catch (e) {
+      print("Error saat inisialisasi Tile Provider Service: $e");
+    }
+
     print('[DEBUG] ORS_API_KEY: ${dotenv.env['ORS_API_KEY']}');
   } catch (e) {
     print("Error fatal saat inisialisasi aplikasi: $e");
   }
-  
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // App is paused/backgrounded - cleanup resources
+      NavigationHelper.cleanupResources();
+    } else if (state == AppLifecycleState.resumed) {
+      // App is resumed - can reinitialize if needed
+      print("App resumed - resources were cleaned up");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => TrackingBloc()),
-      ],
+      providers: [BlocProvider(create: (context) => TrackingBloc())],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         routes: {
-        '/': (context) => const SplashPage(),
-        '/onboarding': (context) => OnboardingPage(),
-        '/sign-in': (context) => SignInPage(),
-        // Sign up batch pages - urutan proses pendaftaran baru
-        '/sign-up-batch-1': (context) => const SignUpBatch1Page(),
-        // Route sign-up-batch-2 sebagai langkah kedua (setelah batch-1)
-        '/sign-up-batch-2': (context) => const SignUpBatch2Page(),
-        '/sign-up-batch-3': (context) => const SignUpBatch3Page(),
-        '/sign-up-batch-4': (context) => const SignUpBatch4Page(),
-        '/sign-up-subscription': (context) => const SignUpSubscriptionPage(),
-        // Batch 5 removed - redirect to subscription page after batch 4
-        // Redirect old sign-up route to the new batch flow
-        '/sign-up': (context) => const SignUpBatch1Page(), // Redirect ke halaman batch 1
-        '/sign-up-uplod-profile': (context) => const SignUpUplodProfilePage(),
-        '/sign-up-success': (context) => SignUpSuccessPage(),
-        '/home': (context) => HomePage(),
-        '/mitra-dashboard': (context) => const MitraDashboardPage(),
-        '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
-        '/notif': (context) => const NotificationPage(),
-        '/chat': (context) => ChatListPage(),
-        '/subscription-plans': (context) => SubscriptionPlansPage(),
-        '/my-subscription': (context) => MySubscriptionPage(),
-        '/tambah-jadwal': (context) => const TambahJadwalPage(),
-        '/user-add-schedule': (context) => const CreateSchedulePage(),
-        '/jadwal': (context) => const UserSchedulesPageNew(),
-        '/tracking': (context) => const TrackingPage(),
-        '/wilayah': (context) => const WilayahPage(),
-        '/mitra-wilayah': (context) => const MitraLokasiPage(),
-        '/reward': (context) => const RewardPage(),
-        '/tracking_full': (context) => const TrackingFullScreen(),
-        '/buatKeluhan': (context) => const BuatKeluhanPage(),
-        '/goldenKeluhan': (context) => const GoldenKeluhanPage(),
-        '/about-us': (context) => AboutUs(),
-        '/wilayah_full': (context) => const WilayahFullScreen(),
-        '/qris-payment': (context) => QRISPaymentPage(
-          amount: ModalRoute.of(context)?.settings.arguments != null 
-            ? (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['amount'] as int? ?? 0 
-            : 0,
-          transactionId: ModalRoute.of(context)?.settings.arguments != null 
-            ? (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['transactionId'] as String? ?? '' 
-            : '',
-          description: ModalRoute.of(context)?.settings.arguments != null 
-            ? (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['description'] as String? ?? '' 
-            : '',
-          returnData: ModalRoute.of(context)?.settings.arguments != null 
-            ? (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>)['returnData'] as Map<String, dynamic>? 
-            : null,
-        ),
-        '/payment-success': (context) => const PaymentSuccessPage(),
-        '/payment-timeout': (context) => const PaymentTimeoutPage(),
-        '/checkout': (context) => const CheckoutPage(),
-        '/payment-methods': (context) => const PaymentMethodsPage(),
-      },
+          '/': (context) => const SplashPage(),
+          '/onboarding': (context) => OnboardingPage(),
+          '/sign-in': (context) => SignInPage(),
+          // Sign up batch pages - urutan proses pendaftaran baru
+          '/sign-up-batch-1': (context) => const SignUpBatch1Page(),
+          // Route sign-up-batch-2 sebagai langkah kedua (setelah batch-1)
+          '/sign-up-batch-2': (context) => const SignUpBatch2Page(),
+          '/sign-up-batch-3': (context) => const SignUpBatch3Page(),
+          '/sign-up-batch-4': (context) => const SignUpBatch4Page(),
+          '/sign-up-subscription': (context) => const SignUpSubscriptionPage(),
+          // Batch 5 removed - redirect to subscription page after batch 4
+          // Redirect old sign-up route to the new batch flow
+          '/sign-up': (context) =>
+              const SignUpBatch1Page(), // Redirect ke halaman batch 1
+          '/sign-up-uplod-profile': (context) => const SignUpUplodProfilePage(),
+          '/sign-up-success': (context) => SignUpSuccessPage(),
+          '/home': (context) => HomePage(),
+          '/mitra-dashboard': (context) => const MitraDashboardPage(),
+          '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
+          '/notif': (context) => const NotificationPage(),
+          '/chat': (context) => ChatListPage(),
+          '/subscription-plans': (context) => SubscriptionPlansPage(),
+          '/my-subscription': (context) => MySubscriptionPage(),
+          '/tambah-jadwal': (context) => const TambahJadwalPage(),
+          '/user-add-schedule': (context) => const CreateSchedulePage(),
+          '/jadwal': (context) => const UserSchedulesPageNew(),
+          '/tracking': (context) => const TrackingPage(),
+          '/wilayah': (context) => const WilayahPage(),
+          '/mitra-wilayah': (context) => const MitraLokasiPage(),
+          '/reward': (context) => const RewardPage(),
+          '/tracking_full': (context) => const TrackingFullScreen(),
+          '/buatKeluhan': (context) => const BuatKeluhanPage(),
+          '/goldenKeluhan': (context) => const GoldenKeluhanPage(),
+          '/about-us': (context) => AboutUs(),
+          '/wilayah_full': (context) => const WilayahFullScreen(),
+          '/qris-payment': (context) => QRISPaymentPage(
+            amount: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                              as Map<String, dynamic>)['amount']
+                          as int? ??
+                      0
+                : 0,
+            transactionId: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                              as Map<String, dynamic>)['transactionId']
+                          as String? ??
+                      ''
+                : '',
+            description: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                              as Map<String, dynamic>)['description']
+                          as String? ??
+                      ''
+                : '',
+            returnData: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                          as Map<String, dynamic>)['returnData']
+                      as Map<String, dynamic>?
+                : null,
+          ),
+          '/payment-success': (context) => const PaymentSuccessPage(),
+          '/payment-timeout': (context) => const PaymentTimeoutPage(),
+          '/checkout': (context) => const CheckoutPage(),
+          '/payment-methods': (context) => const PaymentMethodsPage(),
+        },
       ),
     );
   }

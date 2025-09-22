@@ -1,0 +1,37 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Flutter",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "debug",
+            "program": "lib/main.dart",
+            "args": [
+                "--verbose",
+                "--enable-software-rendering",
+                "--dart-flags=--no-disable-service-port-fallback"
+            ],
+            "console": "debugConsole",
+            "toolArgs": [
+                "--target-platform=android-arm64",
+                "--debug",
+                "--no-dds"
+            ]
+        },
+        {
+            "name": "Flutter (Profile Mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Flutter (Release Mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "program": "lib/main.dart"
+        }
+    ]
+}
