@@ -1,0 +1,21 @@
+name: record
+description: Fork of record package with fixed Android build.gradle
+version: 4.4.4
+
+environment:
+  sdk: ">=2.12.0 <3.0.0"
+  flutter: ">=2.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  path: ^1.8.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.llfbandit.record
+        pluginClass: RecordPlugin
+      ios:
+        pluginClass: RecordPlugin

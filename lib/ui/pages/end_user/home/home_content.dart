@@ -1,6 +1,5 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
-import 'package:bank_sha/ui/pages/end_user/address/select_address_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/models/subscription_model.dart';
@@ -143,99 +142,100 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
   }
 
   Future<void> _loadUserData() async {
-  try {
-    // print("🏠 === HOME INIT START ===");
-    // print("🏠 Step 1: Getting UserService instance...");
-    
-    _userService = await UserService.getInstance();
-    // print("🏠 UserService instance obtained");
-    
-    // print("🏠 Step 2: Initializing UserService...");
-    await _userService.init();
-    // print("🏠 UserService initialized");
-    
-    // print("🏠 Step 3: Getting current user...");
-    final user = await _userService.getCurrentUser();
-    // print("🏠 Current user from service:");
-    // print("   Name: ${user?.name ?? 'NULL'}");
-    // print("   Email: ${user?.email ?? 'NULL'}");
-    // print("   Points: ${user?.points ?? 'NULL'}");
-    // print("   ID: ${user?.id ?? 'NULL'}");
+    try {
+      // print("🏠 === HOME INIT START ===");
+      // print("🏠 Step 1: Getting UserService instance...");
 
-    if (user == null) {
-      print("🏠 === USER IS NULL - DETAILED INVESTIGATION ===");
-      
-      // Direct localStorage investigation
-      final localStorage = await LocalStorageService.getInstance();
-      
-      // Check login status step by step
-      print("🏠 Step 4a: Checking login flag...");
-      final isLoggedIn = await localStorage.isLoggedIn();
-      // print("   IsLoggedIn flag: $isLoggedIn");
-      
-      // Check raw user data
-      // print("🏠 Step 4b: Checking raw userData...");
-      final rawUserData = await localStorage.getUserData();
-      // print("   Raw userData exists: ${rawUserData != null}");
-      // if (rawUserData != null) {
-      //   print("   Raw userData name: ${rawUserData['name']}");
-      //   print("   Raw userData email: ${rawUserData['email']}");
-      //   print("   Raw userData structure keys: ${rawUserData.keys.toList()}");
-      // }
+      _userService = await UserService.getInstance();
+      // print("🏠 UserService instance obtained");
 
-      // Check UserModel creation
-      // print("🏠 Step 4c: Trying to get UserModel directly...");
-      final directUser = await localStorage.getUser();
-      // print("   Direct UserModel exists: ${directUser != null}");
-      if (directUser != null) {
-        print("   Direct UserModel name: ${directUser.name}");
-        print("   Direct UserModel email: ${directUser.email}");
-      }
+      // print("🏠 Step 2: Initializing UserService...");
+      await _userService.init();
+      // print("🏠 UserService initialized");
 
-      // If we have userData but login flag is false, try to fix it
-      if (rawUserData != null && !isLoggedIn) {
-        print("🏠 === ATTEMPTING TO FIX LOGIN STATE ===");
-        print("🏠 We have userData but isLoggedIn is false. This should be fixed.");
-        
-        // Set login flag to true
-        await localStorage.saveBool(localStorage.getLoginKey(), true);
-        
-        // Verify the fix
-        final fixedLoginState = await localStorage.isLoggedIn();
-        print("🏠 Fixed login state: $fixedLoginState");
-        
-        if (fixedLoginState) {
-          // Try to get user again
-          final fixedUser = await _userService.getCurrentUser();
-          // print("🏠 User after fixing login state: ${fixedUser?.name ?? 'Still NULL'}");
-          
-          if (fixedUser != null) {
-            setState(() {
-              _user = fixedUser;
-            });
-            print("🏠 ✅ Successfully recovered user");
-            return;
+      // print("🏠 Step 3: Getting current user...");
+      final user = await _userService.getCurrentUser();
+      // print("🏠 Current user from service:");
+      // print("   Name: ${user?.name ?? 'NULL'}");
+      // print("   Email: ${user?.email ?? 'NULL'}");
+      // print("   Points: ${user?.points ?? 'NULL'}");
+      // print("   ID: ${user?.id ?? 'NULL'}");
+
+      if (user == null) {
+        print("🏠 === USER IS NULL - DETAILED INVESTIGATION ===");
+
+        // Direct localStorage investigation
+        final localStorage = await LocalStorageService.getInstance();
+
+        // Check login status step by step
+        print("🏠 Step 4a: Checking login flag...");
+        final isLoggedIn = await localStorage.isLoggedIn();
+        // print("   IsLoggedIn flag: $isLoggedIn");
+
+        // Check raw user data
+        // print("🏠 Step 4b: Checking raw userData...");
+        final rawUserData = await localStorage.getUserData();
+        // print("   Raw userData exists: ${rawUserData != null}");
+        // if (rawUserData != null) {
+        //   print("   Raw userData name: ${rawUserData['name']}");
+        //   print("   Raw userData email: ${rawUserData['email']}");
+        //   print("   Raw userData structure keys: ${rawUserData.keys.toList()}");
+        // }
+
+        // Check UserModel creation
+        // print("🏠 Step 4c: Trying to get UserModel directly...");
+        final directUser = await localStorage.getUser();
+        // print("   Direct UserModel exists: ${directUser != null}");
+        if (directUser != null) {
+          print("   Direct UserModel name: ${directUser.name}");
+          print("   Direct UserModel email: ${directUser.email}");
+        }
+
+        // If we have userData but login flag is false, try to fix it
+        if (rawUserData != null && !isLoggedIn) {
+          print("🏠 === ATTEMPTING TO FIX LOGIN STATE ===");
+          print(
+            "🏠 We have userData but isLoggedIn is false. This should be fixed.",
+          );
+
+          // Set login flag to true
+          await localStorage.saveBool(localStorage.getLoginKey(), true);
+
+          // Verify the fix
+          final fixedLoginState = await localStorage.isLoggedIn();
+          print("🏠 Fixed login state: $fixedLoginState");
+
+          if (fixedLoginState) {
+            // Try to get user again
+            final fixedUser = await _userService.getCurrentUser();
+            // print("🏠 User after fixing login state: ${fixedUser?.name ?? 'Still NULL'}");
+
+            if (fixedUser != null) {
+              setState(() {
+                _user = fixedUser;
+              });
+              print("🏠 ✅ Successfully recovered user");
+              return;
+            }
           }
         }
+      } else {
+        print("🏠 ✅ User loaded successfully: ${user.name}");
       }
-    } else {
-      print("🏠 ✅ User loaded successfully: ${user.name}");
-    }
 
-    _handleUserChange(user);
-    _userService.addUserChangeListener(_handleUserChange);
-    
-    print("🏠 === HOME INIT END ===");
-    
-  } catch (e, stackTrace) {
-    print("🏠 ❌ ERROR in _loadUserData: $e");
-    print("🏠 StackTrace: $stackTrace");
-    
-    setState(() {
-      _isLoading = false;
-    });
+      _handleUserChange(user);
+      _userService.addUserChangeListener(_handleUserChange);
+
+      print("🏠 === HOME INIT END ===");
+    } catch (e, stackTrace) {
+      print("🏠 ❌ ERROR in _loadUserData: $e");
+      print("🏠 StackTrace: $stackTrace");
+
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
-}
 
   @override
   void dispose() {

@@ -1,8 +1,7 @@
-import 'package:bank_sha/models/schedule_model.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/services/schedule_service.dart';
+﻿import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -11,21 +10,59 @@ class JadwalMitraPage extends StatefulWidget {
   const JadwalMitraPage({super.key});
 
   @override
-  State<JadwalMitraPage> createState() => _JadwalMitraPageState();
+  State<JadwalMitraPage> createState() => _JadwalMitraPageNewState();
 }
 
-class _JadwalMitraPageState extends State<JadwalMitraPage> {
+class _JadwalMit    final screenWidth = MediaQuery.of(context).size.width;
+    final basePadding = screenWidth / 25;
+    final spacingSmall = basePadding / 1.618;
+    final spacingMedium = basePadding;
+    final cardRadius = basePadding * 0.8; // Border radius proporsional
+    final chipRadius = basePadding * 0.6; // Chip radius proporsionalState extends State<JadwalMitraPage> with TickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   String? _driverId;
   bool _isLoading = false;
-  List<ScheduleModel> _schedules = [];
-  
-  final ScheduleService _scheduleService = ScheduleService();
-  
+  String _selectedFilter = "semua";
+  late TabController _tabController;
+
+  // Stats data
+  int _locationCount = 7;
+  int _pendingCount = 5;
+  int _completedCount = 2;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          switch (_tabController.index) {
+            case 0:
+              _selectedFilter = "semua";
+              break;
+            case 1:
+              _selectedFilter = "pending";
+              break;
+            case 2:
+              _selectedFilter = "in_progress";
+              break;
+            case 3:
+              _selectedFilter = "completed";
+              break;
+          }
+        });
+      }
+    });
+    
+    // Initialize data
     _initialize();
+  }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
   
   Future<void> _initialize() async {
@@ -33,540 +70,928 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> {
       _isLoading = true;
     });
     
-    // Initialize date formatting for Indonesia
-    await initializeDateFormatting('id_ID', null);
-    
     try {
-      // Initialize schedule service
-      await _scheduleService.initialize();
+      await initializeDateFormatting("id_ID", null);
       
-      // Get driver ID
-      final localStorage = await LocalStorageService.getInstance();
-      final userData = await localStorage.getUserData();
-      if (userData != null) {
-        _driverId = userData['id'] as String;
+      // Ambil ID driver dari local storage
+      final LocalStorageService localStorageService = await LocalStorageService.getInstance();
+      final userData = await localStorageService.getUserData();
+      
+      if (userData != null && userData["id"] != null) {
+        _driverId = userData["id"] as String;
+      } else {
+        throw Exception("ID driver tidak ditemukan");
       }
       
       // Load schedules
       await _loadSchedules();
-      
-      setState(() {
-        _isLoading = false;
-      });
     } catch (e) {
-      print('Error initializing schedule page: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Gagal memuat jadwal: $e"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              left: 16, 
+              right: 16, 
+              bottom: 80
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
   
   Future<void> _loadSchedules() async {
-    if (_driverId == null) return;
+    setState(() {
+      _isLoading = true;
+    });
     
     try {
-      final schedules = await _scheduleService.getDriverSchedulesByDate(_driverId!, selectedDate);
-      
-      setState(() {
-        _schedules = schedules;
-      });
-    } catch (e) {
-      print('Error loading schedules: $e');
-    }
-  }
-  
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: greenColor,
-              onPrimary: whiteColor,
-              surface: whiteColor,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-      _loadSchedules();
-    }
-  }
-  
-  Future<void> _updateScheduleStatus(ScheduleModel schedule, ScheduleStatus newStatus) async {
-    try {
-      final updatedSchedule = await _scheduleService.updateScheduleStatus(
-        schedule.id!, 
-        newStatus
-      );
-      
-      if (updatedSchedule != null) {
-        DialogHelper.showSuccessDialog(
-          context: context,
-          title: 'Status Diperbarui',
-          message: 'Status jadwal berhasil diperbarui.',
-        );
-        _loadSchedules();
+      if (_driverId != null) {
+        // Simulate loading
+        await Future.delayed(const Duration(seconds: 1));
+        
+        // Update stats
+        setState(() {
+          _locationCount = 7;
+          _pendingCount = 5;
+          _completedCount = 2;
+        });
+      } else {
+        throw Exception("ID driver tidak ditemukan");
       }
     } catch (e) {
-      DialogHelper.showErrorDialog(
-        context: context,
-        title: 'Gagal Memperbarui Status',
-        message: 'Terjadi kesalahan saat memperbarui status. Silakan coba lagi nanti.',
-      );
-      print('Error updating schedule status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Gagal memuat jadwal: $e"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              left: 16, 
+              right: 16, 
+              bottom: 80
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-  }
-  
-  void _viewScheduleDetail(ScheduleModel schedule) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-      ),
-      builder: (context) => _buildScheduleDetailSheet(schedule),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Get screen width and height for responsive layout
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isSmallScreen = screenWidth < 360;
+    
     return Scaffold(
       backgroundColor: lightBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: greenColor,
-        elevation: 0,
-        title: Text(
-          'Jadwal Pengambilan',
-          style: whiteTextStyle.copyWith(
-            fontSize: 20,
-            fontWeight: semiBold,
-            letterSpacing: 0.3,
+      body: Column(
+        children: [
+          // Custom Header matching the design
+          _buildHeader(context, isSmallScreen),
+          
+          // Body content
+          Expanded(
+            child: _isLoading 
+              ? Center(child: CircularProgressIndicator(color: greenColor))
+              : _buildBody(context, isSmallScreen),
           ),
-        ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
+        ],
       ),
-      body: _isLoading 
-          ? Center(
-              child: CircularProgressIndicator(color: greenColor),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadSchedules,
-              color: greenColor,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Date Selector
-                    GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: whiteColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                              spreadRadius: 0,
-                            ),
-                          ],
-                          border: Border.all(
-                            color: greenColor.withOpacity(0.2),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: greenColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.calendar_today_rounded,
-                                    color: greenColor,
-                                    size: 24,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Pilih Tanggal',
-                                      style: blackTextStyle.copyWith(
-                                        fontSize: 16,
-                                        fontWeight: semiBold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(selectedDate),
-                                      style: greyTextStyle.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: medium,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: greenColor.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: greenColor,
-                                    size: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Schedule List
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        children: [
-                          Container(
-                            height: 32,
-                            width: 4,
-                            decoration: BoxDecoration(
-                              color: greenColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _isTodaySelected ? 'Jadwal Hari Ini' : 'Jadwal Dipilih',
-                            style: blackTextStyle.copyWith(
-                              fontSize: 18,
-                              fontWeight: semiBold,
-                            ),
-                          ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: _loadSchedules,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: greenColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.refresh_rounded,
-                                    color: greenColor,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Refresh',
-                                    style: TextStyle(
-                                      color: greenColor,
-                                      fontSize: 12,
-                                      fontWeight: medium,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Schedule Items
-                    _schedules.isEmpty
-                        ? _buildEmptyState()
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _schedules.length,
-                            itemBuilder: (context, index) {
-                              return _buildScheduleItem(_schedules[index]);
-                            },
-                          ),
-                  ],
-                ),
-              ),
-            ),
     );
   }
   
-  bool get _isTodaySelected => 
-    selectedDate.year == DateTime.now().year &&
-    selectedDate.month == DateTime.now().month &&
-    selectedDate.day == DateTime.now().day;
+  // Menggunakan Golden Ratio (1:1.618) untuk layout proporsional
+  double _goldenRatio(double size) => size * 1.618;
+
+  Widget _buildHeader(BuildContext context, bool isSmallScreen) {
+    // Menghitung ukuran berdasarkan golden ratio
+    final screenWidth = MediaQuery.of(context).size.width;
+    final basePadding = screenWidth / 25; // Base padding yang proporsional dengan layar
+    final iconSize = basePadding * 1.618; // Ukuran icon proporsional
+    final spacingSmall = basePadding / 1.618; // Spacing kecil
+    final spacingMedium = basePadding; // Spacing sedang
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF37DE7A), Color(0xFF00A643)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: [0.0, 1.0],
+          transform: GradientRotation(0.2),
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(basePadding * 1.5), // Radius responsif
+          bottomRight: Radius.circular(basePadding * 1.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00A643).withOpacity(0.25),
+            blurRadius: basePadding * 0.75,
+            offset: Offset(0, basePadding * 0.3),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + basePadding,
+        bottom: basePadding,
+        left: basePadding,
+        right: basePadding,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Top bar with logo and notifications
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Logo dengan ukuran proporsional
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/ic_truck.png',
+                    width: iconSize,
+                    height: iconSize,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: spacingSmall),
+                  Text(
+                    'GEROBAKS',
+                    style: whiteTextStyle.copyWith(
+                      fontSize: isSmallScreen ? basePadding * 0.8 : basePadding,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              
+              // Notification and chat icons - layout proporsional
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to chat
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(spacingSmall * 0.8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(basePadding * 0.6),
+                      ),
+                      child: Icon(
+                        Icons.chat_bubble_outline,
+                        color: Colors.white,
+                        size: iconSize * 0.7,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: spacingSmall),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to notifications
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(spacingSmall * 0.8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(basePadding * 0.6),
+                      ),
+                      child: Icon(
+                        Icons.notifications_none,
+                        color: Colors.white,
+                        size: iconSize * 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          
+          SizedBox(height: spacingMedium),
+          
+          // Jadwal Pengambilan Text dengan ukuran proporsional
+          Text(
+            'Jadwal Pengambilan',
+            style: whiteTextStyle.copyWith(
+              fontSize: basePadding * 1.2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          
+          SizedBox(height: spacingMedium),
+          
+          // Stats cards - dengan layout menggunakan golden ratio
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.location_on_outlined,
+                  label: 'Lokasi',
+                  count: _locationCount,
+                  isSmallScreen: isSmallScreen,
+                  basePadding: basePadding,
+                ),
+              ),
+              SizedBox(width: spacingSmall),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.people_outline,
+                  label: 'Menunggu',
+                  count: _pendingCount,
+                  isSmallScreen: isSmallScreen,
+                  basePadding: basePadding,
+                ),
+              ),
+              SizedBox(width: spacingSmall),
+              Expanded(
+                child: _buildStatCard(
+                  icon: Icons.check_circle_outline,
+                  label: 'Selesai',
+                  count: _completedCount,
+                  isSmallScreen: isSmallScreen,
+                  basePadding: basePadding,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
   
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required int count,
+    required bool isSmallScreen,
+    required double basePadding,
+  }) {
+    // Menggunakan proporsi golden ratio untuk ukuran elemen
+    final cardHeight = basePadding * 5.2; // Tinggi card dengan golden ratio
+    final iconSize = basePadding * 1.2;
+    final countTextSize = basePadding * (isSmallScreen ? 0.9 : 1);
+    final labelTextSize = basePadding * (isSmallScreen ? 0.55 : 0.65);
+    final spacing = basePadding * 0.4;
+    
+    return Container(
+      height: cardHeight,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(basePadding * 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: basePadding * 0.4,
+            offset: Offset(0, basePadding * 0.1),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(basePadding * 0.6),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: Colors.white,
+            size: iconSize,
+          ),
+          SizedBox(height: spacing),
+          Text(
+            count.toString(),
+            style: whiteTextStyle.copyWith(
+              fontSize: countTextSize,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: spacing * 0.5),
+          Text(
+            label,
+            style: whiteTextStyle.copyWith(
+              fontSize: labelTextSize,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildBody(BuildContext context, bool isSmallScreen) {
+    // Menghitung ukuran berdasarkan golden ratio dan responsif
+    final screenWidth = MediaQuery.of(context).size.width;
+    final basePadding = screenWidth / 25; // Base padding proporsional
+    final spacingSmall = basePadding / 1.618; // Spacing kecil dengan golden ratio
+    final spacingMedium = basePadding; // Spacing sedang
+    
+    return Column(
+      children: [
+        // Filter tabs dengan layout responsif dan golden ratio
+        Container(
+          margin: EdgeInsets.symmetric(
+            horizontal: basePadding,
+            vertical: spacingSmall
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(basePadding * 0.6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: basePadding * 0.4,
+                offset: Offset(0, basePadding * 0.1),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.all(spacingSmall),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildFilterTab("Semua", _selectedFilter == "semua", () {
+                  setState(() {
+                    _selectedFilter = "semua";
+                    _tabController.animateTo(0);
+                  });
+                }, isSmallScreen),
+              ),
+              SizedBox(width: spacingSmall * 0.8),
+              Expanded(
+                child: _buildFilterTab("Menunggu", _selectedFilter == "pending", () {
+                  setState(() {
+                    _selectedFilter = "pending";
+                    _tabController.animateTo(1);
+                  });
+                }, isSmallScreen),
+              ),
+              SizedBox(width: spacingSmall * 0.8),
+              Expanded(
+                child: _buildFilterTab("Diproses", _selectedFilter == "in_progress", () {
+                  setState(() {
+                    _selectedFilter = "in_progress";
+                    _tabController.animateTo(2);
+                  });
+                }, isSmallScreen),
+              ),
+              SizedBox(width: spacingSmall * 0.8),
+              Expanded(
+                child: _buildFilterTab("Selesai", _selectedFilter == "completed", () {
+                  setState(() {
+                    _selectedFilter = "completed";
+                    _tabController.animateTo(3);
+                  });
+                }, isSmallScreen),
+              ),
+            ],
+          ),
+        ),
+        
+        // Prioritas Terdekat heading dengan golden ratio
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            basePadding,
+            spacingMedium,
+            basePadding,
+            spacingSmall
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: basePadding * 0.2,
+                height: basePadding * _goldenRatio(0.2), // Menggunakan golden ratio
+                decoration: BoxDecoration(
+                  color: greenColor,
+                  borderRadius: BorderRadius.circular(basePadding * 0.1),
+                ),
+              ),
+              SizedBox(width: spacingSmall),
+              Text(
+                'Prioritas Terdekat',
+                style: blackTextStyle.copyWith(
+                  fontSize: basePadding * 0.8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Spacer(),
+              GestureDetector(
+                onTap: _openMapView,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: basePadding * 0.6,
+                    vertical: basePadding * 0.3
+                  ),
+                  decoration: BoxDecoration(
+                    color: greenColor,
+                    borderRadius: BorderRadius.circular(basePadding),
+                    boxShadow: [
+                      BoxShadow(
+                        color: greenColor.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.map,
+                        color: Colors.white,
+                        size: basePadding * 0.8,
+                      ),
+                      SizedBox(width: spacingSmall * 0.6),
+                      Text(
+                        "Lihat Peta",
+                        style: whiteTextStyle.copyWith(
+                          fontSize: basePadding * 0.6,
+                          fontWeight: semiBold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Schedule list dengan padding responsif
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: basePadding),
+            itemCount: _getFilteredSchedules().length,
+            itemBuilder: (context, index) {
+              final schedule = _getFilteredSchedules()[index];
+              return _buildScheduleCard(schedule, index, isSmallScreen);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap, bool isSmallScreen) {
+    // Menghitung ukuran berdasarkan golden ratio dan responsif
+    final screenWidth = MediaQuery.of(context).size.width;
+    final basePadding = screenWidth / 25;
+    final verticalPadding = basePadding * 0.38; // Proportional padding
+    final fontSize = basePadding * (isSmallScreen ? 0.55 : 0.65);
+    final borderRadius = basePadding * 0.4;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+        decoration: BoxDecoration(
+          color: isSelected ? greenColor : Color(0xFFEAFBEF),
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: greenColor.withOpacity(0.2),
+              blurRadius: 4,
+              offset: Offset(0, 1),
+            ),
+          ] : [],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: (isSelected ? whiteTextStyle : greenTextStyle).copyWith(
+            fontSize: fontSize,
+            fontWeight: isSelected ? semiBold : medium,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildScheduleCard(Map<String, dynamic> schedule, int index, bool isSmallScreen) {
+    bool isEven = index % 2 == 0;
+    
+    // Menghitung ukuran berdasarkan golden ratio dan responsif
+    final screenWidth = MediaQuery.of(context).size.width;
+    final basePadding = screenWidth / 25;
+    final spacingSmall = basePadding / 1.618;
+    final spacingMedium = basePadding;
+    final cardRadius = basePadding * 0.8; // Border radius proporsional
+    final chipRadius = basePadding * 0.6; // Chip radius proporsional
+    
+    // Font sizes dengan golden ratio
+    final timeFontSize = basePadding * 0.7;
+    final statusFontSize = basePadding * 0.6;
+    final nameFontSize = basePadding * 0.8;
+    final addressFontSize = basePadding * 0.65;
+    final chipFontSize = basePadding * 0.55;
+    final distanceFontSize = basePadding * 0.6;
+    
+    return GestureDetector(
+      onTap: () {
+        // Navigate to detail page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailPickupPage(
+              scheduleId: schedule["id"],
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: spacingMedium * 0.8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(cardRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: basePadding * 0.5,
+              offset: Offset(0, basePadding * 0.15),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 72,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tidak ada jadwal',
-              style: blackTextStyle.copyWith(
-                fontSize: 16,
-                fontWeight: semiBold,
+            // Time and status dengan proporsi golden ratio
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacingMedium,
+                vertical: spacingMedium * 0.6
+              ),
+              decoration: BoxDecoration(
+                color: Color(0xFFF8F8F8),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(cardRadius),
+                  topRight: Radius.circular(cardRadius),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: timeFontSize,
+                        color: Colors.grey[700],
+                      ),
+                      SizedBox(width: spacingSmall * 0.6),
+                      Text(
+                        schedule["time"],
+                        style: blackTextStyle.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: timeFontSize,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacingMedium * 0.6,
+                      vertical: spacingSmall * 0.5
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(schedule["status"]).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(chipRadius),
+                      border: Border.all(
+                        color: _getStatusColor(schedule["status"]).withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getStatusText(schedule["status"]),
+                      style: TextStyle(
+                        color: _getStatusColor(schedule["status"]),
+                        fontWeight: FontWeight.bold,
+                        fontSize: statusFontSize,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Belum ada jadwal penjemputan pada\ntanggal yang dipilih',
-              style: greyTextStyle.copyWith(
-                fontSize: 14,
-                fontWeight: regular,
+            // Customer info dengan desain improved dan golden ratio
+            Container(
+              padding: EdgeInsets.all(spacingMedium),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    isEven ? Color(0xFF76DE8D) : Color(0xFF76DE8D).withOpacity(0.9),
+                    greenColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(cardRadius),
+                  bottomRight: Radius.circular(cardRadius),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: greenColor.withOpacity(0.1),
+                    blurRadius: basePadding * 0.3,
+                    offset: Offset(0, -basePadding * 0.1),
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Customer name and distance
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          schedule["customer_name"],
+                          style: whiteTextStyle.copyWith(
+                            fontSize: nameFontSize,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Container(
+                        margin: EdgeInsets.only(left: spacingSmall),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spacingSmall * 0.8,
+                          vertical: spacingSmall * 0.3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(chipRadius),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.directions_car,
+                              color: Colors.white,
+                              size: distanceFontSize,
+                            ),
+                            SizedBox(width: spacingSmall * 0.3),
+                            Text(
+                              schedule["estimatedDistance"],
+                              style: whiteTextStyle.copyWith(
+                                fontSize: distanceFontSize,
+                                fontWeight: medium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacingSmall * 0.8),
+                  // Address with icon
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: Colors.white,
+                        size: addressFontSize,
+                      ),
+                      SizedBox(width: spacingSmall * 0.6),
+                      Expanded(
+                        child: Text(
+                          schedule["address"],
+                          style: whiteTextStyle.copyWith(
+                            fontSize: addressFontSize,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacingMedium * 0.6),
+                  // Tags for waste type and weight
+                  Row(
+                    children: [
+                      _buildWasteTypeChip(schedule["waste_type"], isSmallScreen, basePadding),
+                      SizedBox(width: spacingSmall),
+                      _buildWasteWeightChip(schedule["waste_weight"], isSmallScreen, basePadding),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildScheduleItem(ScheduleModel schedule) {
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
-
-    switch (schedule.status) {
-      case ScheduleStatus.pending:
-        statusColor = Colors.orange;
-        statusText = 'Menunggu';
-        statusIcon = Icons.access_time_rounded;
-        break;
-      case ScheduleStatus.inProgress:
-        statusColor = Colors.blue;
-        statusText = 'Sedang Berjalan';
-        statusIcon = Icons.directions_car_rounded;
-        break;
-      case ScheduleStatus.completed:
-        statusColor = Colors.green;
-        statusText = 'Selesai';
-        statusIcon = Icons.check_circle_outline_rounded;
-        break;
-      case ScheduleStatus.cancelled:
-        statusColor = Colors.red;
-        statusText = 'Dibatalkan';
-        statusIcon = Icons.cancel_outlined;
-        break;
-      case ScheduleStatus.missed:
-        statusColor = Colors.grey;
-        statusText = 'Terlewat';
-        statusIcon = Icons.schedule_outlined;
-        break;
-    }
-
+  
+  Widget _buildWasteTypeChip(String wasteType, bool isSmallScreen, double basePadding) {
+    // Menggunakan golden ratio untuk ukuran yang proporsional
+    final chipFontSize = basePadding * 0.55;
+    final horizontalPadding = basePadding * 0.6;
+    final verticalPadding = basePadding * 0.3;
+    final borderRadius = basePadding * 0.8;
+    
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding
+      ),
       decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-            spreadRadius: 0,
-          ),
-        ],
+        color: Colors.white.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: greenColor.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.3),
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Time and Status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    color: greenColor,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${schedule.timeSlot.hour}:${schedule.timeSlot.minute.toString().padLeft(2, '0')}',
-                    style: blackTextStyle.copyWith(
-                      fontSize: 14,
-                      fontWeight: semiBold,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      statusIcon,
-                      color: statusColor,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: medium,
-                        color: statusColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Icon(
+            Icons.eco_outlined,
+            color: Colors.white,
+            size: chipFontSize * 1.1,
           ),
-          const SizedBox(height: 12),
-
-          // Address
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                color: greenColor,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  schedule.address,
-                  style: blackTextStyle.copyWith(
-                    fontSize: 14,
-                    fontWeight: medium,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Waste type and weight
-          Row(
-            children: [
-              Icon(
-                Icons.delete_outline,
-                color: greenColor,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${schedule.wasteType ?? 'Sampah'} ${schedule.estimatedWeight != null ? '(${schedule.estimatedWeight!} kg)' : ''}',
-                style: greyTextStyle.copyWith(
-                  fontSize: 14,
-                  fontWeight: medium,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: greenColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () => _viewScheduleDetail(schedule),
-                  child: Text(
-                    'Detail',
-                    style: TextStyle(
-                      color: greenColor,
-                      fontWeight: medium,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: schedule.status != ScheduleStatus.completed && 
-                            schedule.status != ScheduleStatus.cancelled ? 
-                    () => _updateScheduleStatus(
-                      schedule, 
-                      schedule.status == ScheduleStatus.pending ? 
-                        ScheduleStatus.inProgress : ScheduleStatus.completed
-                    ) : null,
-                  child: Text(
-                    schedule.status == ScheduleStatus.pending
-                        ? 'Mulai'
-                        : schedule.status == ScheduleStatus.inProgress
-                            ? 'Selesai'
-                            : 'Selesai',
-                    style: whiteTextStyle.copyWith(
-                      fontWeight: medium,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          SizedBox(width: basePadding * 0.2),
+          Text(
+            wasteType,
+            style: whiteTextStyle.copyWith(
+              fontSize: chipFontSize,
+              fontWeight: medium,
+            ),
           ),
         ],
       ),
     );
   }
+  
+  Widget _buildWasteWeightChip(String wasteWeight, bool isSmallScreen, double basePadding) {
+    // Menggunakan golden ratio untuk ukuran yang proporsional
+    final chipFontSize = basePadding * 0.55;
+    final horizontalPadding = basePadding * 0.6;
+    final verticalPadding = basePadding * 0.3;
+    final borderRadius = basePadding * 0.8;
+    
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.scale_outlined,
+            color: Colors.white,
+            size: chipFontSize * 1.1,
+          ),
+          SizedBox(width: basePadding * 0.2),
+          Text(
+            wasteWeight,
+            style: whiteTextStyle.copyWith(
+              fontSize: chipFontSize,
+              fontWeight: medium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'pending':
+        return Colors.orange;
+      case 'in_progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+  
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'pending':
+        return 'Menunggu';
+      case 'in_progress':
+        return 'Diproses';
+      case 'completed':
+        return 'Selesai';
+      default:
+        return 'Unknown';
+    }
+  }
+  
+  List<Map<String, dynamic>> _getFilteredSchedules() {
+    // Data dummy untuk pengujian
+    final List<Map<String, dynamic>> schedules = [
+      {
+        "id": "001",
+        "customer_name": "Wahyu Indra",
+        "address": "Jl. Muso Salim B, Kota Samarinda, Kalimantan Timur",
+        "time": "09:00 - 11:00",
+        "waste_type": "Organik",
+        "waste_weight": "3 kg",
+        "status": "pending",
+        "estimatedDistance": "500m • 10 menit",
+        "priority": 1,
+      },
+      {
+        "id": "002",
+        "customer_name": "Siti Rahayu",
+        "address": "Perumahan Indah Blok B, Kota Samarinda",
+        "time": "09:00 - 11:00",
+        "waste_type": "Anorganik",
+        "waste_weight": "1.5 kg",
+        "status": "completed",
+        "estimatedDistance": "800m • 15 menit",
+        "priority": 3,
+      },
+      {
+        "id": "003",
+        "customer_name": "Ahmad Rizal",
+        "address": "Jl. Juanda No. 45, Kota Samarinda",
+        "time": "09:00 - 11:00",
+        "waste_type": "Organik",
+        "waste_weight": "3 kg",
+        "status": "in_progress",
+        "estimatedDistance": "1.2km • 20 menit",
+        "priority": 2,
+      },
+      {
+        "id": "004",
+        "customer_name": "Wahyu Indra",
+        "address": "Jl. Muso Salim B, Kota Samarinda",
+        "time": "09:00 - 11:00",
+        "waste_type": "Organik",
+        "waste_weight": "2 kg",
+        "status": "pending",
+        "estimatedDistance": "1.5km • 25 menit",
+        "priority": 4,
+      },
+    ];
+    
+    // Filter jadwal sesuai dengan tab yang dipilih
+    List<Map<String, dynamic>> filtered;
+    if (_selectedFilter == "semua") {
+      filtered = schedules;
+    } else {
+      filtered = schedules.where((s) => s["status"] == _selectedFilter).toList();
+    }
+    
+    // Sort by priority (in a real app, this would be based on time or distance)
+    filtered.sort((a, b) => a["priority"].compareTo(b["priority"]));
+    
+    return filtered;
+  }
+  
+  // Method to open the map view
+  void _openMapView() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JadwalMitraMapView(),
+      ),
+    );
+  }
 }
+
+// Green text style
+final TextStyle greenTextStyle = TextStyle(
+  color: Color(0xFF00A643),
+  fontFamily: 'Inter',
+);
+
+// Font weight constants
