@@ -20,7 +20,7 @@ class TileProviderService {
     try {
       // Use memory cache for simplicity
       final store = MemCacheStore();
-      
+
       _cachedTileProvider = CachedTileProvider(
         maxStale: const Duration(days: 30),
         store: store,
