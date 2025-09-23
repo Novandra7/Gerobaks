@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:permission_handler/permission_handler.dart'
+    as permission_handler;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'chat_audio_service.dart';
@@ -15,7 +17,8 @@ class ChatAudioUtils {
 
   /// Get informasi platform support
   static String getPlatformSupportInfo() {
-    return ChatAudioService.getInstance().getPlatformInfo();
+    final info = ChatAudioService.getInstance().getPlatformInfo();
+    return "Platform: ${info['os']} ${info['version']}";
   }
 
   /// Check dan request permissions untuk voice recording
@@ -210,7 +213,7 @@ class ChatAudioUtils {
 
   /// Open app settings untuk permission
   static Future<bool> openAppSettings() async {
-    return await openAppSettings();
+    return await permission_handler.openAppSettings();
   }
 
   /// Get voice message info dari file path
