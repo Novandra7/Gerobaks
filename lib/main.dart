@@ -16,6 +16,8 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
@@ -246,6 +248,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/payment-timeout': (context) => const PaymentTimeoutPage(),
           '/checkout': (context) => const CheckoutPage(),
           '/payment-methods': (context) => const PaymentMethodsPage(),
+          '/navigation-improved': (context) => InAppNavigationPage(
+            scheduleData: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                      as Map<String, dynamic>)
+                : {},
+          ),
+          '/navigation-demo': (context) => const NavigationDemoPage(),
         },
       ),
     );
