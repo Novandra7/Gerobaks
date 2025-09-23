@@ -62,6 +62,9 @@ dependencies:
   flutter_svg: ^2.0.10+1
   uuid: ^4.3.5
   logger: ^2.0.2+1
+  
+  # Chart library for statistics
+  fl_chart: ^0.69.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
