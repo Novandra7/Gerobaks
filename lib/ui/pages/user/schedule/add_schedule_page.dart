@@ -30,7 +30,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
 
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 0);
-  LatLng _selectedLocation = const LatLng(-6.2088, 106.8456); // Default to Jakarta
+  LatLng _selectedLocation = const LatLng(
+    -6.2088,
+    106.8456,
+  ); // Default to Jakarta
   String _selectedWasteType = 'Campuran';
   ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
 
@@ -60,7 +63,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
 
   Future<void> _initialize() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -79,6 +82,11 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
+        // Set mock user data
+        _nameController.text = 'Andi Wijaya';
+        _phoneController.text = '+62 812-3456-7890';
+        _addressController.text =
+            'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310';
       });
     } catch (e) {
       print('Error initializing: $e');
@@ -108,11 +116,11 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
 
       // Get current position
       final position = await Geolocator.getCurrentPosition();
-      
+
       if (!mounted) return;
       setState(() {
         _selectedLocation = LatLng(position.latitude, position.longitude);
-        _addressController.text = "Lokasi saya saat ini"; // Default address
+        // Keep mock address data, don't override
       });
     } catch (e) {
       print('Error getting location: $e');
@@ -183,19 +191,26 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           scheduledDate: _selectedDate,
           timeSlot: _selectedTime,
           location: _selectedLocation,
-          address: _addressController.text,
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          address:
+              'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310',
+          notes: _notesController.text.isNotEmpty
+              ? _notesController.text
+              : null,
           status: ScheduleStatus.pending,
           frequency: _selectedFrequency,
           createdAt: DateTime.now(),
           wasteType: _selectedWasteType,
-          estimatedWeight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
+          estimatedWeight: _weightController.text.isNotEmpty
+              ? double.parse(_weightController.text)
+              : null,
           isPaid: false,
-          contactName: _nameController.text,
-          contactPhone: _phoneController.text,
+          contactName: 'Andi Wijaya',
+          contactPhone: '+62 812-3456-7890',
         );
 
-        final createdSchedule = await _scheduleService.createSchedule(newSchedule);
+        final createdSchedule = await _scheduleService.createSchedule(
+          newSchedule,
+        );
 
         if (createdSchedule != null) {
           if (mounted) {
@@ -205,7 +220,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
               message: 'Jadwal pengambilan sampah Anda telah berhasil dibuat.',
               onPressed: () {
                 Navigator.pop(context); // Close dialog
-                Navigator.pop(context, createdSchedule); // Return to previous screen with created schedule
+                Navigator.pop(
+                  context,
+                  createdSchedule,
+                ); // Return to previous screen with created schedule
               },
             );
           }
@@ -214,7 +232,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
             DialogHelper.showErrorDialog(
               context: context,
               title: 'Gagal Membuat Jadwal',
-              message: 'Terjadi kesalahan saat membuat jadwal. Silakan coba lagi nanti.',
+              message:
+                  'Terjadi kesalahan saat membuat jadwal. Silakan coba lagi nanti.',
             );
           }
         }
@@ -259,16 +278,17 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         ),
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(color: greenColor),
-            )
+          ? Center(child: CircularProgressIndicator(color: greenColor))
           : SingleChildScrollView(
               child: Column(
                 children: [
                   // Header section with illustration
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     decoration: BoxDecoration(
                       color: whiteColor,
                       boxShadow: [
@@ -281,18 +301,14 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                     ),
                     child: Row(
                       children: [
-                        Image.asset(
-                          'assets/ic_tracking_truck.png',
-                          width: 60,
-                          height: 60,
-                        ),
+                        Icon(Icons.eco, color: greenColor, size: 60),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Jadwalkan Pengambilan Sampah',
+                                'Hari ini pengambilan sampah organik!',
                                 style: blackTextStyle.copyWith(
                                   fontSize: 16,
                                   fontWeight: semiBold,
@@ -301,9 +317,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               const SizedBox(height: 4),
                               Text(
                                 'Lengkapi detail jadwal untuk pengambilan sampah',
-                                style: greyTextStyle.copyWith(
-                                  fontSize: 14,
-                                ),
+                                style: greyTextStyle.copyWith(fontSize: 14),
                               ),
                             ],
                           ),
@@ -326,17 +340,22 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             icon: Icons.access_time,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Date picker
                           GestureDetector(
                             onTap: () => _selectDate(context),
                             child: Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: whiteColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: greyColor.withOpacity(0.3)),
+                                border: Border.all(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               child: Row(
                                 children: [
@@ -348,7 +367,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Tanggal Penjemputan',
@@ -359,7 +379,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate),
+                                          DateFormat(
+                                            'EEEE, d MMMM yyyy',
+                                            'id_ID',
+                                          ).format(_selectedDate),
                                           style: blackTextStyle.copyWith(
                                             fontSize: 16,
                                             fontWeight: medium,
@@ -377,19 +400,24 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Time picker
                           GestureDetector(
                             onTap: () => _selectTime(context),
                             child: Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: whiteColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: greyColor.withOpacity(0.3)),
+                                border: Border.all(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               child: Row(
                                 children: [
@@ -401,7 +429,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Waktu Penjemputan',
@@ -430,9 +459,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Frequency
                           DropdownButtonFormField<ScheduleFrequency>(
                             value: _selectedFrequency,
@@ -445,11 +474,15 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -496,196 +529,178 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               }
                             },
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
-                          // Section title - Contact Information
-                          _buildSectionTitle(
-                            title: 'Informasi Kontak',
-                            icon: Icons.person,
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          // User Information
-                          TextFormField(
-                            controller: _nameController,
-                            decoration: InputDecoration(
-                              labelText: 'Nama Lengkap',
-                              labelStyle: greyTextStyle.copyWith(
-                                fontSize: 14,
-                                fontWeight: medium,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greenColor),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.person_outline,
-                                color: greenColor,
-                              ),
-                            ),
-                            style: blackTextStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: medium,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Nama tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Phone input
-                          TextFormField(
-                            controller: _phoneController,
-                            decoration: InputDecoration(
-                              labelText: 'Nomor Telepon',
-                              labelStyle: greyTextStyle.copyWith(
-                                fontSize: 14,
-                                fontWeight: medium,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greenColor),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.phone_outlined,
-                                color: greenColor,
-                              ),
-                            ),
-                            style: blackTextStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: medium,
-                            ),
-                            keyboardType: TextInputType.phone,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Nomor telepon tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
+
                           // Section title - Location
                           _buildSectionTitle(
                             title: 'Lokasi Penjemputan',
                             icon: Icons.location_on,
                           ),
                           const SizedBox(height: 16),
-                          
-                          // Address input
-                          TextFormField(
-                            controller: _addressController,
-                            decoration: InputDecoration(
-                              labelText: 'Alamat Lengkap',
-                              labelStyle: greyTextStyle.copyWith(
-                                fontSize: 14,
-                                fontWeight: medium,
+
+                          // Location pickup card
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: whiteColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: greenColor.withOpacity(0.2),
+                                width: 1.5,
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greenColor),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.location_on_outlined,
-                                color: greenColor,
-                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: greenColor.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            style: blackTextStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: medium,
-                            ),
-                            maxLines: 2,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Alamat tidak boleh kosong';
-                              }
-                              return null;
-                            },
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Location map preview placeholder
-                          GestureDetector(
-                            onTap: () {
-                              // TODO: Implement map location picker
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Header with icon and title
+                                Row(
                                   children: [
-                                    Icon(
-                                      Icons.map_outlined,
-                                      color: greenColor,
-                                      size: 32,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Peta Lokasi',
-                                      style: blackTextStyle.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: medium,
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: greenColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.home_outlined,
+                                        color: greenColor,
+                                        size: 24,
                                       ),
                                     ),
-                                    Text(
-                                      'Tekan untuk memilih lokasi di peta',
-                                      style: greyTextStyle.copyWith(
-                                        fontSize: 12,
-                                        fontWeight: regular,
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Alamat Penjemputan',
+                                            style: blackTextStyle.copyWith(
+                                              fontSize: 16,
+                                              fontWeight: semiBold,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Data tetap dari profil Anda',
+                                            style: greyTextStyle.copyWith(
+                                              fontSize: 12,
+                                              fontWeight: regular,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
+
+                                const SizedBox(height: 16),
+
+                                // Address display
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: lightBackgroundColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: greyColor.withOpacity(0.2),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Contact name
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.person_outline,
+                                            color: greenColor,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Andi Wijaya',
+                                            style: blackTextStyle.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: medium,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 8),
+
+                                      // Phone number
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.phone_outlined,
+                                            color: greenColor,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            '+62 812-3456-7890',
+                                            style: blackTextStyle.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: medium,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 8),
+
+                                      // Address
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Icon(
+                                            Icons.location_on_outlined,
+                                            color: greenColor,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310',
+                                              style: blackTextStyle.copyWith(
+                                                fontSize: 14,
+                                                fontWeight: medium,
+                                              ),
+                                              maxLines: 3,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
-                          // Section title - Waste Details
+
+                          // Section title - Additional Waste
                           _buildSectionTitle(
-                            title: 'Detail Sampah',
-                            icon: Icons.delete_outline,
+                            title: 'Sampah Tambahan',
+                            icon: Icons.add_circle_outline,
                           ),
                           const SizedBox(height: 16),
-                          
+
                           // Waste type
                           DropdownButtonFormField<String>(
                             value: _selectedWasteType,
@@ -698,18 +713,22 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(color: greenColor),
                               ),
                               prefixIcon: Icon(
-                                Icons.delete_outline,
+                                Icons.add_circle_outline,
                                 color: greenColor,
                               ),
                             ),
@@ -731,9 +750,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               }
                             },
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Estimated weight
                           TextFormField(
                             controller: _weightController,
@@ -745,11 +764,15 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -767,9 +790,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             ),
                             keyboardType: TextInputType.number,
                           ),
-                          
+
                           const SizedBox(height: 16),
-                          
+
                           // Notes
                           TextFormField(
                             controller: _notesController,
@@ -781,11 +804,15 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -802,15 +829,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             ),
                             maxLines: 3,
                           ),
-                          
+
                           const SizedBox(height: 32),
-                          
-                          // Submit button
-                          CustomFilledButton(
-                            title: 'Buat Jadwal',
-                            onPressed: _submitSchedule,
-                            isLoading: _isLoading,
-                          ),
                         ],
                       ),
                     ),
@@ -818,28 +838,38 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                 ],
               ),
             ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: whiteColor,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: CustomFilledButton(
+            title: 'Buat Jadwal',
+            onPressed: _submitSchedule,
+            isLoading: _isLoading,
+          ),
+        ),
+      ),
     );
   }
-  
+
   // Helper method to build section titles
-  Widget _buildSectionTitle({
-    required String title,
-    required IconData icon,
-  }) {
+  Widget _buildSectionTitle({required String title, required IconData icon}) {
     return Row(
       children: [
-        Icon(
-          icon,
-          color: greenColor,
-          size: 24,
-        ),
+        Icon(icon, color: greenColor, size: 24),
         const SizedBox(width: 8),
         Text(
           title,
-          style: blackTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
         ),
       ],
     );
