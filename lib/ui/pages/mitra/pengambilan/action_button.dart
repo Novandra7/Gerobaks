@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:bank_sha/utils/responsive_helper.dart';
+import 'package:bank_sha/shared/theme.dart';
+
 // New utility method for action buttons
-Widget _buildActionButton(
+Widget buildActionButton(
   BuildContext context, {
   required IconData icon,
   required String label,
@@ -31,7 +35,7 @@ Widget _buildActionButton(
           label,
           style: blackTextStyle.copyWith(
             fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
-            fontWeight: medium,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

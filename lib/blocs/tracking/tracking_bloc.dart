@@ -14,6 +14,14 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   TrackingBloc() : super(TrackingState.initial()) {
     on<FetchRoute>(_onFetchRoute);
     on<UpdateTruckLocation>(_onUpdateLocation);
+    on<UpdateDestination>(_onUpdateDestination);
+  }
+
+  void _onUpdateDestination(
+    UpdateDestination event,
+    Emitter<TrackingState> emit,
+  ) {
+    emit(state.copyWith(destination: event.destination));
   }
 
   void _onUpdateLocation(

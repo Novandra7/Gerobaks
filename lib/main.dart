@@ -17,6 +17,7 @@ import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -254,6 +255,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       as Map<String, dynamic>)
                 : {},
           ),
+      '/navigation-redesigned': (context) => NavigationPageRedesigned(
+        scheduleData: ModalRoute.of(context)?.settings.arguments != null
+          ? (ModalRoute.of(context)?.settings.arguments
+            as Map<String, dynamic>)
+          : {},
+        ),
           '/navigation-demo': (context) => const NavigationDemoPage(),
         },
       ),

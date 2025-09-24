@@ -3,7 +3,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
-import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
 
 class DetailPickupPage extends StatefulWidget {
   final String scheduleId;
@@ -261,8 +261,10 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
         // Prepare data for the navigation page
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) =>
-                InAppNavigationPage(scheduleData: scheduleData!),
+            builder: (context) => BlocProvider(
+              create: (context) => TrackingBloc(),
+              child: NavigationPageRedesigned(scheduleData: scheduleData!),
+            ),
           ),
         );
       } catch (e) {
