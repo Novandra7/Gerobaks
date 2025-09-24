@@ -72,6 +72,15 @@
 				"$flutter-verbose"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Flutter: Pub Get",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"get"
+			]
 		}
 	]
 }

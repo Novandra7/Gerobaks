@@ -255,12 +255,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       as Map<String, dynamic>)
                 : {},
           ),
-      '/navigation-redesigned': (context) => NavigationPageRedesigned(
-        scheduleData: ModalRoute.of(context)?.settings.arguments != null
-          ? (ModalRoute.of(context)?.settings.arguments
-            as Map<String, dynamic>)
-          : {},
-        ),
+          '/navigation-redesigned': (context) => NavigationPageRedesigned(
+            scheduleData: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                      as Map<String, dynamic>)
+                : {},
+          ),
           '/navigation-demo': (context) => const NavigationDemoPage(),
         },
       ),

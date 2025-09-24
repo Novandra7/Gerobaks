@@ -45,6 +45,7 @@ dependencies:
   geolocator: ^11.0.0
   flutter_bloc: ^9.1.1
   geocoding: ^2.2.0
+  google_maps_flutter: ^2.9.0
   
   # Audio recording and playback
   audioplayers: ^6.0.0

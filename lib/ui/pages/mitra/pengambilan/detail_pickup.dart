@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
+import 'package:bank_sha/services/schedule_api_service.dart';
 
 class DetailPickupPage extends StatefulWidget {
   final String scheduleId;
@@ -27,26 +28,63 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
   }
 
   Future<void> _loadScheduleData() async {
-    // Simulate loading data
-    await Future.delayed(Duration(seconds: 1));
-
-    // Mock data for now
-    setState(() {
+    try {
+      // Try loading schedule from backend
+      final int? idInt = int.tryParse(widget.scheduleId);
+      if (idInt != null) {
+        final raw = await ScheduleApiService().getScheduleById(idInt);
+        // Map backend schedule fields to UI scheduleData shape
+        scheduleData = {
+          'id': raw['id'],
+          'customer_name': raw['title'] ?? 'Pelanggan',
+          'address': raw['description'] ?? 'Alamat tidak tersedia',
+          'latitude': (raw['latitude'] as num?)?.toDouble() ?? -0.5017,
+          'longitude': (raw['longitude'] as num?)?.toDouble() ?? 117.1536,
+          'time': raw['scheduled_at'] ?? '08:00 - 09:00',
+          'waste_type': 'Organik',
+          'waste_weight': '3 kg',
+          'status': raw['status'] ?? 'pending',
+          'phone': '+62812345678',
+          'notes': raw['description'] ?? '',
+        };
+      } else {
+        // Fallback to mock if scheduleId isn't numeric
+        scheduleData = {
+          'id': widget.scheduleId,
+          'customer_name': 'Wahyu Indra',
+          'address': 'Jl. Muso Salim 8, Kota Samarinda, Kalimantan Timur',
+          'latitude': -0.5017,
+          'longitude': 117.1536,
+          'time': '08:00 - 09:00',
+          'waste_type': 'Organik',
+          'waste_weight': '3 kg',
+          'status': 'pending',
+          'phone': '+62812345678',
+          'notes': 'Sampah diletakkan di depan pagar rumah',
+        };
+      }
+    } catch (e) {
+      // Fallback to mock data on error
       scheduleData = {
-        "id": widget.scheduleId,
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim 8, Kota Samarinda, Kalimantan Timur",
-        "latitude": -0.5017, // Koordinat Samarinda
-        "longitude": 117.1536,
-        "time": "08:00 - 09:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "pending",
-        "phone": "+62812345678",
-        "notes": "Sampah diletakkan di depan pagar rumah",
+        'id': widget.scheduleId,
+        'customer_name': 'Wahyu Indra',
+        'address': 'Jl. Muso Salim 8, Kota Samarinda, Kalimantan Timur',
+        'latitude': -0.5017,
+        'longitude': 117.1536,
+        'time': '08:00 - 09:00',
+        'waste_type': 'Organik',
+        'waste_weight': '3 kg',
+        'status': 'pending',
+        'phone': '+62812345678',
+        'notes': 'Sampah diletakkan di depan pagar rumah',
       };
-      isLoading = false;
-    });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _openGoogleMaps() async {

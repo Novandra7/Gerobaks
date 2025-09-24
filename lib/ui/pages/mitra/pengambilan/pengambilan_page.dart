@@ -3,6 +3,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/action_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 
 class PengambilanPage extends StatefulWidget {
   const PengambilanPage({super.key});
@@ -100,7 +101,7 @@ class _PengambilanPageState extends State<PengambilanPage> {
         ResponsiveHelper.getResponsiveWidth(context, 16),
         ResponsiveHelper.getResponsiveHeight(context, 50),
         ResponsiveHelper.getResponsiveWidth(context, 16),
-        ResponsiveHelper.getResponsiveHeight(context, 16)
+        ResponsiveHelper.getResponsiveHeight(context, 16),
       ),
       child: SafeArea(
         bottom: false,
@@ -146,25 +147,30 @@ class _PengambilanPageState extends State<PengambilanPage> {
                     color: Colors.white,
                     size: 20,
                   ),
-                const SizedBox(width: 8),
-                Text(
-                  'KT 777 WAN',
-                  style: whiteTextStyle.copyWith(
-                    fontSize: 14,
-                    fontWeight: medium,
+                  const SizedBox(width: 8),
+                  Text(
+                    'KT 777 WAN',
+                    style: whiteTextStyle.copyWith(
+                      fontSize: 14,
+                      fontWeight: medium,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                const Icon(Icons.person_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'DRV-KTM-214',
-                  style: whiteTextStyle.copyWith(
-                    fontSize: 14,
-                    fontWeight: medium,
+                  const SizedBox(width: 16),
+                  const Icon(
+                    Icons.person_outline,
+                    color: Colors.white,
+                    size: 20,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    'DRV-KTM-214',
+                    style: whiteTextStyle.copyWith(
+                      fontSize: 14,
+                      fontWeight: medium,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             Center(
@@ -402,64 +408,68 @@ class _PengambilanPageState extends State<PengambilanPage> {
                 children: [
                   Row(
                     children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Wahyu Indra',
-                                style: whiteTextStyle.copyWith(
-                                  fontSize: 20,
-                                  fontWeight: semiBold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  'Wahyu Indra',
+                                  style: whiteTextStyle.copyWith(
+                                    fontSize: 20,
+                                    fontWeight: semiBold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(
-                                Icons.verified_user,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
-                            style: whiteTextStyle.copyWith(
-                              fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
-                              fontWeight: regular,
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.verified_user,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ],
                             ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              _buildTag('Organik'),
-                              const SizedBox(width: 8),
-                              _buildTag('2 Kg'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        image: const DecorationImage(
-                          image: NetworkImage('https://placehold.co/90x90'),
-                          fit: BoxFit.cover,
+                            const SizedBox(height: 4),
+                            Text(
+                              'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
+                              style: whiteTextStyle.copyWith(
+                                fontSize:
+                                    ResponsiveHelper.getResponsiveFontSize(
+                                      context,
+                                      12,
+                                    ),
+                                fontWeight: regular,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                _buildTag('Organik'),
+                                const SizedBox(width: 8),
+                                _buildTag('2 Kg'),
+                              ],
+                            ),
+                          ],
                         ),
-                        border: Border.all(color: Colors.white, width: 2),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildContactButton(),
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          image: const DecorationImage(
+                            image: NetworkImage('https://placehold.co/90x90'),
+                            fit: BoxFit.cover,
+                          ),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildContactButton(),
                 ],
               ),
             ),
@@ -487,45 +497,60 @@ class _PengambilanPageState extends State<PengambilanPage> {
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 8)),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveWidth(context, 8),
+                  ),
                   buildActionButton(
-                  context,
-                  icon: Icons.call,
-                  label: 'Telepon',
-                  onTap: () {
-                    // Handle call action
-                  },
-                ),
-                SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
-                buildActionButton(
-                  context,
-                  icon: Icons.navigation,
-                  label: 'Navigasi',
-                  onTap: () {
-                    // Handle navigation action
-                  },
-                ),
-                SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
-                buildActionButton(
-                  context,
-                  icon: Icons.message,
-                  label: 'Pesan',
-                  onTap: () {
-                    // Handle message action
-                  },
-                ),
-                SizedBox(width: ResponsiveHelper.getResponsiveWidth(context, 16)),
-                buildActionButton(
-                  context,
-                  icon: Icons.check_circle,
-                  label: 'Selesai',
-                  onTap: () {
-                    // Handle complete action
-                  },
-                ),
-              ],
+                    context,
+                    icon: Icons.call,
+                    label: 'Telepon',
+                    onTap: () {
+                      // Handle call action
+                    },
+                  ),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveWidth(context, 16),
+                  ),
+                  buildActionButton(
+                    context,
+                    icon: Icons.navigation,
+                    label: 'Navigasi',
+                    onTap: () {
+                      // Navigate to DetailPickupPage so user can start navigation flow
+                      // Assumption: using a demo schedule id here; replace with real id from data source when available
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const DetailPickupPage(scheduleId: '1'),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveWidth(context, 16),
+                  ),
+                  buildActionButton(
+                    context,
+                    icon: Icons.message,
+                    label: 'Pesan',
+                    onTap: () {
+                      // Handle message action
+                    },
+                  ),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveWidth(context, 16),
+                  ),
+                  buildActionButton(
+                    context,
+                    icon: Icons.check_circle,
+                    label: 'Selesai',
+                    onTap: () {
+                      // Handle complete action
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],

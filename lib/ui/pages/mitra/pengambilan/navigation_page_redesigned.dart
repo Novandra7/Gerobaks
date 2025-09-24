@@ -11,6 +11,7 @@ import 'package:bank_sha/blocs/tracking/tracking_event.dart';
 import 'package:bank_sha/blocs/tracking/tracking_state.dart';
 import 'package:bank_sha/utils/navigation_helper.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
+import 'package:bank_sha/services/tracking_api_service.dart';
 // import 'package:bank_sha/services/tile_provider_service.dart';
 
 class NavigationPageRedesigned extends StatefulWidget {
@@ -34,6 +35,10 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
   bool _isSyncingLocation = false;
   Timer? _locationUpdateTimer;
   double _zoomLevel = 15.0;
+  bool _showHistory = false;
+  List<LatLng> _historyPoints = const [];
+  DateTime? _historySince;
+  DateTime? _historyUntil;
 
   @override
   void initState() {
@@ -46,21 +51,24 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
     // Initialize the map with routes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      
+
       // Set destination from scheduleData
-      if (widget.scheduleData.containsKey('latitude') && 
+      if (widget.scheduleData.containsKey('latitude') &&
           widget.scheduleData.containsKey('longitude')) {
-        final double lat = double.tryParse(widget.scheduleData['latitude'].toString()) ?? -0.5028797174108289;
-        final double lng = double.tryParse(widget.scheduleData['longitude'].toString()) ?? 117.15020096577763;
-        
+        final double lat =
+            double.tryParse(widget.scheduleData['latitude'].toString()) ??
+            -0.5028797174108289;
+        final double lng =
+            double.tryParse(widget.scheduleData['longitude'].toString()) ??
+            117.15020096577763;
+
         // Update destination in the TrackingBloc
-        context.read<TrackingBloc>().add(
-          UpdateDestination(LatLng(lat, lng))
-        );
+        context.read<TrackingBloc>().add(UpdateDestination(LatLng(lat, lng)));
       }
-      
+
       context.read<TrackingBloc>().add(FetchRoute());
       _requestLocationPermission();
+      _loadTrackingHistory();
     });
   }
 
@@ -106,6 +114,146 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
     NavigationHelper.registerTimer(_locationUpdateTimer!);
   }
 
+  Future<void> _loadTrackingHistory() async {
+    final scheduleIdRaw =
+        widget.scheduleData['id'] ?? widget.scheduleData['schedule_id'];
+    final scheduleId = int.tryParse(scheduleIdRaw?.toString() ?? '');
+    if (scheduleId == null) return;
+    try {
+      final list = await TrackingApiService().getHistory(
+        scheduleId: scheduleId,
+        limit: 200,
+        since: _historySince,
+        until: _historyUntil,
+      );
+      final pts = <LatLng>[];
+      for (final item in list) {
+        if (item is Map<String, dynamic>) {
+          final lat = (item['latitude'] as num?)?.toDouble();
+          final lng = (item['longitude'] as num?)?.toDouble();
+          if (lat != null && lng != null) pts.add(LatLng(lat, lng));
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _historyPoints = pts.reversed.toList(); // chronological
+        });
+      }
+    } catch (_) {
+      // ignore errors silently for now
+    }
+  }
+
+  void _openHistoryFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Filter Riwayat',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _HistoryChip(
+                      label: '1 Jam Terakhir',
+                      onTap: () {
+                        final now = DateTime.now();
+                        setState(() {
+                          _historySince = now.subtract(
+                            const Duration(hours: 1),
+                          );
+                          _historyUntil = now;
+                        });
+                        Navigator.pop(ctx);
+                        _loadTrackingHistory();
+                      },
+                    ),
+                    _HistoryChip(
+                      label: 'Hari Ini',
+                      onTap: () {
+                        final now = DateTime.now();
+                        final start = DateTime(now.year, now.month, now.day);
+                        setState(() {
+                          _historySince = start;
+                          _historyUntil = now;
+                        });
+                        Navigator.pop(ctx);
+                        _loadTrackingHistory();
+                      },
+                    ),
+                    _HistoryChip(
+                      label: '24 Jam',
+                      onTap: () {
+                        final now = DateTime.now();
+                        setState(() {
+                          _historySince = now.subtract(
+                            const Duration(hours: 24),
+                          );
+                          _historyUntil = now;
+                        });
+                        Navigator.pop(ctx);
+                        _loadTrackingHistory();
+                      },
+                    ),
+                    _HistoryChip(
+                      label: 'Tanpa Filter',
+                      onTap: () {
+                        setState(() {
+                          _historySince = null;
+                          _historyUntil = null;
+                        });
+                        Navigator.pop(ctx);
+                        _loadTrackingHistory();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: now,
+                      firstDate: now.subtract(const Duration(days: 30)),
+                      lastDate: now,
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _historySince = DateTime(
+                          picked.year,
+                          picked.month,
+                          picked.day,
+                        );
+                        _historyUntil = now;
+                      });
+                      Navigator.pop(ctx);
+                      _loadTrackingHistory();
+                    }
+                  },
+                  child: const Text('Pilih Tanggal Mulai…'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _syncCurrentLocation() async {
     if (_isSyncingLocation) return;
 
@@ -130,6 +278,26 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
         // Center map on current position if map is ready
         if (_isMapReady) {
           _mapController.move(currentLocation, _zoomLevel);
+        }
+
+        // Also post to backend tracking API if we have a schedule id
+        final scheduleIdRaw =
+            widget.scheduleData['id'] ?? widget.scheduleData['schedule_id'];
+        final scheduleId = int.tryParse(scheduleIdRaw?.toString() ?? '');
+        if (scheduleId != null) {
+          try {
+            await TrackingApiService().postLocation(
+              scheduleId: scheduleId,
+              latitude: currentLocation.latitude,
+              longitude: currentLocation.longitude,
+              // We can pass optional fields if available; heading can come from bloc
+              heading: context.read<TrackingBloc>().state.truckBearing,
+              recordedAt: DateTime.now(),
+            );
+          } catch (e) {
+            // Silent fail to avoid spamming UI; could add debug log if needed
+            // print('Failed to post tracking: $e');
+          }
         }
       }
     } catch (e) {
@@ -310,6 +478,16 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
                           ),
                         ],
                       ),
+                    if (_showHistory && _historyPoints.isNotEmpty)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: _historyPoints,
+                            color: Colors.orange.withOpacity(0.8),
+                            strokeWidth: 3.0,
+                          ),
+                        ],
+                      ),
                     MarkerLayer(
                       markers: [
                         // Destination marker
@@ -443,6 +621,70 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
                           color: _isSyncingLocation ? Colors.blue : greenColor,
                         ),
                         onPressed: _syncCurrentLocation,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Toggle history + filter
+                    Container(
+                      height: buttonSize,
+                      width: buttonSize,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: IconButton(
+                              icon: Icon(
+                                _showHistory
+                                    ? Icons.history_toggle_off
+                                    : Icons.history,
+                                size: iconSize,
+                                color: _showHistory
+                                    ? Colors.orange
+                                    : Colors.grey[800],
+                              ),
+                              tooltip: _showHistory
+                                  ? 'Sembunyikan Riwayat'
+                                  : 'Tampilkan Riwayat',
+                              onPressed: () async {
+                                setState(() {
+                                  _showHistory = !_showHistory;
+                                });
+                                if (_showHistory && _historyPoints.isEmpty) {
+                                  await _loadTrackingHistory();
+                                }
+                              },
+                            ),
+                          ),
+                          Positioned(
+                            right: 2,
+                            top: 2,
+                            child: InkWell(
+                              onTap: _openHistoryFilterSheet,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.06),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.tune,
+                                  size: 14,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -720,121 +962,123 @@ class _NavigationPageRedesignedState extends State<NavigationPageRedesigned>
                               ),
                               SizedBox(width: 16),
 
-                            // Customer info
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          customerName,
-                                          style: TextStyle(
-                                            fontSize:
-                                                ResponsiveHelper.getResponsiveFontSize(
-                                                  context,
-                                                  20,
+                              // Customer info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            customerName,
+                                            style: TextStyle(
+                                              fontSize:
+                                                  ResponsiveHelper.getResponsiveFontSize(
+                                                    context,
+                                                    20,
+                                                  ),
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black26,
+                                                  blurRadius: 4,
                                                 ),
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black26,
-                                                blurRadius: 4,
-                                              ),
-                                            ],
+                                              ],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                      SizedBox(width: 4),
-                                      IconButton(
-                                        icon: Icon(
-                                          Icons.content_copy,
-                                          color: Colors.white.withOpacity(0.8),
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          // Copy customer name to clipboard
-                                        },
-                                        padding: EdgeInsets.zero,
-                                        constraints: BoxConstraints(),
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    customerAddress,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontSize:
-                                          ResponsiveHelper.getResponsiveFontSize(
-                                            context,
-                                            14,
+                                        SizedBox(width: 4),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.content_copy,
+                                            color: Colors.white.withOpacity(
+                                              0.8,
+                                            ),
+                                            size: 18,
                                           ),
+                                          onPressed: () {
+                                            // Copy customer name to clipboard
+                                          },
+                                          padding: EdgeInsets.zero,
+                                          constraints: BoxConstraints(),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ],
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        SizedBox(height: 16),
-
-                        // Single CTA chip (MVP) - Hubungi Pelanggan
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: ShapeDecoration(
-                              color: const Color(0xFF6AC28E),
-                              shape: RoundedRectangleBorder(
-                                side: const BorderSide(
-                                  width: 0.7,
-                                  color: Colors.white,
+                                    SizedBox(height: 4),
+                                    Text(
+                                      customerAddress,
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              14,
+                                            ),
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                                borderRadius: BorderRadius.circular(15),
                               ),
-                            ),
-                            child: Text(
-                              'Hubungi Pelanggan',
-                              style: TextStyle(
-                                color: const Color(0xFFF9FFF8),
-                                fontSize:
-                                    ResponsiveHelper.getResponsiveFontSize(
-                                      context,
-                                      10,
-                                    ),
-                                fontWeight: FontWeight.w600,
+                            ],
+                          ),
+
+                          SizedBox(height: 16),
+
+                          // Single CTA chip (MVP) - Hubungi Pelanggan
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: ShapeDecoration(
+                                color: const Color(0xFF6AC28E),
+                                shape: RoundedRectangleBorder(
+                                  side: const BorderSide(
+                                    width: 0.7,
+                                    color: Colors.white,
+                                  ),
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              child: Text(
+                                'Hubungi Pelanggan',
+                                style: TextStyle(
+                                  color: const Color(0xFFF9FFF8),
+                                  fontSize:
+                                      ResponsiveHelper.getResponsiveFontSize(
+                                        context,
+                                        10,
+                                      ),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
-                        ),
 
-                        SizedBox(height: 16),
+                          SizedBox(height: 16),
 
-                        // Waste info
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildChip(wasteType),
-                            _buildChip(wasteWeight),
-                            _buildChip(
-                              'Sampah Rumah Tangga',
-                              icon: Icons.home_outlined,
-                            ),
-                          ],
-                        ),
+                          // Waste info
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _buildChip(wasteType),
+                              _buildChip(wasteWeight),
+                              _buildChip(
+                                'Sampah Rumah Tangga',
+                                icon: Icons.home_outlined,
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -1132,6 +1376,37 @@ class _NavAppChip extends StatelessWidget {
               label,
               style: TextStyle(color: color, fontWeight: FontWeight.w600),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _HistoryChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.filter_alt, size: 16, color: Colors.black87),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
       ),
