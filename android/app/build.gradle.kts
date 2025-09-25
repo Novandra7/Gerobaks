@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -33,7 +35,7 @@ android {
 
         // Provide Google Maps API key to the manifest via placeholder.
         // Reads from local.properties (MAPS_API_KEY=...), falls back to env var, then empty.
-        val props = java.util.Properties()
+    val props = Properties()
         val lpFile = File(rootDir, "local.properties")
         if (lpFile.exists()) {
             lpFile.inputStream().use { props.load(it) }
