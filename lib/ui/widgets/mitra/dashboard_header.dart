@@ -12,14 +12,14 @@ class DashboardHeader extends StatelessWidget {
   final List<QuickActionItem> quickActions;
 
   const DashboardHeader({
-    Key? key,
+    super.key,
     required this.name,
     required this.vehicleNumber,
     required this.driverId,
     required this.onChatPressed,
     required this.onNotificationPressed,
     required this.quickActions,
-  }) : super(key: key);
+  });
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -47,8 +47,12 @@ class DashboardHeader extends StatelessWidget {
           transform: GradientRotation(0.2),
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 30)),
-          bottomRight: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 30)),
+          bottomLeft: Radius.circular(
+            ResponsiveHelper.getResponsiveRadius(context, 30),
+          ),
+          bottomRight: Radius.circular(
+            ResponsiveHelper.getResponsiveRadius(context, 30),
+          ),
         ),
         boxShadow: [
           BoxShadow(
@@ -59,7 +63,9 @@ class DashboardHeader extends StatelessWidget {
         ],
       ),
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + ResponsiveHelper.getResponsiveSpacing(context, 16),
+        top:
+            MediaQuery.of(context).padding.top +
+            ResponsiveHelper.getResponsiveSpacing(context, 16),
         bottom: ResponsiveHelper.getResponsiveSpacing(context, 20),
         left: ResponsiveHelper.getResponsiveSpacing(context, 20),
         right: ResponsiveHelper.getResponsiveSpacing(context, 20),
@@ -72,7 +78,7 @@ class DashboardHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Image.asset(
-                'assets/img_gerobakss.png', 
+                'assets/img_gerobakss.png',
                 height: ResponsiveHelper.getResponsiveHeight(context, 28),
                 color: Colors.white,
               ),
@@ -80,41 +86,47 @@ class DashboardHeader extends StatelessWidget {
                 children: [
                   // Chat icon with badge
                   Container(
-                    margin: EdgeInsets.only(right: ResponsiveHelper.getResponsiveSpacing(context, 8)),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                    margin: EdgeInsets.only(
+                      right: ResponsiveHelper.getResponsiveSpacing(context, 8),
                     ),
                     padding: const EdgeInsets.all(4),
                     child: ChatIconWithBadge(
                       onTap: onChatPressed,
                       iconColor: Colors.white,
                       forHeader: true,
-                      iconSize: ResponsiveHelper.getResponsiveIconSize(context, 22),
+                      iconSize: ResponsiveHelper.getResponsiveIconSize(
+                        context,
+                        22,
+                      ),
                     ),
                   ),
-                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context, 4),
+                  ),
                   // Notification icon
                   Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-                    ),
                     padding: const EdgeInsets.all(4),
                     child: IconButton(
                       onPressed: onNotificationPressed,
                       icon: Icon(
                         Icons.notifications_outlined,
                         color: Colors.white,
-                        size: ResponsiveHelper.getResponsiveIconSize(context, 22),
+                        size: ResponsiveHelper.getResponsiveIconSize(
+                          context,
+                          22,
+                        ),
                       ),
                       tooltip: 'Notifikasi',
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
-                        minWidth: ResponsiveHelper.getResponsiveIconSize(context, 36),
-                        minHeight: ResponsiveHelper.getResponsiveIconSize(context, 36),
+                        minWidth: ResponsiveHelper.getResponsiveIconSize(
+                          context,
+                          22,
+                        ),
+                        minHeight: ResponsiveHelper.getResponsiveIconSize(
+                          context,
+                          22,
+                        ),
                       ),
                     ),
                   ),
@@ -122,18 +134,20 @@ class DashboardHeader extends StatelessWidget {
               ),
             ],
           ),
-          
+
           SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-          
+
           // Vehicle info
           Row(
             children: [
               Icon(
-                Icons.local_shipping_outlined, 
+                Icons.local_shipping_outlined,
                 color: Colors.white.withOpacity(0.9),
                 size: ResponsiveHelper.getResponsiveIconSize(context, 14),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+              SizedBox(
+                width: ResponsiveHelper.getResponsiveSpacing(context, 6),
+              ),
               Text(
                 vehicleNumber,
                 style: whiteTextStyle.copyWith(
@@ -141,13 +155,17 @@ class DashboardHeader extends StatelessWidget {
                   fontWeight: medium,
                 ),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+              SizedBox(
+                width: ResponsiveHelper.getResponsiveSpacing(context, 16),
+              ),
               Icon(
-                Icons.badge_outlined, 
+                Icons.badge_outlined,
                 color: Colors.white.withOpacity(0.9),
                 size: ResponsiveHelper.getResponsiveIconSize(context, 14),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+              SizedBox(
+                width: ResponsiveHelper.getResponsiveSpacing(context, 6),
+              ),
               Text(
                 driverId,
                 style: whiteTextStyle.copyWith(
@@ -157,9 +175,9 @@ class DashboardHeader extends StatelessWidget {
               ),
             ],
           ),
-          
+
           SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 10)),
-          
+
           // Greeting with name
           Text(
             'Selamat ${_getGreeting()}, $name',
@@ -168,9 +186,9 @@ class DashboardHeader extends StatelessWidget {
               fontWeight: semiBold,
             ),
           ),
-          
+
           SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
-          
+
           // Quick Action buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -196,7 +214,9 @@ class DashboardHeader extends StatelessWidget {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+      borderRadius: BorderRadius.circular(
+        ResponsiveHelper.getResponsiveRadius(context, 16),
+      ),
       child: Container(
         width: ResponsiveHelper.getResponsiveWidth(context, 65),
         padding: EdgeInsets.symmetric(
@@ -204,11 +224,10 @@ class DashboardHeader extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1.0,
+          borderRadius: BorderRadius.circular(
+            ResponsiveHelper.getResponsiveRadius(context, 16),
           ),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
