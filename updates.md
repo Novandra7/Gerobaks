@@ -18,6 +18,17 @@
 
 ---
 
+> **Update (Auth & Backend Hardening - Recent)**
+>
+> - Implementasi Laravel Sanctum untuk autentikasi token mobile
+> - Penambahan proteksi role-based (end_user, mitra, admin) pada route sensitif
+> - Perubahan struktur response auth (`data.user`, `data.token`)
+> - Integrasi token otomatis pada Flutter `ApiClient` (Bearer header)
+> - Service baru: `AuthApiService` (login, register, me, logout)
+> - Endpoint `logout` & `auth/me` ditambahkan
+> - Pengetatan akses: create order hanya end_user, assign/status order hanya mitra/admin, tracking store hanya mitra
+> - Rencana berikutnya: validasi transisi status order, ledger otomatis, resource serialization lanjutan.
+
 <details open>
 <summary>
   <h2 id="1-sistem-multi-role">1. Sistem Multi-Role <img src="assets/ic_profile.png" width="25"></h2>
@@ -228,6 +239,7 @@ Sistem autentikasi yang diperbarui menawarkan pengalaman pendaftaran dan masuk y
 </div>
 
 #### Peningkatan Proses Pendaftaran:
+
 - ✅ **Alur yang Disederhanakan:** Pengurangan dari 4 langkah menjadi 3 langkah
 - ✅ **Tanpa OTP:** Penghapusan verifikasi OTP untuk mempercepat proses
 - ✅ **Validasi Real-time:** Umpan balik instan untuk format email, kekuatan password
@@ -622,6 +634,7 @@ Sistem penyimpanan lokal yang ditingkatkan untuk manajemen data yang lebih efisi
 </table>
 
 #### Manfaat Logger:
+
 - ✅ **Level Log yang Berbeda:** debug, info, warning, error, wtf
 - ✅ **Formatting Konsisten:** Format output yang seragam dan mudah dibaca
 - ✅ **Performance Impact Minimal:** Dampak kinerja yang lebih rendah dibanding print

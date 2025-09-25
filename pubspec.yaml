@@ -46,6 +46,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   geocoding: ^2.2.0
   google_maps_flutter: ^2.9.0
+  flutter_secure_storage: ^9.2.2
   
   # Audio recording and playback
   audioplayers: ^6.0.0

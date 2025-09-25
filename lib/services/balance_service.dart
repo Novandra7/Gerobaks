@@ -1,98 +1,84 @@
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:bank_sha/services/api_client.dart';
 
 class BalanceService {
-  // Base URL for the API
-  static const String baseUrl = 'https://example.com';
-  
-  // Cache time in milliseconds (5 minutes)
-  static const int cacheTime = 300000;
-  
-  // Last fetch time and cached balance
-  static int? _lastFetchTime;
-  static double? _cachedBalance;
+  static const Duration _cacheDuration = Duration(minutes: 5);
 
-  // Fetch balance for user
+  static final ApiClient _api = ApiClient();
+  static DateTime? _lastFetchTime;
+  static Map<String, dynamic>? _cachedSummary;
+
   static Future<Map<String, dynamic>> fetchUserBalance(String userId) async {
+    final now = DateTime.now();
+    if (_cachedSummary != null &&
+        _lastFetchTime != null &&
+        now.difference(_lastFetchTime!) < _cacheDuration) {
+      return {'success': true, 'isCache': true, ..._cachedSummary!};
+    }
+
     try {
-      // Check if cache is valid
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      if (_cachedBalance != null && 
-          _lastFetchTime != null && 
-          currentTime - _lastFetchTime! < cacheTime) {
-        // Return cached data
-        return {
-          'success': true,
-          'balance': _cachedBalance,
-          'isCache': true,
-        };
+      final response = await _api.getJson(
+        '/api/balance/summary',
+        query: {'user_id': userId},
+      );
+
+      if (response is! Map<String, dynamic>) {
+        throw Exception('Invalid balance summary response');
       }
-      
-      // Make API call
-      final response = await http.get(
-        Uri.parse('$baseUrl/saldo/user/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-      
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        
-        // Update cache
-        _cachedBalance = data['balance'] is int 
-            ? (data['balance'] as int).toDouble() 
-            : data['balance'];
-        _lastFetchTime = currentTime;
-        
-        return {
-          'success': true,
-          'balance': _cachedBalance,
-          'isCache': false,
-        };
-      } else {
-        // Return error from server
-        return {
-          'success': false,
-          'message': 'Server error: ${response.statusCode}',
-        };
-      }
+
+      final summary = {
+        'user_id': response['user_id'],
+        'balance': _asDouble(response['balance']),
+        'credit': _asDouble(response['credit']),
+        'debit': _asDouble(response['debit']),
+        'recent_entries': List<Map<String, dynamic>>.from(
+          (response['recent_entries'] as List? ?? const []).map(
+            (e) => Map<String, dynamic>.from(e as Map),
+          ),
+        ),
+      };
+
+      _cachedSummary = summary;
+      _lastFetchTime = now;
+
+      return {'success': true, 'isCache': false, ...summary};
     } catch (e) {
-      // If we have cached data, return it with error flag
-      if (_cachedBalance != null) {
+      if (_cachedSummary != null) {
         return {
           'success': true,
-          'balance': _cachedBalance,
           'isCache': true,
           'hasError': true,
           'errorMessage': e.toString(),
+          ..._cachedSummary!,
         };
       }
-      
-      // Otherwise return error
-      return {
-        'success': false,
-        'message': 'Connection error: ${e.toString()}',
-      };
+
+      return {'success': false, 'message': 'Connection error: ${e.toString()}'};
     }
   }
-  
-  // Clear the balance cache to force refresh
+
   static void clearCache() {
-    _cachedBalance = null;
+    _cachedSummary = null;
     _lastFetchTime = null;
   }
-  
+
+  static double _asDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
+
   // Format balance as currency
   static String formatCurrency(double balance) {
     // Format with thousand separators
-    final formatted = balance.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
-    );
-    
+    final formatted = balance
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
+
     return 'Rp $formatted';
   }
 }
@@ -101,13 +87,13 @@ class BalanceCard extends StatefulWidget {
   final String userId;
   final VoidCallback? onTap;
   final bool autoRefresh;
-  
+
   const BalanceCard({
-    Key? key,
+    super.key,
     required this.userId,
     this.onTap,
     this.autoRefresh = true,
-  }) : super(key: key);
+  });
 
   @override
   State<BalanceCard> createState() => _BalanceCardState();
@@ -118,12 +104,12 @@ class _BalanceCardState extends State<BalanceCard> {
   bool _hasError = false;
   double _balance = 0;
   bool _isRefreshing = false;
-  
+
   @override
   void initState() {
     super.initState();
     _loadBalance();
-    
+
     // Set up auto refresh if enabled
     if (widget.autoRefresh) {
       // Refresh every 5 minutes
@@ -134,19 +120,19 @@ class _BalanceCardState extends State<BalanceCard> {
       });
     }
   }
-  
+
   Future<void> _loadBalance() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _hasError = false;
     });
-    
+
     final result = await BalanceService.fetchUserBalance(widget.userId);
-    
+
     if (!mounted) return;
-    
+
     if (result['success']) {
       setState(() {
         _balance = result['balance'];
@@ -160,18 +146,18 @@ class _BalanceCardState extends State<BalanceCard> {
       });
     }
   }
-  
+
   Future<void> _refreshBalance() async {
     if (_isRefreshing) return;
-    
+
     setState(() {
       _isRefreshing = true;
     });
-    
+
     // Clear cache to force refresh
     BalanceService.clearCache();
     await _loadBalance();
-    
+
     setState(() {
       _isRefreshing = false;
     });
@@ -227,25 +213,21 @@ class _BalanceCardState extends State<BalanceCard> {
                     ),
                   )
                 else
-                  Icon(
-                    Icons.refresh,
-                    size: 16,
-                    color: Colors.black45,
-                  ),
+                  Icon(Icons.refresh, size: 16, color: Colors.black45),
               ],
             ),
             const SizedBox(height: 8),
             _isLoading
                 ? _buildLoadingIndicator()
                 : _hasError
-                    ? _buildErrorState()
-                    : _buildBalanceDisplay(),
+                ? _buildErrorState()
+                : _buildBalanceDisplay(),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildLoadingIndicator() {
     return Row(
       children: [
@@ -262,26 +244,19 @@ class _BalanceCardState extends State<BalanceCard> {
         const SizedBox(width: 12),
         Text(
           'Memuat saldo...',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ],
     );
   }
-  
+
   Widget _buildErrorState() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(
-              Icons.error_outline,
-              color: Colors.orange,
-              size: 20,
-            ),
+            Icon(Icons.error_outline, color: Colors.orange, size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -299,29 +274,24 @@ class _BalanceCardState extends State<BalanceCard> {
           const SizedBox(height: 4),
           Text(
             'Saldo terakhir: ${BalanceService.formatCurrency(_balance)}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black45,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.black45),
           ),
         ],
         const SizedBox(height: 4),
         Text(
           'Ketuk untuk mencoba lagi',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black38,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.black38),
         ),
       ],
     );
   }
-  
+
   Widget _buildBalanceDisplay() {
     final formattedBalance = BalanceService.formatCurrency(_balance);
     final lastUpdate = DateTime.now();
-    final timeString = '${lastUpdate.hour.toString().padLeft(2, '0')}:${lastUpdate.minute.toString().padLeft(2, '0')}';
-    
+    final timeString =
+        '${lastUpdate.hour.toString().padLeft(2, '0')}:${lastUpdate.minute.toString().padLeft(2, '0')}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -336,10 +306,7 @@ class _BalanceCardState extends State<BalanceCard> {
         const SizedBox(height: 4),
         Text(
           'Terakhir diperbarui: $timeString',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black38,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.black38),
         ),
       ],
     );

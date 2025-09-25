@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiClient {
   ApiClient._internal();
@@ -31,8 +32,9 @@ class ApiClient {
 
   Future<dynamic> getJson(String path, {Map<String, dynamic>? query}) async {
     final uri = _buildUri(path, query);
+    final headers = await _headers();
     final resp = await http
-        .get(uri, headers: {'Accept': 'application/json'})
+        .get(uri, headers: headers)
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       if (resp.body.isEmpty) return null;
@@ -46,15 +48,9 @@ class ApiClient {
 
   Future<dynamic> postJson(String path, Map<String, dynamic> body) async {
     final uri = _buildUri(path);
+    final headers = await _headers();
     final resp = await http
-        .post(
-          uri,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode(body),
-        )
+        .post(uri, headers: headers, body: jsonEncode(body))
         .timeout(const Duration(seconds: 15));
     if (resp.statusCode >= 200 && resp.statusCode < 300) {
       if (resp.body.isEmpty) return null;
@@ -64,6 +60,18 @@ class ApiClient {
       'POST ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
       statusCode: resp.statusCode,
     );
+  }
+}
+
+extension on ApiClient {
+  static final _storage = FlutterSecureStorage();
+  Future<Map<String, String>> _headers() async {
+    final token = await _storage.read(key: 'auth_token');
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
   }
 }
 
