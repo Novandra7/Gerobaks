@@ -4,6 +4,7 @@ import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
+import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
@@ -35,7 +36,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     106.8456,
   ); // Default to Jakarta
   String _selectedWasteType = 'Campuran';
-  ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
+  final ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
 
   final List<String> _wasteTypes = [
     'Campuran',
@@ -74,6 +75,14 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       final userData = await localStorage.getUserData();
       if (userData != null) {
         _userId = userData['id'] as String;
+
+        // Get user data from mock based on user ID
+        final userMockData = UserDataMock.getUserById(_userId!);
+        if (userMockData != null) {
+          _nameController.text = userMockData['name'] ?? '';
+          _phoneController.text = userMockData['phone'] ?? '';
+          _addressController.text = userMockData['address'] ?? '';
+        }
       }
 
       // Get current location
@@ -82,11 +91,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        // Set mock user data
-        _nameController.text = 'Andi Wijaya';
-        _phoneController.text = '+62 812-3456-7890';
-        _addressController.text =
-            'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310';
       });
     } catch (e) {
       print('Error initializing: $e');
@@ -460,76 +464,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             ),
                           ),
 
-                          const SizedBox(height: 16),
-
-                          // Frequency
-                          DropdownButtonFormField<ScheduleFrequency>(
-                            value: _selectedFrequency,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: 'Frekuensi Pengambilan',
-                              labelStyle: greyTextStyle.copyWith(
-                                fontSize: 14,
-                                fontWeight: medium,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: greyColor.withOpacity(0.3),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: greyColor.withOpacity(0.3),
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: greenColor),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.repeat_rounded,
-                                color: greenColor,
-                              ),
-                            ),
-                            style: blackTextStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: medium,
-                            ),
-                            items: ScheduleFrequency.values.map((frequency) {
-                              String label;
-                              switch (frequency) {
-                                case ScheduleFrequency.once:
-                                  label = 'Sekali Saja';
-                                  break;
-                                case ScheduleFrequency.daily:
-                                  label = 'Setiap Hari';
-                                  break;
-                                case ScheduleFrequency.weekly:
-                                  label = 'Setiap Minggu';
-                                  break;
-                                case ScheduleFrequency.biWeekly:
-                                  label = 'Setiap 2 Minggu';
-                                  break;
-                                case ScheduleFrequency.monthly:
-                                  label = 'Setiap Bulan';
-                                  break;
-                              }
-                              return DropdownMenuItem<ScheduleFrequency>(
-                                value: frequency,
-                                child: Text(label),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedFrequency = value;
-                                });
-                              }
-                            },
-                          ),
-
                           const SizedBox(height: 24),
 
                           // Section title - Location
@@ -629,7 +563,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            'Andi Wijaya',
+                                            _nameController.text.isNotEmpty
+                                                ? _nameController.text
+                                                : 'Nama Pengguna',
                                             style: blackTextStyle.copyWith(
                                               fontSize: 14,
                                               fontWeight: medium,
@@ -650,7 +586,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
-                                            '+62 812-3456-7890',
+                                            _phoneController.text.isNotEmpty
+                                                ? _phoneController.text
+                                                : 'Nomor Telepon',
                                             style: blackTextStyle.copyWith(
                                               fontSize: 14,
                                               fontWeight: medium,
@@ -674,7 +612,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310',
+                                              _addressController.text.isNotEmpty
+                                                  ? _addressController.text
+                                                  : 'Alamat Lengkap',
                                               style: blackTextStyle.copyWith(
                                                 fontSize: 14,
                                                 fontWeight: medium,
