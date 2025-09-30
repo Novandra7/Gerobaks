@@ -1,4 +1,6 @@
+import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:bank_sha/utils/map_utils.dart';
@@ -9,22 +11,28 @@ import 'package:intl/date_symbol_data_local.dart';
 
 class JadwalMitraMapView extends StatefulWidget {
   final String? scheduleId;
-  
+
   const JadwalMitraMapView({super.key, this.scheduleId});
 
   @override
   State<JadwalMitraMapView> createState() => _JadwalMitraMapViewState();
 }
 
-class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTickerProviderStateMixin {
+class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
+    with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   String? _driverId;
   bool _isLoading = false;
-  String _selectedFilter = "semua"; // Filter options: semua, pending, in_progress, completed
+  final String _selectedFilter =
+      "semua"; // Filter options: semua, pending, in_progress, completed
+  final ScheduleApiService _scheduleApiService = ScheduleApiService();
+  List<ScheduleApiModel> _schedules = [];
+  String? _errorMessage;
   final MapController _mapController = MapController();
   int _selectedCardIndex = -1; // Index of the selected schedule card
   late PageController _pageController;
-  
+  final Set<int> _updatingScheduleIds = <int>{};
+
   // Service area polygon coordinates
   final List<LatLng> _serviceAreaPolygon = [
     LatLng(-0.502473, 117.148738),
@@ -32,64 +40,69 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
     LatLng(-0.503959, 117.151090),
     LatLng(-0.503240, 117.151347),
   ];
-  
+
   // Initial map center position
   LatLng _mapCenter = LatLng(-0.5035, 117.1500);
-  
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0, viewportFraction: 0.9);
-    
+
     // Initialize
     _initialize();
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _initialize() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       await initializeDateFormatting("id_ID", null);
-      
+
       // Ambil ID driver dari local storage
-      final LocalStorageService localStorageService = await LocalStorageService.getInstance();
+      final LocalStorageService localStorageService =
+          await LocalStorageService.getInstance();
       final userData = await localStorageService.getUserData();
-      
+
       if (userData != null && userData["id"] != null) {
-        _driverId = userData["id"] as String;
+        _driverId = userData["id"].toString();
       } else {
         throw Exception("ID driver tidak ditemukan");
       }
-      
+
       // Load schedules
       await _loadSchedules();
-      
+
       // If we have a specific scheduleId, select the corresponding card
       if (widget.scheduleId != null) {
         final schedules = _getFilteredSchedules();
         for (int i = 0; i < schedules.length; i++) {
-          if (schedules[i]["id"] == widget.scheduleId) {
+          if (schedules[i].id.toString() == widget.scheduleId) {
             setState(() {
               _selectedCardIndex = i;
             });
-            
-            // Scroll to the selected card
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _pageController.animateToPage(
                 i,
-                duration: Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );
+
+              final lat = schedules[i].latitude;
+              final lng = schedules[i].longitude;
+              if (lat != null && lng != null) {
+                _mapController.move(LatLng(lat, lng), 16.0);
+              }
             });
-            
             break;
           }
         }
@@ -102,11 +115,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
             content: Text("Gagal memuat jadwal: $e"),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.only(
-              left: 16, 
-              right: 16, 
-              bottom: 80
-            ),
+            margin: EdgeInsets.only(left: 16, right: 16, bottom: 80),
           ),
         );
       }
@@ -118,49 +127,48 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
       }
     }
   }
-  
+
   Future<void> _loadSchedules() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
     try {
-      if (_driverId != null) {
-        // Di sini akan implementasi untuk mendapatkan jadwal berdasarkan ID driver dan tanggal
-        // dari API atau sumber data lain
-        // Untuk sementara, kita gunakan data dummy dan simulasi loading
-        await Future.delayed(const Duration(seconds: 1));
-        
-        // Dalam implementasi sebenarnya akan seperti:
-        // final schedules = await _scheduleService.getSchedules(driverId: _driverId!, date: selectedDate);
-        // setState(() {
-        //   _schedules = schedules;
-        // });
-        
-        // Reset selected card when reloading schedules
-        if (widget.scheduleId == null) {
-          setState(() {
-            _selectedCardIndex = -1;
-          });
-        }
-        
-        // Adjust map bounds to include all markers
-        _adjustMapBounds();
-      } else {
-        throw Exception("ID driver tidak ditemukan");
+      final driverId = int.tryParse(_driverId ?? '');
+      final result = await _scheduleApiService.listSchedules(
+        assignedTo: driverId,
+        perPage: 100,
+      );
+
+      final schedules = List<ScheduleApiModel>.from(result.items)
+        ..sort((a, b) {
+          final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return aDate.compareTo(bDate);
+        });
+
+      if (widget.scheduleId == null) {
+        _selectedCardIndex = -1;
+      }
+
+      if (mounted) {
+        setState(() {
+          _schedules = schedules;
+        });
+        _adjustMapBounds(schedules);
       }
     } catch (e) {
+      _errorMessage = e.toString();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Gagal memuat jadwal: $e"),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.only(
-              left: 16, 
-              right: 16, 
-              bottom: 80
-            ),
+            margin: EdgeInsets.only(left: 16, right: 16, bottom: 80),
           ),
         );
       }
@@ -172,53 +180,50 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
       }
     }
   }
-  
+
   // Function to adjust map bounds to include all pickup locations
-  void _adjustMapBounds() {
-    final schedules = _getFilteredSchedules();
+  void _adjustMapBounds([List<ScheduleApiModel>? source]) {
+    final schedules = List<ScheduleApiModel>.from(
+      (source ?? _getFilteredSchedules()).where(
+        (schedule) => schedule.latitude != null && schedule.longitude != null,
+      ),
+    );
     if (schedules.isEmpty) return;
-    
-    // Calculate bounds
-    double minLat = 90.0;
-    double maxLat = -90.0;
-    double minLng = 180.0;
-    double maxLng = -180.0;
-    
-    for (int i = 0; i < schedules.length; i++) {
-      final lat = -0.502784 + ((i * 0.0002) % 0.003);
-      final lng = 117.149304 + ((i * 0.0003) % 0.004);
-      
-      minLat = lat < minLat ? lat : minLat;
-      maxLat = lat > maxLat ? lat : maxLat;
-      minLng = lng < minLng ? lng : minLng;
-      maxLng = lng > maxLng ? lng : maxLng;
+
+    double minLat = schedules.first.latitude!;
+    double maxLat = schedules.first.latitude!;
+    double minLng = schedules.first.longitude!;
+    double maxLng = schedules.first.longitude!;
+
+    for (final schedule in schedules) {
+      final lat = schedule.latitude!;
+      final lng = schedule.longitude!;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
     }
-    
-    // Add padding to bounds
-    final latPadding = (maxLat - minLat) * 0.2;
-    final lngPadding = (maxLng - minLng) * 0.2;
-    
+
+    final latPadding = ((maxLat - minLat).abs()).clamp(0.001, 0.01);
+    final lngPadding = ((maxLng - minLng).abs()).clamp(0.001, 0.01);
+
     minLat -= latPadding;
     maxLat += latPadding;
     minLng -= lngPadding;
     maxLng += lngPadding;
-    
-    // Calculate center and zoom for bounds
+
     final centerLat = (minLat + maxLat) / 2;
     final centerLng = (minLng + maxLng) / 2;
-    
-    // Update map center
+
     _mapCenter = LatLng(centerLat, centerLng);
-    
-    // In a real app, you would use bounds to calculate the appropriate zoom level
-    // Here we just update the center
+
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _mapController.move(_mapCenter, 15.0);
       });
     }
   }
-  
+
   void _navigateToLocation(LatLng location) {
     // Open maps navigation using MapUtils
     MapUtils.openMapsNavigation(
@@ -289,7 +294,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                         ),
                       ],
                     ),
-                    
+
                     // Notification and chat icons
                     Row(
                       children: [
@@ -332,9 +337,9 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                     ),
                   ],
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Jadwal Pengambilan Text
                 Text(
                   'Jadwal Pengambilan',
@@ -343,9 +348,9 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                
+
                 SizedBox(height: 8),
-                
+
                 // Date indicator
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -361,41 +366,74 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
               ],
             ),
           ),
-          
+
           // Body content
           Expanded(
-            child: _isLoading 
-              ? Center(child: CircularProgressIndicator(color: greenColor))
-              : _buildBody(),
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator(color: greenColor))
+                : _buildBody(),
           ),
         ],
       ),
     );
   }
-  
+
   String _getMonthName(int month) {
     switch (month) {
-      case 1: return 'Januari';
-      case 2: return 'Februari';
-      case 3: return 'Maret';
-      case 4: return 'April';
-      case 5: return 'Mei';
-      case 6: return 'Juni';
-      case 7: return 'Juli';
-      case 8: return 'Agustus';
-      case 9: return 'September';
-      case 10: return 'Oktober';
-      case 11: return 'November';
-      case 12: return 'Desember';
-      default: return '';
+      case 1:
+        return 'Januari';
+      case 2:
+        return 'Februari';
+      case 3:
+        return 'Maret';
+      case 4:
+        return 'April';
+      case 5:
+        return 'Mei';
+      case 6:
+        return 'Juni';
+      case 7:
+        return 'Juli';
+      case 8:
+        return 'Agustus';
+      case 9:
+        return 'September';
+      case 10:
+        return 'Oktober';
+      case 11:
+        return 'November';
+      case 12:
+        return 'Desember';
+      default:
+        return '';
     }
   }
-  
+
   Widget _buildBody() {
     final schedules = _getFilteredSchedules();
-    
+
     return Column(
       children: [
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Gagal memuat jadwal. Tarik ke bawah untuk mencoba lagi.',
+                style: blackTextStyle.copyWith(
+                  color: Colors.red,
+                  fontSize: 12,
+                  fontWeight: medium,
+                ),
+              ),
+            ),
+          ),
         // Map View with Service Area - Full screen
         Expanded(
           child: Stack(
@@ -416,11 +454,12 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                 children: [
                   // Base map layer
                   TileLayer(
-                    urlTemplate: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                    urlTemplate:
+                        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
                     subdomains: const ["a", "b", "c", "d"],
                     userAgentPackageName: "com.gerobaks.app",
                   ),
-                  
+
                   // Service area polygon
                   PolygonLayer(
                     polygons: [
@@ -432,20 +471,23 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                       ),
                     ],
                   ),
-                  
+
                   // Pickup location markers
-                  MarkerLayer(
-                    markers: _buildMarkers(schedules),
-                  ),
+                  MarkerLayer(markers: _buildMarkers(schedules)),
                 ],
               ),
-              
+
               // Map control buttons
               Positioned(
                 right: 16,
                 top: 16,
                 child: Column(
                   children: [
+                    _buildMapControlButton(
+                      icon: Icons.refresh,
+                      onTap: () => _loadSchedules(),
+                    ),
+                    SizedBox(height: 8),
                     // Full screen button
                     _buildMapControlButton(
                       icon: Icons.fullscreen,
@@ -482,7 +524,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                   ],
                 ),
               ),
-              
+
               // Floating schedule card with navigation
               if (schedules.isNotEmpty)
                 Positioned(
@@ -490,7 +532,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                   left: 0,
                   right: 0,
                   child: SizedBox(
-                    height: 150,  // Increased height to accommodate content
+                    height: 150, // Increased height to accommodate content
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
@@ -501,31 +543,50 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                           onPageChanged: (index) {
                             setState(() {
                               _selectedCardIndex = index;
-                              
-                              // Update map focus to selected marker
-                              final lat = -0.502784 + ((index * 0.0002) % 0.003);
-                              final lng = 117.149304 + ((index * 0.0003) % 0.004);
-                              _mapController.move(LatLng(lat, lng), 16.0);
                             });
+
+                            final lat = schedules[index].latitude;
+                            final lng = schedules[index].longitude;
+                            if (lat != null && lng != null) {
+                              _mapController.move(LatLng(lat, lng), 16.0);
+                            }
                           },
                           itemBuilder: (context, index) {
+                            final schedule = schedules[index];
+                            final lat = schedule.latitude;
+                            final lng = schedule.longitude;
+                            final petugas =
+                                schedule.assignedUser?.name ??
+                                'Petugas belum ditetapkan';
+                            final trackingText =
+                                'Tracking: ${schedule.trackingsCount ?? 0}';
+                            final actionButton = _buildActionButton(schedule);
+
                             return GestureDetector(
                               onTap: () {
-                                // Navigate to detail page when card is tapped
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => DetailPickupPage(
-                                      scheduleId: schedules[index]["id"],
+                                      scheduleId: schedule.id.toString(),
                                     ),
                                   ),
-                                );
+                                ).then((_) {
+                                  if (mounted) {
+                                    _loadSchedules();
+                                  }
+                                });
                               },
                               child: Container(
-                                margin: EdgeInsets.symmetric(horizontal: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [Color(0xFF76DE8D), greenColor],
+                                    colors: [
+                                      const Color(0xFF76DE8D),
+                                      greenColor,
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -534,7 +595,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.1),
                                       blurRadius: 8,
-                                      offset: Offset(0, 2),
+                                      offset: const Offset(0, 2),
                                     ),
                                   ],
                                 ),
@@ -542,14 +603,17 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // Time and action button row
                                     Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            schedules[index]["time"],
+                                            '${schedule.formattedTime} • ${schedule.formattedDate}',
                                             style: whiteTextStyle.copyWith(
                                               fontSize: 14,
                                               fontWeight: semiBold,
@@ -560,17 +624,22 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                                               backgroundColor: whiteColor,
                                               foregroundColor: greenColor,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
-                                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                              minimumSize: Size(0, 0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: const Size(0, 0),
                                             ),
-                                            onPressed: () {
-                                              // Navigate to location
-                                              final lat = -0.502784 + ((index * 0.0002) % 0.003);
-                                              final lng = 117.149304 + ((index * 0.0003) % 0.004);
-                                              _navigateToLocation(LatLng(lat, lng));
-                                            },
+                                            onPressed:
+                                                lat != null && lng != null
+                                                ? () => _navigateToLocation(
+                                                    LatLng(lat, lng),
+                                                  )
+                                                : null,
                                             child: Text(
                                               "Menuju Lokasi",
                                               style: TextStyle(
@@ -582,56 +651,73 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                                         ],
                                       ),
                                     ),
-                                    
-                                    // Customer info
                                     Padding(
-                                      padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        8,
+                                      ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            schedules[index]["customer_name"],
+                                            schedule.title,
                                             style: whiteTextStyle.copyWith(
                                               fontSize: 16,
                                               fontWeight: semiBold,
                                             ),
                                           ),
-                                          SizedBox(height: 2),
+                                          const SizedBox(height: 2),
                                           Row(
                                             children: [
-                                              Icon(
+                                              const Icon(
                                                 Icons.location_on_outlined,
                                                 color: Colors.white,
                                                 size: 14,
                                               ),
-                                              SizedBox(width: 4),
+                                              const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
-                                                  schedules[index]["address"],
-                                                  style: whiteTextStyle.copyWith(
-                                                    fontSize: 12,
-                                                  ),
+                                                  schedule.description ??
+                                                      'Alamat belum tersedia',
+                                                  style: whiteTextStyle
+                                                      .copyWith(fontSize: 12),
                                                   maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
                                           ),
-                                          SizedBox(height: 6),
+                                          const SizedBox(height: 6),
                                           Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(10),
+                                              color: Colors.white.withOpacity(
+                                                0.2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
                                             child: Text(
-                                              "${schedules[index]["waste_type"]} - ${schedules[index]["waste_weight"]}",
+                                              '$petugas • $trackingText',
                                               style: whiteTextStyle.copyWith(
                                                 fontSize: 11,
                                                 fontWeight: medium,
                                               ),
                                             ),
                                           ),
+                                          const SizedBox(height: 8),
+                                          _buildStatusChip(schedule),
+                                          if (actionButton != null) ...[
+                                            const SizedBox(height: 8),
+                                            actionButton,
+                                          ],
                                         ],
                                       ),
                                     ),
@@ -641,22 +727,26 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                             );
                           },
                         ),
-                        
+
                         // Left Arrow
                         Positioned(
                           left: 0,
                           child: GestureDetector(
-                            onTap: _selectedCardIndex > 0 ? () {
-                              _pageController.previousPage(
-                                duration: Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            } : null,
+                            onTap: _selectedCardIndex > 0
+                                ? () {
+                                    _pageController.previousPage(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                : null,
                             child: Container(
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: _selectedCardIndex > 0 ? greenColor : Colors.grey.withOpacity(0.3),
+                                color: _selectedCardIndex > 0
+                                    ? greenColor
+                                    : Colors.grey.withOpacity(0.3),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -674,7 +764,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                             ),
                           ),
                         ),
-                        
+
                         // "Lihat Jadwal" button between arrows
                         Positioned(
                           bottom: -5,
@@ -684,7 +774,10 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                               Navigator.pop(context);
                             },
                             child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: greenColor,
                                 borderRadius: BorderRadius.circular(20),
@@ -717,22 +810,26 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
                             ),
                           ),
                         ),
-                        
+
                         // Right Arrow
                         Positioned(
                           right: 0,
                           child: GestureDetector(
-                            onTap: _selectedCardIndex < schedules.length - 1 ? () {
-                              _pageController.nextPage(
-                                duration: Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            } : null,
+                            onTap: _selectedCardIndex < schedules.length - 1
+                                ? () {
+                                    _pageController.nextPage(
+                                      duration: Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                : null,
                             child: Container(
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: _selectedCardIndex < schedules.length - 1 ? greenColor : Colors.grey.withOpacity(0.3),
+                                color: _selectedCardIndex < schedules.length - 1
+                                    ? greenColor
+                                    : Colors.grey.withOpacity(0.3),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -760,9 +857,12 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
       ],
     );
   }
-  
+
   // Helper method to build map control buttons
-  Widget _buildMapControlButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildMapControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -779,36 +879,23 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: greenColor,
-          size: 20,
-        ),
+        child: Icon(icon, color: greenColor, size: 20),
       ),
     );
   }
-  
+
   // Fungsi untuk membuat marker pada peta
-  List<Marker> _buildMarkers(List<Map<String, dynamic>> schedules) {
-    List<Marker> markers = [];
-    
+  List<Marker> _buildMarkers(List<ScheduleApiModel> schedules) {
+    final markers = <Marker>[];
+
     for (int i = 0; i < schedules.length; i++) {
       final schedule = schedules[i];
-      
-      // In a real app, you would get lat/lng from your API
-      // For demo purposes, we'll generate locations around the center point
-      final lat = -0.502784 + ((i * 0.0002) % 0.003);
-      final lng = 117.149304 + ((i * 0.0003) % 0.004);
-      
-      // Set icon color based on waste type
-      Color markerColor;
-      if (schedule["waste_type"] == "Organik") {
-        markerColor = greenColor;
-      } else {
-        markerColor = Colors.red;
-      }
-      
-      // Create marker
+      final lat = schedule.latitude;
+      final lng = schedule.longitude;
+      if (lat == null || lng == null) continue;
+
+      final markerColor = _statusColor(schedule.status);
+
       markers.add(
         Marker(
           point: LatLng(lat, lng),
@@ -818,30 +905,27 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
             onTap: () {
               setState(() {
                 _selectedCardIndex = i;
-                
-                // Scroll to selected card
-                _pageController.animateToPage(
-                  i,
-                  duration: Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
               });
-              
-              // Center map on this location
+
+              _pageController.animateToPage(
+                i,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+
               _mapController.move(LatLng(lat, lng), 17.0);
             },
             child: Container(
               decoration: BoxDecoration(
-                // Highlight selected marker
-                border: _selectedCardIndex == i 
-                  ? Border.all(color: Colors.white, width: 2) 
-                  : null,
+                border: _selectedCardIndex == i
+                    ? Border.all(color: Colors.white, width: 2)
+                    : null,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
                     blurRadius: 4,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -856,60 +940,312 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView> with SingleTick
         ),
       );
     }
-    
+
     return markers;
   }
-  
-  List<Map<String, dynamic>> _getFilteredSchedules() {
-    // Data dummy untuk pengujian
-    final List<Map<String, dynamic>> schedules = [
-      {
-        "id": "001",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim 8, Kota Samarinda, Kalimantan Timur",
-        "time": "08:00 - 09:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "pending",
-        "estimatedDistance": "500m • 10 menit",
-      },
-      {
-        "id": "002",
-        "customer_name": "Siti Rahayu",
-        "address": "Perumahan Indah Blok B, Kota Samarinda, Kalimantan Timur",
-        "time": "09:30 - 10:30",
-        "waste_type": "Anorganik",
-        "waste_weight": "1.5 kg",
-        "status": "completed",
-        "estimatedDistance": "800m • 15 menit",
-      },
-      {
-        "id": "003",
-        "customer_name": "Ahmad Rizal",
-        "address": "Jl. Juanda No. 45, Kota Samarinda, Kalimantan Timur",
-        "time": "11:00 - 12:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "in_progress",
-        "estimatedDistance": "1.2km • 20 menit",
-      },
-      {
-        "id": "004",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim 8, Kota Samarinda, Kalimantan Timur",
-        "time": "14:00 - 16:00",
-        "waste_type": "Anorganik",
-        "waste_weight": "2 kg",
-        "status": "pending",
-        "estimatedDistance": "1.5km • 25 menit",
-      },
-    ];
-    
-    // Filter jadwal sesuai dengan tab yang dipilih
+
+  List<ScheduleApiModel> _getFilteredSchedules() {
     if (_selectedFilter == "semua") {
-      return schedules;
-    } else {
-      return schedules.where((s) => s["status"] == _selectedFilter).toList();
+      return List<ScheduleApiModel>.from(_schedules);
     }
+
+    final filtered = _schedules
+        .where(
+          (schedule) => _normalizeStatus(schedule.status) == _selectedFilter,
+        )
+        .toList();
+    filtered.sort((a, b) {
+      final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return aDate.compareTo(bDate);
+    });
+    return filtered;
+  }
+
+  Color _statusColor(String? status) {
+    switch (_normalizeStatus(status)) {
+      case 'pending':
+        return Colors.orange;
+      case 'in_progress':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      default:
+        return greenColor;
+    }
+  }
+
+  String _normalizeStatus(String? status) => status?.toLowerCase() ?? 'unknown';
+
+  Widget _buildStatusChip(ScheduleApiModel schedule) {
+    final normalizedStatus = _normalizeStatus(schedule.status);
+    late Color chipColor;
+    late String label;
+
+    switch (normalizedStatus) {
+      case 'pending':
+        chipColor = Colors.orange;
+        label = 'Menunggu';
+        break;
+      case 'in_progress':
+        chipColor = Colors.blue;
+        label = 'Diproses';
+        break;
+      case 'completed':
+        chipColor = Colors.green;
+        label = 'Selesai';
+        break;
+      case 'cancelled':
+        chipColor = Colors.grey;
+        label = 'Dibatalkan';
+        break;
+      default:
+        chipColor = Colors.grey;
+        label = normalizedStatus;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: chipColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label.toUpperCase(),
+            style: whiteTextStyle.copyWith(
+              fontSize: 11,
+              fontWeight: semiBold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildActionButton(ScheduleApiModel schedule) {
+    final normalizedStatus = _normalizeStatus(schedule.status);
+    String? label;
+
+    switch (normalizedStatus) {
+      case 'pending':
+        label = 'Mulai Pengambilan';
+        break;
+      case 'in_progress':
+        label = 'Tandai Selesai';
+        break;
+      default:
+        label = null;
+    }
+
+    if (label == null) return null;
+
+  final isProcessing = _updatingScheduleIds.contains(schedule.id);
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: greenColor,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed:
+            isProcessing ? null : () => _handleScheduleAction(schedule),
+        child: isProcessing
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+                ),
+              )
+            : Text(
+                label,
+                style: blackTextStyle.copyWith(
+                  fontSize: 13,
+                  fontWeight: semiBold,
+                  color: greenColor,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Future<void> _handleScheduleAction(ScheduleApiModel schedule) async {
+    final normalizedStatus = _normalizeStatus(schedule.status);
+
+    if (normalizedStatus == 'pending') {
+      final confirmed = await _showStatusConfirmation(
+        title: 'Mulai Pengambilan',
+        message:
+            'Status jadwal akan diubah menjadi Diproses dan tampil di daftar tugas aktif.',
+        confirmLabel: 'Mulai',
+      );
+
+      if (confirmed) {
+        await _updateScheduleStatus(
+          schedule,
+          'in_progress',
+          successMessage: 'Pengambilan ditandai sedang diproses.',
+        );
+      }
+      return;
+    }
+
+    if (normalizedStatus == 'in_progress') {
+      final confirmed = await _showStatusConfirmation(
+        title: 'Selesaikan Pengambilan',
+        message:
+            'Pastikan sampah sudah diambil. Status akan ditandai sebagai selesai.',
+        confirmLabel: 'Selesai',
+      );
+
+      if (confirmed) {
+        await _updateScheduleStatus(
+          schedule,
+          'completed',
+          successMessage: 'Pengambilan selesai dicatat.',
+        );
+      }
+      return;
+    }
+
+    if (normalizedStatus == 'cancelled') {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Jadwal ini telah dibatalkan oleh sistem.'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateScheduleStatus(
+    ScheduleApiModel schedule,
+    String newStatus, {
+    String? successMessage,
+  }) async {
+    if (_updatingScheduleIds.contains(schedule.id)) return;
+
+    setState(() {
+      _updatingScheduleIds.add(schedule.id);
+    });
+
+    try {
+      final updated = await _scheduleApiService.updateScheduleStatus(
+        schedule.id,
+        newStatus,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        final index =
+            _schedules.indexWhere((element) => element.id == schedule.id);
+        if (index != -1) {
+          _schedules[index] = updated;
+        }
+        _updatingScheduleIds.remove(schedule.id);
+        final filtered = _getFilteredSchedules();
+        _selectedCardIndex =
+            filtered.indexWhere((element) => element.id == updated.id);
+        if (_selectedCardIndex >= 0 && _pageController.hasClients) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_pageController.hasClients) {
+              _pageController.animateToPage(
+                _selectedCardIndex,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
+        }
+      });
+
+      _adjustMapBounds();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(successMessage ?? 'Status jadwal diperbarui.'),
+          backgroundColor: greenColor,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _updatingScheduleIds.remove(schedule.id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui status: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+        ),
+      );
+    }
+  }
+
+  Future<bool> _showStatusConfirmation({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title, style: blackTextStyle.copyWith(fontWeight: bold)),
+          content: Text(
+            message,
+            style: blackTextStyle.copyWith(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Batal',
+                style: blackTextStyle.copyWith(color: Colors.red),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(confirmLabel),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
   }
 }

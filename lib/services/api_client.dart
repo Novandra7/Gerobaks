@@ -61,6 +61,22 @@ class ApiClient {
       statusCode: resp.statusCode,
     );
   }
+
+  Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
+    final uri = _buildUri(path);
+    final headers = await _headers();
+    final resp = await http
+        .patch(uri, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (resp.body.isEmpty) return null;
+      return jsonDecode(resp.body);
+    }
+    throw HttpException(
+      'PATCH ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+      statusCode: resp.statusCode,
+    );
+  }
 }
 
 extension on ApiClient {

@@ -11,20 +11,17 @@ class LocalStorageService {
   static const String _notificationKey = 'notifications';
   static const String _subscriptionKey = 'user_subscription';
   static const String _userKey = 'user_data';
-  static const String _pointsKey = 'user_points';
   static const String _isLoggedInKey = 'is_logged_in';
   static const String _lastLoginKey = 'last_login';
-  static const String _addressesKey = 'saved_addresses';
-  static const String _settingsKey = 'app_settings';
   static const String _credentialsKey = 'user_credentials';
   static const String _userRoleKey = 'user_role'; // Explicit key for role
-  
+
   final Logger _logger = Logger();
-  
+
   // Role constants
   static const String roleEndUser = 'end_user';
   static const String roleMitra = 'mitra';
-  
+
   // Public getter for login key
   String getLoginKey() => _isLoggedInKey;
 
@@ -92,14 +89,15 @@ class LocalStorageService {
     await _preferences!.remove(_subscriptionKey);
   }
 
-
   // User Data Storage
   Future<void> saveUserData(Map<String, dynamic> userData) async {
-    _logger.d("Saving user data: ${userData['name']} with role: ${userData['role'] ?? 'unknown'}");
-    
+    _logger.d(
+      "Saving user data: ${userData['name']} with role: ${userData['role'] ?? 'unknown'}",
+    );
+
     final String userJson = jsonEncode(userData);
     await _preferences!.setString(_userKey, userJson);
-    
+
     // Jika ada role, simpan secara terpisah untuk memudahkan akses
     if (userData.containsKey('role')) {
       _logger.d("Explicitly saving role: ${userData['role']}");
@@ -121,7 +119,7 @@ class LocalStorageService {
   Future<Map<String, dynamic>?> getRawUser() async {
     return getUserData();
   }
-  
+
   /// Mendapatkan role pengguna yang tersimpan
   Future<String?> getUserRole() async {
     // Coba ambil dari key khusus role dulu
@@ -129,17 +127,17 @@ class LocalStorageService {
     if (role != null) {
       return role;
     }
-    
+
     // Jika tidak ada, coba ambil dari user data
     final userData = await getUserData();
     return userData?['role'] as String?;
   }
-  
+
   // Enhanced User Management
   Future<void> saveUser(UserModel user) async {
     // Convert to JSON
     Map<String, dynamic> userData = user.toJson();
-    
+
     // Preserve password and role if they exist
     final existingData = await getUserData();
     if (existingData != null) {
@@ -150,15 +148,17 @@ class LocalStorageService {
         userData['role'] = existingData['role'];
       }
     }
-    
+
     // Save the data
     await saveUserData(userData);
     await saveBool(_isLoggedInKey, true);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
-    
-    _logger.i("User saved: ${user.name} (${user.email}) with role: ${userData['role'] ?? 'unknown'}");
+
+    _logger.i(
+      "User saved: ${user.name} (${user.email}) with role: ${userData['role'] ?? 'unknown'}",
+    );
   }
-  
+
   Future<UserModel?> getUser() async {
     final userData = await getUserData();
     if (userData != null) {
@@ -171,7 +171,7 @@ class LocalStorageService {
     }
     return null;
   }
-  
+
   Future<void> updateUserPoints(int points) async {
     final user = await getUser();
     if (user != null) {
@@ -179,17 +179,17 @@ class LocalStorageService {
       await saveUser(updatedUser);
     }
   }
-  
+
   Future<int> getUserPoints() async {
     final user = await getUser();
     return user?.points ?? 0;
   }
-  
+
   Future<void> addPoints(int amount) async {
     final currentPoints = await getUserPoints();
     await updateUserPoints(currentPoints + amount);
   }
-  
+
   Future<void> saveAddress(String address) async {
     final user = await getUser();
     if (user != null) {
@@ -200,28 +200,28 @@ class LocalStorageService {
       }
     }
   }
-  
+
   Future<List<String>> getSavedAddresses() async {
     final user = await getUser();
     return user?.savedAddresses ?? [];
   }
-  
+
   Future<bool> isLoggedIn() async {
     return await getBool(_isLoggedInKey, defaultValue: false);
   }
-  
+
   /// Melakukan logout dengan cara menyimpan status login menjadi false,
   /// tapi tetap menyimpan data user dan kredensial untuk auto-login berikutnya
   Future<void> logout() async {
     // Only change login status without removing user data
     await saveBool(_isLoggedInKey, false);
-    
+
     // Save the logout timestamp but don't delete the user data
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
-    
+
     _logger.i("User logged out but data preserved for future auto-login");
   }
-  
+
   /// Melakukan full logout dengan menghapus semua data login
   Future<void> fullLogout() async {
     await saveBool(_isLoggedInKey, false);
@@ -229,7 +229,7 @@ class LocalStorageService {
     await remove(_userRoleKey);
     await remove(_credentialsKey);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
-    
+
     _logger.i("User fully logged out with all data cleared");
   }
 
@@ -257,16 +257,16 @@ class LocalStorageService {
   Future<int> getInt(String key, {int defaultValue = 0}) async {
     return _preferences!.getInt(key) ?? defaultValue;
   }
-  
+
   // General key-value storage methods for any temporary data
   Future<void> saveValue(String key, String value) async {
     await _preferences!.setString(key, value);
   }
-  
+
   Future<String?> getValue(String key) async {
     return _preferences!.getString(key);
   }
-  
+
   Future<bool> removeValue(String key) async {
     return await _preferences!.remove(key);
   }
@@ -281,14 +281,11 @@ class LocalStorageService {
 
   // Credential Management
   Future<void> saveCredentials(String email, String password) async {
-    final credentials = {
-      'email': email,
-      'password': password,
-    };
+    final credentials = {'email': email, 'password': password};
     await _preferences!.setString(_credentialsKey, jsonEncode(credentials));
     _logger.d("Credentials saved for: $email");
   }
-  
+
   Future<Map<String, String>?> getCredentials() async {
     final String? credentialsJson = _preferences!.getString(_credentialsKey);
     if (credentialsJson != null) {

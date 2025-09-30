@@ -14,10 +14,11 @@ class SignUpBatch4Page extends StatefulWidget {
   State<SignUpBatch4Page> createState() => _SignUpBatch4PageState();
 }
 
-class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin {
+class _SignUpBatch4PageState extends State<SignUpBatch4Page>
+    with AppDialogMixin {
   final _addressController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   String? _selectedLocation;
   double? _selectedLat;
   double? _selectedLng;
@@ -48,7 +49,8 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
 
   @override
   Widget build(BuildContext context) {
-    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final arguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
     return Scaffold(
       backgroundColor: whiteColor,
@@ -118,9 +120,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
 
                     Text(
                       'Langkah 4 dari 5 - Informasi Alamat',
-                      style: greyTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: greyTextStyle.copyWith(fontSize: 14),
                     ),
 
                     const SizedBox(height: 16),
@@ -128,9 +128,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                     Text(
                       'Masukkan alamat dan tandai lokasi tempat tinggal Anda',
                       textAlign: TextAlign.center,
-                      style: greyTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: greyTextStyle.copyWith(fontSize: 14),
                     ),
 
                     const SizedBox(height: 30),
@@ -182,7 +180,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                           child: Container(
                             height: 4,
                             decoration: BoxDecoration(
-                              color: greyColor.withOpacity(0.3),
+                              color: greyColor.withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -218,19 +216,21 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                       ),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: _selectedLocation != null ? greenColor : greyColor.withOpacity(0.5),
+                          color: _selectedLocation != null
+                              ? greenColor
+                              : greyColor.withValues(alpha: 0.5),
                           width: _selectedLocation != null ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: _selectedLocation != null 
-                          ? [
-                              BoxShadow(
-                                color: greenColor.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              ),
-                            ] 
-                          : null,
+                        boxShadow: _selectedLocation != null
+                            ? [
+                                BoxShadow(
+                                  color: greenColor.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : null,
                       ),
                       child: InkWell(
                         onTap: _openMapPicker,
@@ -238,7 +238,8 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min, // Agar tidak terlalu besar
+                            mainAxisSize:
+                                MainAxisSize.min, // Agar tidak terlalu besar
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
@@ -246,35 +247,42 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: _selectedLocation != null 
-                                        ? greenColor.withOpacity(0.1) 
-                                        : greyColor.withOpacity(0.1),
+                                      color: _selectedLocation != null
+                                          ? greenColor.withValues(alpha: 0.1)
+                                          : greyColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
                                       Icons.location_on,
-                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      color: _selectedLocation != null
+                                          ? greenColor
+                                          : greyColor,
                                       size: 24,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Pilih Lokasi di Peta',
-                                          style: (_selectedLocation != null ? greenTextStyle : blackTextStyle).copyWith(
-                                            fontSize: 16,
-                                            fontWeight: semiBold,
-                                          ),
+                                          style:
+                                              (_selectedLocation != null
+                                                      ? greenTextStyle
+                                                      : blackTextStyle)
+                                                  .copyWith(
+                                                    fontSize: 16,
+                                                    fontWeight: semiBold,
+                                                  ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          _selectedLocation != null 
-                                            ? 'Lokasi sudah dipilih' 
-                                            : 'Klik untuk memilih lokasi',
+                                          _selectedLocation != null
+                                              ? 'Lokasi sudah dipilih'
+                                              : 'Klik untuk memilih lokasi',
                                           style: greyTextStyle.copyWith(
                                             fontSize: 12,
                                           ),
@@ -285,16 +293,18 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: _selectedLocation != null 
-                                        ? greenColor.withOpacity(0.1) 
-                                        : Colors.transparent,
+                                      color: _selectedLocation != null
+                                          ? greenColor.withValues(alpha: 0.1)
+                                          : Colors.transparent,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Icon(
-                                      _selectedLocation != null 
-                                        ? Icons.check_circle 
-                                        : Icons.arrow_forward_ios,
-                                      color: _selectedLocation != null ? greenColor : greyColor,
+                                      _selectedLocation != null
+                                          ? Icons.check_circle
+                                          : Icons.arrow_forward_ios,
+                                      color: _selectedLocation != null
+                                          ? greenColor
+                                          : greyColor,
                                       size: _selectedLocation != null ? 22 : 16,
                                     ),
                                   ),
@@ -306,15 +316,16 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: greenColor.withOpacity(0.1),
+                                    color: greenColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: greenColor.withOpacity(0.3),
+                                      color: greenColor.withValues(alpha: 0.3),
                                       width: 1,
                                     ),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -356,10 +367,12 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
+                                    color: Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.orange.withOpacity(0.3),
+                                      color: Colors.orange.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       width: 1,
                                     ),
                                   ),
@@ -394,10 +407,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                       const SizedBox(height: 8),
                       Text(
                         '* Lokasi pada peta wajib dipilih',
-                        style: TextStyle(
-                          color: redcolor,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: redcolor, fontSize: 12),
                       ),
                     ],
 
@@ -411,72 +421,87 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page> with AppDialogMixin
                       showIcon: true,
                       icon: Icons.arrow_forward,
                       onPressed: () async {
-                        if (_formKey.currentState!.validate() && _selectedLocation != null) {
+                        if (_formKey.currentState!.validate() &&
+                            _selectedLocation != null) {
                           // Show loading dialog
                           showAppLoadingDialog(
                             message: 'Mendaftarkan akun Anda...',
                           );
-                          
+
                           try {
                             // Create user data object with all information
                             final userData = {
                               ...?arguments,
-                              'address': _selectedLocation ?? _addressController.text,
+                              'address':
+                                  _selectedLocation ?? _addressController.text,
                               'selectedLocation': _selectedLocation,
                               'latitude': _selectedLat,
                               'longitude': _selectedLng,
                             };
-                            
+
                             // Register the user first using UserService
                             final userService = await UserService.getInstance();
                             await userService.init();
-                            
+
                             // Register user with basic info
                             final user = await userService.registerUser(
-                              name: userData['fullName'] ?? userData['name'] ?? 'User',
+                              name:
+                                  userData['fullName'] ??
+                                  userData['name'] ??
+                                  'User',
                               email: userData['email'],
                               password: userData['password'],
                               phone: userData['phone'],
-                              address: _selectedLocation ?? _addressController.text,
+                              address:
+                                  _selectedLocation ?? _addressController.text,
                               latitude: _selectedLat,
                               longitude: _selectedLng,
                             );
-                            
+
                             // Save location coordinates in user data
                             if (_selectedLat != null && _selectedLng != null) {
                               // Save as a saved address if we have a pinpointed location
                               if (_selectedLocation != null) {
-                                List<String> savedAddresses = user.savedAddresses ?? [];
-                                if (!savedAddresses.contains(_selectedLocation)) {
+                                List<String> savedAddresses =
+                                    user.savedAddresses ?? [];
+                                if (!savedAddresses.contains(
+                                  _selectedLocation,
+                                )) {
                                   savedAddresses.add(_selectedLocation!);
-                                  await userService.updateSavedAddresses(savedAddresses);
+                                  await userService.updateSavedAddresses(
+                                    savedAddresses,
+                                  );
                                 }
                               }
                             }
-                            
+
                             // Mark onboarding complete
-                            final signUpService = await SignUpService.getInstance();
+                            final signUpService =
+                                await SignUpService.getInstance();
                             await signUpService.markOnboardingComplete();
-                            
-                            // Close loading dialog
-                            if (mounted) Navigator.of(context).pop();
-                            
-                            // Navigate to subscription page with user data
-                            if (mounted) {
-                              Navigator.pushNamed(
-                                context,
-                                '/sign-up-subscription',
-                                arguments: userData,
-                              );
+
+                            if (!context.mounted) {
+                              return;
                             }
+
+                            Navigator.of(context).pop();
+
+                            Navigator.pushNamed(
+                              context,
+                              '/sign-up-subscription',
+                              arguments: userData,
+                            );
                           } catch (e) {
-                            // Close loading dialog
-                            if (mounted) Navigator.of(context).pop();
-                            
-                            // Show error dialog
+                            if (!context.mounted) {
+                              return;
+                            }
+
+                            Navigator.of(context).pop();
+
                             showAppErrorDialog(
                               title: 'Gagal Mendaftar',
-                              message: 'Terjadi kesalahan saat mendaftarkan akun: ${e.toString()}',
+                              message:
+                                  'Terjadi kesalahan saat mendaftarkan akun: ${e.toString()}',
                               buttonText: 'Coba Lagi',
                             );
                           }

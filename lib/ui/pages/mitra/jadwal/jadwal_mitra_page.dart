@@ -1,13 +1,13 @@
-﻿import 'package:bank_sha/services/local_storage_service.dart';
+﻿import 'package:bank_sha/models/schedule_api_model.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:bank_sha/ui/widgets/mitra/jadwal_mitra_header.dart';
 import 'package:bank_sha/ui/widgets/shared/filter_tab.dart';
-import 'package:bank_sha/ui/widgets/shared/stat_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 
 class JadwalMitraPage extends StatefulWidget {
   const JadwalMitraPage({super.key});
@@ -23,11 +23,14 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   bool _isLoading = false;
   String _selectedFilter = "semua";
   late TabController _tabController;
+  final ScheduleApiService _scheduleApiService = ScheduleApiService();
+  List<ScheduleApiModel> _schedules = [];
+  String? _errorMessage;
 
   // Stats data
-  int _locationCount = 7;
-  int _pendingCount = 5;
-  int _completedCount = 2;
+  int _locationCount = 0;
+  int _pendingCount = 0;
+  int _completedCount = 0;
 
   @override
   void initState() {
@@ -78,7 +81,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
       final userData = await localStorageService.getUserData();
 
       if (userData != null && userData["id"] != null) {
-        _driverId = userData["id"] as String;
+        _driverId = userData["id"].toString();
       } else {
         throw Exception("ID driver tidak ditemukan");
       }
@@ -107,25 +110,44 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   }
 
   Future<void> _loadSchedules() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
-      if (_driverId != null) {
-        // Simulate loading
-        await Future.delayed(const Duration(seconds: 1));
+      final driverId = int.tryParse(_driverId ?? '');
+      final result = await _scheduleApiService.listSchedules(
+        assignedTo: driverId,
+        perPage: 100,
+      );
 
-        // Update stats
-        setState(() {
-          _locationCount = 7;
-          _pendingCount = 5;
-          _completedCount = 2;
+      final schedules = List<ScheduleApiModel>.from(result.items)
+        ..sort((a, b) {
+          final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return aDate.compareTo(bDate);
         });
-      } else {
-        throw Exception("ID driver tidak ditemukan");
+
+      final pending = schedules
+          .where((s) => _normalizeStatus(s.status) == 'pending')
+          .length;
+      final completed = schedules
+          .where((s) => _normalizeStatus(s.status) == 'completed')
+          .length;
+
+      if (mounted) {
+        setState(() {
+          _schedules = schedules;
+          _locationCount = schedules.length;
+          _pendingCount = pending;
+          _completedCount = completed;
+        });
       }
     } catch (e) {
+      _errorMessage = e.toString();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -149,7 +171,6 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   Widget build(BuildContext context) {
     // Menghitung ukuran berdasarkan golden ratio
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
 
     return Scaffold(
@@ -338,18 +359,62 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
 
         // Schedule list
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: spacingMedium),
-            itemCount: _getFilteredSchedules().length,
-            itemBuilder: (context, index) {
-              final schedule = _getFilteredSchedules()[index];
-              return _buildScheduleCard(
-                schedule,
-                index,
-                isSmallScreen,
-                basePadding,
-              );
-            },
+          child: RefreshIndicator(
+            color: greenColor,
+            onRefresh: _loadSchedules,
+            child: Builder(
+              builder: (context) {
+                final filteredSchedules = _getFilteredSchedules();
+                if (filteredSchedules.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacingMedium,
+                      vertical: spacingMedium * 2,
+                    ),
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.format_list_bulleted,
+                              size: basePadding * 2,
+                              color: greenColor.withOpacity(0.3),
+                            ),
+                            SizedBox(height: spacingMedium),
+                            Text(
+                              _errorMessage != null
+                                  ? 'Gagal memuat jadwal. Tarik untuk mencoba lagi.'
+                                  : 'Belum ada jadwal untuk ditampilkan.',
+                              style: blackTextStyle.copyWith(
+                                fontSize: basePadding * 0.6,
+                                fontWeight: medium,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: spacingMedium),
+                  itemCount: filteredSchedules.length,
+                  itemBuilder: (context, index) {
+                    final schedule = filteredSchedules[index];
+                    return _buildScheduleCard(
+                      schedule,
+                      index,
+                      isSmallScreen,
+                      basePadding,
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -375,7 +440,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   }
 
   Widget _buildScheduleCard(
-    Map<String, dynamic> schedule,
+    ScheduleApiModel schedule,
     int index,
     bool isSmallScreen, [
     double? basePadding,
@@ -401,7 +466,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailPickupPage(scheduleId: schedule["id"]),
+            builder: (context) =>
+                DetailPickupPage(scheduleId: schedule.id.toString()),
           ),
         );
       },
@@ -444,7 +510,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       ),
                       SizedBox(width: spacingSmall * 0.5),
                       Text(
-                        schedule["time"],
+                        schedule.formattedTime,
                         style: blackTextStyle.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: subtitleFontSize,
@@ -458,15 +524,13 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       vertical: spacingSmall * 0.4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(
-                        schedule["status"],
-                      ).withOpacity(0.2),
+                      color: _getStatusColor(schedule.status).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(bp * 0.6),
                     ),
                     child: Text(
-                      _getStatusText(schedule["status"]),
+                      _getStatusText(schedule.status),
                       style: TextStyle(
-                        color: _getStatusColor(schedule["status"]),
+                        color: _getStatusColor(schedule.status),
                         fontWeight: FontWeight.bold,
                         fontSize: statusFontSize,
                       ),
@@ -507,7 +571,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                   Row(
                     children: [
                       Text(
-                        schedule["customer_name"],
+                        schedule.title,
                         style: whiteTextStyle.copyWith(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.bold,
@@ -516,7 +580,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       Spacer(),
                       // Add distance indicator
                       Text(
-                        schedule["estimatedDistance"],
+                        schedule.formattedDate,
                         style: whiteTextStyle.copyWith(
                           fontSize: chipFontSize,
                           fontWeight: medium,
@@ -535,7 +599,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       SizedBox(width: spacingSmall * 0.5),
                       Expanded(
                         child: Text(
-                          schedule["address"],
+                          schedule.description ?? 'Alamat belum tersedia',
                           style: whiteTextStyle.copyWith(
                             fontSize: subtitleFontSize,
                           ),
@@ -549,13 +613,15 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                   Row(
                     children: [
                       _buildWasteTypeChip(
-                        schedule["waste_type"],
+                        schedule.assignedUser?.name == null
+                            ? 'Petugas belum ditetapkan'
+                            : 'Petugas: ${schedule.assignedUser!.name}',
                         isSmallScreen,
                         bp,
                       ),
                       SizedBox(width: spacingSmall),
                       _buildWasteWeightChip(
-                        schedule["waste_weight"],
+                        'Tracking: ${schedule.trackingsCount ?? 0}',
                         isSmallScreen,
                         bp,
                       ),
@@ -624,8 +690,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
+  Color _getStatusColor(String? status) {
+    switch (_normalizeStatus(status)) {
       case 'pending':
         return Colors.orange;
       case 'in_progress':
@@ -637,8 +703,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status) {
+  String _getStatusText(String? status) {
+    switch (_normalizeStatus(status)) {
       case 'pending':
         return 'Menunggu';
       case 'in_progress':
@@ -646,74 +712,29 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
       case 'completed':
         return 'Selesai';
       default:
-        return 'Unknown';
+        return 'Tidak diketahui';
     }
   }
 
-  List<Map<String, dynamic>> _getFilteredSchedules() {
-    // Data dummy untuk pengujian
-    final List<Map<String, dynamic>> schedules = [
-      {
-        "id": "001",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim B, Kota Samarinda, Kalimantan Timur",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "pending",
-        "estimatedDistance": "500m • 10 menit",
-        "priority": 1,
-      },
-      {
-        "id": "002",
-        "customer_name": "Siti Rahayu",
-        "address": "Perumahan Indah Blok B, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Anorganik",
-        "waste_weight": "1.5 kg",
-        "status": "completed",
-        "estimatedDistance": "800m • 15 menit",
-        "priority": 3,
-      },
-      {
-        "id": "003",
-        "customer_name": "Ahmad Rizal",
-        "address": "Jl. Juanda No. 45, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "in_progress",
-        "estimatedDistance": "1.2km • 20 menit",
-        "priority": 2,
-      },
-      {
-        "id": "004",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim B, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "2 kg",
-        "status": "pending",
-        "estimatedDistance": "1.5km • 25 menit",
-        "priority": 4,
-      },
-    ];
-
-    // Filter jadwal sesuai dengan tab yang dipilih
-    List<Map<String, dynamic>> filtered;
+  List<ScheduleApiModel> _getFilteredSchedules() {
     if (_selectedFilter == "semua") {
-      filtered = schedules;
-    } else {
-      filtered = schedules
-          .where((s) => s["status"] == _selectedFilter)
-          .toList();
+      return List<ScheduleApiModel>.from(_schedules);
     }
 
-    // Sort by priority (in a real app, this would be based on time or distance)
-    filtered.sort((a, b) => a["priority"].compareTo(b["priority"]));
-
+    final filtered = _schedules
+        .where(
+          (schedule) => _normalizeStatus(schedule.status) == _selectedFilter,
+        )
+        .toList();
+    filtered.sort((a, b) {
+      final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return aDate.compareTo(bDate);
+    });
     return filtered;
   }
+
+  String _normalizeStatus(String? status) => status?.toLowerCase() ?? 'unknown';
 
   // Method to open the map view
   void _openMapView() {

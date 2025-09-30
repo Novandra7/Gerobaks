@@ -12,9 +12,10 @@ class GoldenKeluhanPage extends StatefulWidget {
   State<GoldenKeluhanPage> createState() => _GoldenKeluhanPageState();
 }
 
-class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTickerProviderStateMixin {
+class _GoldenKeluhanPageState extends State<GoldenKeluhanPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   // Data dummy untuk hasil keluhan yang sudah ada
   final List<Map<String, dynamic>> daftarKeluhan = [
     {
@@ -26,7 +27,8 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'tanggal': '2025-08-01',
       'status': 'Sedang Diproses',
       'lokasi': 'Jl. Merdekan No. 123, Samarinda',
-      'deskripsi': 'Petugas belum mengambil sampah padahal sudah dijadwalkan untuk hari Senin.'
+      'deskripsi':
+          'Petugas belum mengambil sampah padahal sudah dijadwalkan untuk hari Senin.',
     },
     {
       'id': '1723456789013',
@@ -37,8 +39,10 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'tanggal': '2025-07-30',
       'status': 'Selesai',
       'lokasi': 'Jl. Merdekan No. 123, Samarinda',
-      'deskripsi': 'Petugas datang 2 jam lebih lambat dari jadwal yang ditentukan.',
-      'balasan': 'Terima kasih atas laporannya. Kami akan melakukan perbaikan sistem untuk memastikan jadwal tepat waktu.'
+      'deskripsi':
+          'Petugas datang 2 jam lebih lambat dari jadwal yang ditentukan.',
+      'balasan':
+          'Terima kasih atas laporannya. Kami akan melakukan perbaikan sistem untuk memastikan jadwal tepat waktu.',
     },
     {
       'id': '1723456789014',
@@ -49,7 +53,8 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'tanggal': '2025-08-20',
       'status': 'Menunggu',
       'lokasi': 'Jl. Merdekan No. 123, Samarinda',
-      'deskripsi': 'Aplikasi selalu crash ketika mencoba melihat tracking truk sampah.',
+      'deskripsi':
+          'Aplikasi selalu crash ketika mencoba melihat tracking truk sampah.',
     },
     {
       'id': '1723456789015',
@@ -60,8 +65,10 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'tanggal': '2025-08-15',
       'status': 'Selesai',
       'lokasi': 'Jl. Merdekan No. 123, Samarinda',
-      'deskripsi': 'Pengambilan sampah rutin selalu terlambat 1-2 jam dari jadwal yang ditentukan.',
-      'balasan': 'Terima kasih atas laporannya. Kami telah mengingatkan petugas untuk tepat waktu.'
+      'deskripsi':
+          'Pengambilan sampah rutin selalu terlambat 1-2 jam dari jadwal yang ditentukan.',
+      'balasan':
+          'Terima kasih atas laporannya. Kami telah mengingatkan petugas untuk tepat waktu.',
     },
     {
       'id': '1723456789016',
@@ -72,10 +79,11 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'tanggal': '2025-08-10',
       'status': 'Sedang Diproses',
       'lokasi': 'Jl. Merdekan No. 123, Samarinda',
-      'deskripsi': 'Petugas tidak memisahkan sampah organik dan anorganik sesuai prosedur.',
+      'deskripsi':
+          'Petugas tidak memisahkan sampah organik dan anorganik sesuai prosedur.',
     },
   ];
-  
+
   // Filter state
   List<Map<String, dynamic>> filteredKeluhan = [];
   String selectedStatus = 'Semua';
@@ -85,7 +93,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
 
   // Sections for tab view - simplified to avoid overflow
   final List<String> tabSections = ['Semua', 'Riwayat', 'Terbaru'];
-  
+
   @override
   void initState() {
     super.initState();
@@ -120,7 +128,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       });
     }
   }
-  
+
   // Sort by most recent
   void _sortByRecent() {
     filteredKeluhan.sort((a, b) {
@@ -134,13 +142,12 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
   Widget _buildAnimatedTab(int index, IconData icon) {
     final isSelected = _tabController.index == index;
     final String tabText = tabSections[index];
-    
+
     // Golden ratio derived sizes
     final phi = 1.618;
     final baseSize = 14.0;
-    final largeSize = baseSize * phi; // ~22.7
     final smallSize = baseSize / phi; // ~8.7
-    
+
     return Tab(
       height: 46, // Slightly taller for better touch targets
       child: Align(
@@ -164,14 +171,16 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       shape: BoxShape.circle,
                     ),
                   ),
-                
+
                 // Icon container
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeOutCubic,
-                  padding: EdgeInsets.all(isSelected ? smallSize : smallSize * 0.8),
+                  padding: EdgeInsets.all(
+                    isSelected ? smallSize : smallSize * 0.8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected 
+                    color: isSelected
                         ? Colors.white.withOpacity(0.25)
                         : Colors.transparent,
                     shape: BoxShape.circle,
@@ -191,9 +200,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                 ),
               ],
             ),
-            
+
             const SizedBox(width: 8),
-            
+
             // Animated text for better transition - now shows full text since we've simplified the labels
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
@@ -218,28 +227,37 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
     setState(() {
       filteredKeluhan = daftarKeluhan.where((keluhan) {
         // Filter berdasarkan status
-        bool statusMatch = selectedStatus == 'Semua' || 
-            keluhan['status'] == selectedStatus;
-            
+        bool statusMatch =
+            selectedStatus == 'Semua' || keluhan['status'] == selectedStatus;
+
         // Filter berdasarkan kategori
-        bool categoryMatch = selectedCategory == 'Semua' ||
+        bool categoryMatch =
+            selectedCategory == 'Semua' ||
             keluhan['kategori'] == selectedCategory;
-            
+
         // Filter berdasarkan prioritas
-        bool priorityMatch = selectedPriority == 'Semua' ||
+        bool priorityMatch =
+            selectedPriority == 'Semua' ||
             keluhan['prioritas'] == selectedPriority;
-            
+
         // Filter berdasarkan pencarian
-        bool searchMatch = searchQuery.isEmpty || 
-            keluhan['judul'].toLowerCase().contains(searchQuery.toLowerCase()) ||
-            (keluhan['deskripsi'] != null && 
-             keluhan['deskripsi'].toLowerCase().contains(searchQuery.toLowerCase())) ||
-            keluhan['kategori'].toLowerCase().contains(searchQuery.toLowerCase()) ||
+        bool searchMatch =
+            searchQuery.isEmpty ||
+            keluhan['judul'].toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            ) ||
+            (keluhan['deskripsi'] != null &&
+                keluhan['deskripsi'].toLowerCase().contains(
+                  searchQuery.toLowerCase(),
+                )) ||
+            keluhan['kategori'].toLowerCase().contains(
+              searchQuery.toLowerCase(),
+            ) ||
             keluhan['id'].toLowerCase().contains(searchQuery.toLowerCase());
-            
+
         return statusMatch && categoryMatch && priorityMatch && searchMatch;
       }).toList();
-      
+
       // Sort by date if "Recent Complaints" tab
       if (_tabController.index == 2) {
         _sortByRecent();
@@ -260,7 +278,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       }
     });
   }
-  
+
   void _navigateToTanggapanPage(Map<String, dynamic> keluhan) {
     Navigator.push(
       context,
@@ -271,7 +289,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       if (result != null) {
         setState(() {
           // Find the index of the keluhan in the list
-          final index = daftarKeluhan.indexWhere((k) => k['id'] == keluhan['id']);
+          final index = daftarKeluhan.indexWhere(
+            (k) => k['id'] == keluhan['id'],
+          );
           if (index != -1) {
             // Update the keluhan with the result
             daftarKeluhan[index] = result;
@@ -279,7 +299,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
             _filterKeluhan();
           }
         });
-        
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -295,10 +315,6 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
   @override
   Widget build(BuildContext context) {
     // Calculate golden ratio width divisions - approximately 1:1.618
-    final screenWidth = MediaQuery.of(context).size.width;
-    final goldenWidth = screenWidth - 48; // Total width minus padding
-    final primaryWidth = (goldenWidth / 2.618).ceil(); // Main content (larger)
-    final secondaryWidth = goldenWidth - primaryWidth; // Sidebar content (smaller)
 
     // Golden ratio for vertical spacing
     final baseSpacing = 16.0;
@@ -308,15 +324,17 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
 
     return Scaffold(
       backgroundColor: uicolor,
-      appBar: const CustomAppBar(
-        title: 'Keluhan',
-        showBackButton: true,
-      ),
+      appBar: const CustomAppBar(title: 'Keluhan', showBackButton: true),
       body: Column(
         children: [
           // Enhanced Tab Bar with golden ratio styling and better balance - fixed overflow issues
           Container(
-            margin: const EdgeInsets.fromLTRB(24, 16, 24, 16), // More balanced margins
+            margin: const EdgeInsets.fromLTRB(
+              24,
+              16,
+              24,
+              16,
+            ), // More balanced margins
             height: 52, // Fixed height for better control
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
@@ -369,7 +387,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               ),
             ),
           ),
-          
+
           // Enhanced Search and Filter Row with Golden Ratio (38.2% : 61.8%)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -382,7 +400,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                     height: 50, // Fixed height for better proportions
                     decoration: BoxDecoration(
                       color: whiteColor,
-                      borderRadius: BorderRadius.circular(25), // More rounded for modern look
+                      borderRadius: BorderRadius.circular(
+                        25,
+                      ), // More rounded for modern look
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
@@ -410,7 +430,11 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                             ? Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: IconButton(
-                                  icon: Icon(Icons.close, color: greyColor, size: 18),
+                                  icon: Icon(
+                                    Icons.close,
+                                    color: greyColor,
+                                    size: 18,
+                                  ),
                                   onPressed: () {
                                     setState(() {
                                       searchQuery = '';
@@ -457,7 +481,8 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                           color: greenColor,
                           size: 24,
                         ),
-                        if (selectedCategory != 'Semua' || selectedPriority != 'Semua')
+                        if (selectedCategory != 'Semua' ||
+                            selectedPriority != 'Semua')
                           Positioned(
                             top: 0,
                             right: 0,
@@ -478,9 +503,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Enhanced Status Filter Chips with better scrolling and visuals
           SizedBox(
             height: 44, // Fixed height for consistency
@@ -498,9 +523,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Keluhan List Content with Golden Ratio Padding
           Expanded(
             child: filteredKeluhan.isEmpty
@@ -526,21 +551,21 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       ),
     );
   }
-  
+
   Widget _buildFilterChip(String status) {
     final isSelected = selectedStatus == status;
-    
+
     // Golden ratio calculations
     final phi = 1.618;
     final basePadding = 10.0;
-    final horizontalPadding = basePadding * phi;  // ~16.2
+    final horizontalPadding = basePadding * phi; // ~16.2
     final verticalPadding = basePadding; // 10
-    
+
     // Get appropriate color based on status
     Color statusColor = greenColor;
     IconData statusIcon;
-    
-    switch(status.toLowerCase()) {
+
+    switch (status.toLowerCase()) {
       case 'menunggu':
         statusColor = Colors.orange;
         statusIcon = Icons.access_time_rounded;
@@ -557,7 +582,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
         statusColor = greenColor;
         statusIcon = Icons.list_alt_rounded;
     }
-    
+
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: GestureDetector(
@@ -601,11 +626,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
             children: [
               // Only show icon when selected
               if (isSelected) ...[
-                Icon(
-                  statusIcon,
-                  color: whiteColor,
-                  size: 14,
-                ),
+                Icon(statusIcon, color: whiteColor, size: 14),
                 SizedBox(width: 6),
               ],
               Text(
@@ -632,11 +653,10 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
     final phi = 1.618;
     final basePadding = 16.0;
     final smallPadding = basePadding / phi; // ~9.9
-    final largePadding = basePadding * phi; // ~25.9
-    
+
     // Calculate animations based on golden ratio
     final animationDuration = const Duration(milliseconds: 300);
-    
+
     return GestureDetector(
       onTap: () => _showDetailKeluhan(keluhan),
       child: AnimatedContainer(
@@ -664,14 +684,19 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               height: 6,
               decoration: BoxDecoration(
                 color: _getStatusColor(keluhan['status']),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
             ),
-            
+
             // Header with ID and Status - follows golden ratio for spacing
             Padding(
               padding: EdgeInsets.fromLTRB(
-                basePadding, smallPadding, basePadding, smallPadding / phi
+                basePadding,
+                smallPadding,
+                basePadding,
+                smallPadding / phi,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -683,7 +708,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(keluhan['status']).withOpacity(0.1),
+                            color: _getStatusColor(
+                              keluhan['status'],
+                            ).withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -706,7 +733,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       ],
                     ),
                   ),
-                  
+
                   // Status pill
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -714,10 +741,14 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(keluhan['status']).withOpacity(0.1),
+                      color: _getStatusColor(
+                        keluhan['status'],
+                      ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: _getStatusColor(keluhan['status']).withOpacity(0.3),
+                        color: _getStatusColor(
+                          keluhan['status'],
+                        ).withOpacity(0.3),
                       ),
                     ),
                     child: Text(
@@ -739,7 +770,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               child: Text(
                 keluhan['judul'],
                 style: blackTextStyle.copyWith(
-                  fontSize: 16, 
+                  fontSize: 16,
                   fontWeight: bold,
                   height: 1.3,
                 ),
@@ -795,7 +826,11 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         // User info
                         Row(
                           children: [
-                            Icon(Icons.person_rounded, color: greyColor, size: 14),
+                            Icon(
+                              Icons.person_rounded,
+                              color: greyColor,
+                              size: 14,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               keluhan['nama'],
@@ -807,7 +842,11 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         // Location with truncation
                         Row(
                           children: [
-                            Icon(Icons.location_on_rounded, color: greyColor, size: 14),
+                            Icon(
+                              Icons.location_on_rounded,
+                              color: greyColor,
+                              size: 14,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -822,10 +861,13 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       ],
                     ),
                   ),
-                  
+
                   // Date - takes 38.2% of space (golden ratio)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(20),
@@ -870,11 +912,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: semiBold,
-            ),
+            style: TextStyle(color: color, fontSize: 11, fontWeight: semiBold),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -883,9 +921,12 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
   }
 
   Widget _buildEmptyState() {
-    bool isFiltering = searchQuery.isNotEmpty || selectedStatus != 'Semua' || 
-                      selectedCategory != 'Semua' || selectedPriority != 'Semua';
-    
+    bool isFiltering =
+        searchQuery.isNotEmpty ||
+        selectedStatus != 'Semua' ||
+        selectedCategory != 'Semua' ||
+        selectedPriority != 'Semua';
+
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Center(
@@ -908,7 +949,10 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
             const SizedBox(height: 24),
             Text(
               isFiltering ? 'Tidak Ada Hasil' : 'Belum Ada Keluhan',
-              style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
+              style: blackTextStyle.copyWith(
+                fontSize: 18,
+                fontWeight: semiBold,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -967,7 +1011,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
     // Temporary variables for filter values
     String tempCategory = selectedCategory;
     String tempPriority = selectedPriority;
-    
+
     final List<String> categoryList = [
       'Semua',
       'Pengambilan Sampah',
@@ -977,7 +1021,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'Petugas',
       'Lainnya',
     ];
-    
+
     final List<String> priorityList = [
       'Semua',
       'Rendah',
@@ -985,7 +1029,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
       'Tinggi',
       'Urgent',
     ];
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1013,24 +1057,21 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Filter Title
               Text(
                 'Filter Keluhan',
-                style: blackTextStyle.copyWith(
-                  fontSize: 20,
-                  fontWeight: bold,
-                ),
+                style: blackTextStyle.copyWith(fontSize: 20, fontWeight: bold),
               ),
               const SizedBox(height: 24),
-              
+
               // Category Filter
               Text(
                 'Kategori',
                 style: blackTextStyle.copyWith(fontWeight: semiBold),
               ),
               const SizedBox(height: 12),
-              
+
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1043,14 +1084,15 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected ? greenColor : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
-                          color: isSelected 
-                              ? greenColor 
-                              : Colors.grey.shade300,
+                          color: isSelected ? greenColor : Colors.grey.shade300,
                         ),
                       ),
                       child: Text(
@@ -1063,25 +1105,25 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                   );
                 }).toList(),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Priority Filter
               Text(
                 'Prioritas',
                 style: blackTextStyle.copyWith(fontWeight: semiBold),
               ),
               const SizedBox(height: 12),
-              
+
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: priorityList.map((priority) {
                   final isSelected = tempPriority == priority;
-                  final Color priorityColor = priority == 'Semua' 
+                  final Color priorityColor = priority == 'Semua'
                       ? Colors.grey
                       : _getPrioritasColor(priority);
-                  
+
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -1089,18 +1131,25 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                       });
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: isSelected 
-                            ? priority == 'Semua' ? greenColor : priorityColor
+                        color: isSelected
+                            ? priority == 'Semua'
+                                  ? greenColor
+                                  : priorityColor
                             : Colors.white,
                         borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: isSelected
-                              ? priority == 'Semua' ? greenColor : priorityColor
-                              : priority == 'Semua' 
-                                  ? Colors.grey.shade300
-                                  : priorityColor.withOpacity(0.5),
+                              ? priority == 'Semua'
+                                    ? greenColor
+                                    : priorityColor
+                              : priority == 'Semua'
+                              ? Colors.grey.shade300
+                              : priorityColor.withOpacity(0.5),
                         ),
                       ),
                       child: Row(
@@ -1115,20 +1164,23 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                 shape: BoxShape.circle,
                               ),
                             ),
-                          if (priority != 'Semua')
-                            const SizedBox(width: 6),
+                          if (priority != 'Semua') const SizedBox(width: 6),
                           Text(
                             priority,
                             style: isSelected
-                                ? priority == 'Semua' 
-                                    ? whiteTextStyle.copyWith(fontWeight: medium)
-                                    : whiteTextStyle.copyWith(fontWeight: medium)
+                                ? priority == 'Semua'
+                                      ? whiteTextStyle.copyWith(
+                                          fontWeight: medium,
+                                        )
+                                      : whiteTextStyle.copyWith(
+                                          fontWeight: medium,
+                                        )
                                 : priority == 'Semua'
-                                    ? greyTextStyle.copyWith(fontWeight: medium)
-                                    : TextStyle(
-                                        color: priorityColor,
-                                        fontWeight: medium,
-                                      ),
+                                ? greyTextStyle.copyWith(fontWeight: medium)
+                                : TextStyle(
+                                    color: priorityColor,
+                                    fontWeight: medium,
+                                  ),
                           ),
                         ],
                       ),
@@ -1136,9 +1188,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                   );
                 }).toList(),
               ),
-              
+
               const Spacer(),
-              
+
               // Apply and Reset buttons
               Row(
                 children: [
@@ -1201,7 +1253,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
     // Using golden ratio for section heights
     final height = MediaQuery.of(context).size.height;
     final goldenHeight = height * 0.618; // ~62% of screen height
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1227,10 +1279,12 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
               width: double.infinity,
               decoration: BoxDecoration(
                 color: _getStatusColor(keluhan['status']),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
               ),
             ),
-            
+
             // Main content
             Expanded(
               child: SingleChildScrollView(
@@ -1250,7 +1304,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         ),
                       ),
                     ),
-                    
+
                     // Status dan ID in golden ratio row
                     Row(
                       children: [
@@ -1269,10 +1323,14 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(keluhan['status']).withOpacity(0.1),
+                            color: _getStatusColor(
+                              keluhan['status'],
+                            ).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _getStatusColor(keluhan['status']).withOpacity(0.3),
+                              color: _getStatusColor(
+                                keluhan['status'],
+                              ).withOpacity(0.3),
                             ),
                           ),
                           child: Row(
@@ -1297,9 +1355,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Judul
                     Text(
                       keluhan['judul'],
@@ -1309,9 +1367,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         height: 1.3,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Info submission with golden ratio layout
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -1330,7 +1388,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                 children: [
                                   // Avatar
                                   CircleAvatar(
-                                    backgroundColor: greenColor.withOpacity(0.1),
+                                    backgroundColor: greenColor.withOpacity(
+                                      0.1,
+                                    ),
                                     child: Text(
                                       keluhan['nama'][0],
                                       style: TextStyle(
@@ -1343,7 +1403,8 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                   // Name and date
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           keluhan['nama'],
@@ -1373,14 +1434,14 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                 ],
                               ),
                             ),
-                            
+
                             // Vertical divider
                             VerticalDivider(
                               color: Colors.grey.shade300,
                               thickness: 1,
                               width: 32,
                             ),
-                            
+
                             // Priority (smaller part - ~38.2%)
                             Column(
                               mainAxisSize: MainAxisSize.min,
@@ -1397,7 +1458,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: _getPrioritasColor(keluhan['prioritas']).withOpacity(0.1),
+                                    color: _getPrioritasColor(
+                                      keluhan['prioritas'],
+                                    ).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Row(
@@ -1407,7 +1470,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                         width: 8,
                                         height: 8,
                                         decoration: BoxDecoration(
-                                          color: _getPrioritasColor(keluhan['prioritas']),
+                                          color: _getPrioritasColor(
+                                            keluhan['prioritas'],
+                                          ),
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -1415,7 +1480,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                                       Text(
                                         keluhan['prioritas'],
                                         style: TextStyle(
-                                          color: _getPrioritasColor(keluhan['prioritas']),
+                                          color: _getPrioritasColor(
+                                            keluhan['prioritas'],
+                                          ),
                                           fontSize: 12,
                                           fontWeight: medium,
                                         ),
@@ -1429,12 +1496,15 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Section header with icons
-                    _buildSectionHeader('Deskripsi Keluhan', Icons.description_outlined),
-                    
+                    _buildSectionHeader(
+                      'Deskripsi Keluhan',
+                      Icons.description_outlined,
+                    ),
+
                     // Description
                     Padding(
                       padding: const EdgeInsets.only(
@@ -1451,21 +1521,26 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         ),
                       ),
                     ),
-                    
+
                     // Kategori & Lokasi
                     _buildSectionHeader('Kategori', Icons.category_outlined),
                     _buildDetailText(keluhan['kategori']),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     _buildSectionHeader('Lokasi', Icons.location_on_outlined),
                     _buildDetailText(keluhan['lokasi']),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Balasan jika ada
-                    if (keluhan.containsKey('balasan') && keluhan['balasan'] != null) ...[
-                      _buildSectionHeader('Balasan Admin', Icons.comment_outlined, color: Colors.green),
+                    if (keluhan.containsKey('balasan') &&
+                        keluhan['balasan'] != null) ...[
+                      _buildSectionHeader(
+                        'Balasan Admin',
+                        Icons.comment_outlined,
+                        color: Colors.green,
+                      ),
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(top: 12),
@@ -1473,9 +1548,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                         decoration: BoxDecoration(
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.green.shade100,
-                          ),
+                          border: Border.all(color: Colors.green.shade100),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1503,7 +1576,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                             ),
                             const SizedBox(height: 12),
                             Container(
-                              padding: const EdgeInsets.only(left: 42), // Alignment with avatar
+                              padding: const EdgeInsets.only(
+                                left: 42,
+                              ), // Alignment with avatar
                               child: Text(
                                 keluhan['balasan'],
                                 style: blackTextStyle.copyWith(
@@ -1535,9 +1610,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                             Expanded(
                               child: Text(
                                 'Belum ada balasan untuk keluhan ini',
-                                style: greyTextStyle.copyWith(
-                                  fontSize: 14,
-                                ),
+                                style: greyTextStyle.copyWith(fontSize: 14),
                               ),
                             ),
                           ],
@@ -1549,7 +1622,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                 ),
               ),
             ),
-            
+
             // Bottom action bar with golden ratio division
             Container(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -1590,7 +1663,9 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
                   ],
                   // Close button (smaller portion if respond exists)
                   Expanded(
-                    flex: keluhan['status'] != 'Selesai' ? 10 : 26, // Golden ratio adjustment
+                    flex: keluhan['status'] != 'Selesai'
+                        ? 10
+                        : 26, // Golden ratio adjustment
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
@@ -1614,29 +1689,27 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, {Color color = Colors.green}) {
+  Widget _buildSectionHeader(
+    String title,
+    IconData icon, {
+    Color color = Colors.green,
+  }) {
     return Row(
       children: [
         Icon(icon, color: color),
         const SizedBox(width: 8),
         Text(
           title,
-          style: blackTextStyle.copyWith(
-            fontSize: 16,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
         ),
       ],
     );
   }
-  
+
   Widget _buildDetailText(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 32, top: 8), // Alignment with header
-      child: Text(
-        text,
-        style: blackTextStyle.copyWith(fontSize: 14),
-      ),
+      child: Text(text, style: blackTextStyle.copyWith(fontSize: 14)),
     );
   }
 
@@ -1652,7 +1725,7 @@ class _GoldenKeluhanPageState extends State<GoldenKeluhanPage> with SingleTicker
         return greyColor;
     }
   }
-  
+
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'selesai':

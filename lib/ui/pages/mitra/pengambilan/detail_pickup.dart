@@ -3,8 +3,10 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
-import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
+import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
+import 'package:intl/intl.dart';
 
 class DetailPickupPage extends StatefulWidget {
   final String scheduleId;
@@ -19,6 +21,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
   bool isLoading = true;
   Map<String, dynamic>? scheduleData;
   bool isSmallScreen = false;
+  bool _isUpdatingStatus = false;
 
   @override
   void initState() {
@@ -32,20 +35,28 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       // Try loading schedule from backend
       final int? idInt = int.tryParse(widget.scheduleId);
       if (idInt != null) {
-        final raw = await ScheduleApiService().getScheduleById(idInt);
-        // Map backend schedule fields to UI scheduleData shape
+        final ScheduleApiModel raw = await ScheduleApiService().getScheduleById(
+          idInt,
+        );
+        final latitude = raw.latitude ?? -0.5017;
+        final longitude = raw.longitude ?? 117.1536;
+        final scheduledAt = raw.scheduledAt;
+        final formattedTime = scheduledAt == null
+            ? 'Waktu belum ditentukan'
+            : DateFormat.Hm('id_ID').format(scheduledAt);
+
         scheduleData = {
-          'id': raw['id'],
-          'customer_name': raw['title'] ?? 'Pelanggan',
-          'address': raw['description'] ?? 'Alamat tidak tersedia',
-          'latitude': (raw['latitude'] as num?)?.toDouble() ?? -0.5017,
-          'longitude': (raw['longitude'] as num?)?.toDouble() ?? 117.1536,
-          'time': raw['scheduled_at'] ?? '08:00 - 09:00',
-          'waste_type': 'Organik',
+          'id': raw.id,
+          'customer_name': raw.title,
+          'address': raw.description ?? 'Alamat tidak tersedia',
+          'latitude': latitude,
+          'longitude': longitude,
+          'time': formattedTime,
+          'waste_type': 'Campuran',
           'waste_weight': '3 kg',
-          'status': raw['status'] ?? 'pending',
-          'phone': '+62812345678',
-          'notes': raw['description'] ?? '',
+          'status': raw.status ?? 'pending',
+          'phone': raw.assignedUser?.phone ?? '+62812345678',
+          'notes': raw.description ?? '',
         };
       } else {
         // Fallback to mock if scheduleId isn't numeric
@@ -84,6 +95,196 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
           isLoading = false;
         });
       }
+    }
+  }
+
+  String _normalizeStatus(dynamic value) =>
+      value?.toString().toLowerCase() ?? 'pending';
+
+  Future<bool> _updateScheduleStatus(
+    String status, {
+    String? successMessage,
+  }) async {
+    final scheduleId = int.tryParse(widget.scheduleId);
+    if (scheduleId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ID jadwal tidak valid untuk memperbarui status.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isUpdatingStatus = true;
+      });
+    }
+
+    try {
+      final updated = await ScheduleApiService().updateScheduleStatus(
+        scheduleId,
+        status,
+      );
+
+      final scheduledAt = updated.scheduledAt;
+      final formattedTime = scheduledAt == null
+          ? 'Waktu belum ditentukan'
+          : DateFormat.Hm('id_ID').format(scheduledAt);
+
+      if (mounted) {
+        setState(() {
+          scheduleData = {
+            ...(scheduleData ?? <String, dynamic>{}),
+            'id': updated.id,
+            'customer_name': updated.title,
+            'address':
+                updated.description ??
+                (scheduleData?['address'] ?? 'Alamat tidak tersedia'),
+            'latitude':
+                updated.latitude ?? scheduleData?['latitude'] ?? -0.5017,
+            'longitude':
+                updated.longitude ?? scheduleData?['longitude'] ?? 117.1536,
+            'time': formattedTime,
+            'waste_type': scheduleData?['waste_type'] ?? 'Campuran',
+            'waste_weight': scheduleData?['waste_weight'] ?? '3 kg',
+            'status': updated.status ?? status,
+            'phone':
+                updated.assignedUser?.phone ??
+                scheduleData?['phone'] ??
+                '+62812345678',
+            'notes': updated.description ?? scheduleData?['notes'] ?? '',
+          };
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(successMessage ?? 'Status jadwal diperbarui.'),
+            backgroundColor: greenColor,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+          ),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui status: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+          ),
+        );
+      }
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingStatus = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handlePrimaryAction() async {
+    final status = _normalizeStatus(scheduleData?['status']);
+    if (status == 'completed' || _isUpdatingStatus) {
+      return;
+    }
+
+    if (status == 'pending') {
+      final success = await _updateScheduleStatus(
+        'in_progress',
+        successMessage: 'Status diperbarui menjadi Diproses.',
+      );
+      if (success) {
+        await _promptNavigationOptions();
+      }
+      return;
+    }
+
+    if (status == 'in_progress') {
+      await _updateScheduleStatus(
+        'completed',
+        successMessage: 'Pengambilan ditandai selesai.',
+      );
+      return;
+    }
+
+    await _promptNavigationOptions();
+  }
+
+  Future<void> _promptNavigationOptions() async {
+    if (!mounted) return;
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            'Mulai Pengambilan',
+            style: blackTextStyle.copyWith(fontWeight: semiBold),
+          ),
+          content: Text(
+            'Pilih metode navigasi yang ingin digunakan untuk menuju lokasi.',
+            style: blackTextStyle.copyWith(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Batal',
+                style: blackTextStyle.copyWith(color: Colors.red),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('in_app'),
+              child: Text(
+                'Navigasi Dalam Aplikasi',
+                style: greenTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: medium,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('google'),
+              child: Text(
+                'Google Maps',
+                style: greenTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: medium,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('alternative'),
+              child: Text(
+                'Aplikasi Lain',
+                style: greenTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: medium,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (choice == 'in_app') {
+      _openInAppNavigation();
+    } else if (choice == 'google') {
+      await _openGoogleMaps();
+    } else if (choice == 'alternative') {
+      await _openAlternativeMaps();
     }
   }
 
@@ -160,7 +361,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       }
     } catch (e) {
       // Log the error for debugging
-      print('Error opening Google Maps: $e');
+      debugPrint('Error opening Google Maps: $e');
 
       // Show error message
       if (mounted) {
@@ -279,7 +480,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       }
     } catch (e) {
       // Log error for debugging
-      print('Error opening alternative maps: $e');
+      debugPrint('Error opening alternative maps: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -377,12 +578,14 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
             margin: EdgeInsets.only(bottom: isSmallScreen ? 14 : 16),
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             decoration: BoxDecoration(
-              color: _getStatusColor(scheduleData!['status']).withOpacity(0.15),
+              color: _getStatusColor(
+                scheduleData!['status'],
+              ).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _getStatusColor(
                   scheduleData!['status'],
-                ).withOpacity(0.3),
+                ).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -415,7 +618,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 6,
                   offset: Offset(0, 3),
                 ),
@@ -472,7 +675,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 6,
                   offset: Offset(0, 3),
                 ),
@@ -530,116 +733,63 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
           SizedBox(height: isSmallScreen ? 20 : 24),
 
           // Action button
-          SizedBox(
-            width: double.infinity,
-            height: isSmallScreen ? 50 : 56,
-            child: ElevatedButton(
-              onPressed: () async {
-                // Menampilkan dialog pilihan navigasi
-                final choice = await showDialog<String>(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Text(
-                        'Pilih Aplikasi Navigasi',
-                        style: blackTextStyle.copyWith(
-                          fontSize: 18,
-                          fontWeight: semiBold,
-                        ),
-                      ),
-                      content: Text(
-                        'Pilih aplikasi untuk navigasi ke lokasi pengambilan:',
-                        style: greyTextStyle.copyWith(fontSize: 14),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(null),
-                          child: Text(
-                            'Batal',
-                            style: greyTextStyle.copyWith(
-                              fontSize: 14,
-                              fontWeight: medium,
-                            ),
-                          ),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop('in_app'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: greenColor,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: Text(
-                            'Navigasi Dalam Aplikasi',
-                            style: whiteTextStyle.copyWith(
-                              fontSize: 14,
-                              fontWeight: medium,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop('google'),
-                          child: Text(
-                            'Google Maps',
-                            style: greenTextStyle.copyWith(
-                              fontSize: 14,
-                              fontWeight: medium,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.of(context).pop('alternative'),
-                          child: Text(
-                            'Aplikasi Lain',
-                            style: greenTextStyle.copyWith(
-                              fontSize: 14,
-                              fontWeight: medium,
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
+          Builder(
+            builder: (context) {
+              final status = _normalizeStatus(scheduleData?['status']);
+              final isCompleted = status == 'completed';
+              final buttonLabel = isCompleted
+                  ? 'Pengambilan Selesai'
+                  : status == 'in_progress'
+                  ? 'Selesaikan Pengambilan'
+                  : 'Mulai Pengambilan';
+              final buttonIcon = status == 'in_progress' || isCompleted
+                  ? Icons.check_circle
+                  : Icons.navigation;
 
-                if (choice == 'in_app') {
-                  // Buka navigasi dalam aplikasi
-                  _openInAppNavigation();
-                } else if (choice == 'google') {
-                  // Buka Google Maps dengan navigasi
-                  await _openGoogleMaps();
-                } else if (choice == 'alternative') {
-                  // Buka aplikasi navigasi alternatif
-                  await _openAlternativeMaps();
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: greenColor,
-                foregroundColor: Colors.white,
-                elevation: 2,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.navigation, // Ikon navigasi yang lebih sesuai
-                    size: isSmallScreen ? 18 : 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Mulai Pengambilan',
-                    style: whiteTextStyle.copyWith(
-                      fontSize: isSmallScreen ? 14 : 16,
-                      fontWeight: semiBold,
+              return SizedBox(
+                width: double.infinity,
+                height: isSmallScreen ? 50 : 56,
+                child: ElevatedButton(
+                  onPressed: (_isUpdatingStatus || isCompleted)
+                      ? null
+                      : () => _handlePrimaryAction(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isCompleted ? Colors.grey : greenColor,
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ],
-              ),
-            ),
+                  child: _isUpdatingStatus
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(buttonIcon, size: isSmallScreen ? 18 : 20),
+                            SizedBox(width: 8),
+                            Text(
+                              buttonLabel,
+                              style: whiteTextStyle.copyWith(
+                                fontSize: isSmallScreen ? 14 : 16,
+                                fontWeight: semiBold,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              );
+            },
           ),
         ],
       ),

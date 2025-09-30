@@ -13,7 +13,8 @@ class SignUpSuccessPage extends StatefulWidget {
   State<SignUpSuccessPage> createState() => _SignUpSuccessPageState();
 }
 
-class _SignUpSuccessPageState extends State<SignUpSuccessPage> with AppDialogMixin {
+class _SignUpSuccessPageState extends State<SignUpSuccessPage>
+    with AppDialogMixin {
   bool _isLoading = false;
 
   @override
@@ -44,7 +45,7 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage> with AppDialogMix
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: greenColor.withOpacity(0.5)),
+                border: Border.all(color: greenColor.withValues(alpha: 0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -94,38 +95,54 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage> with AppDialogMix
                         }
 
                         // The user is already registered in batch 4 page
-                        
+
                         final userService = await UserService.getInstance();
                         await userService.init();
-                        
+                        if (!context.mounted) return;
+
                         // Get current user
                         final user = await userService.getCurrentUser();
-                        
-                        print("In sign-up success page for: ${args['email']}");
-                        
+                        if (!context.mounted) return;
+
+                        debugPrint(
+                          'In sign-up success page for: ${args['email']}',
+                        );
+
                         if (user == null) {
-                          print("User not found in sign-up success page, attempting login");
-                          
+                          debugPrint(
+                            'User not found in sign-up success page, attempting login',
+                          );
+
                           // Try logging in with provided credentials
                           final loggedInUser = await userService.loginUser(
                             email: args['email'],
                             password: args['password'],
                           );
-                          
+                          if (!context.mounted) return;
+
                           if (loggedInUser == null) {
-                            throw Exception('Gagal login, akun tidak ditemukan');
+                            throw Exception(
+                              'Gagal login, akun tidak ditemukan',
+                            );
                           }
-                          
-                          print("Login successful for: ${loggedInUser.name}");
+
+                          debugPrint(
+                            'Login successful for: ${loggedInUser.name}',
+                          );
                         } else {
-                          print("User found: ${user.name} (${user.email})");
+                          debugPrint(
+                            'User found: ${user.name} (${user.email})',
+                          );
                         }
-                        
+
                         // Update subscription status if needed
-                        final bool hasSubscription = args['hasSubscription'] ?? false;
+                        final bool hasSubscription =
+                            args['hasSubscription'] ?? false;
                         if (hasSubscription) {
                           // In a real app, you would update subscription status
-                          print('User ${args['email']} has subscription: $hasSubscription');
+                          debugPrint(
+                            'User ${args['email']} has subscription: $hasSubscription',
+                          );
                         }
 
                         // Show notification and toast
@@ -136,35 +153,39 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage> with AppDialogMix
                               'Akun Anda telah berhasil terdaftar di Gerobaks dengan 15 poin',
                         );
 
-                        if (mounted) {
-                          // Show custom success dialog
-                          showAppSuccessDialog(
-                            title: 'Registrasi Berhasil',
-                            message: 'Akun Anda telah berhasil terdaftar di Gerobaks dengan 15 poin bonus. Silakan login untuk melanjutkan.',
-                            buttonText: 'Login Sekarang',
-                          );
+                        if (!context.mounted) {
+                          return;
+                        }
 
-                          // Navigate to sign in with credentials
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            '/sign-in',
-                            (route) => false,
-                            arguments: {
-                              'email': args['email'],
-                              'password': args['password'],
-                            },
-                          );
-                        }
+                        // Show custom success dialog
+                        showAppSuccessDialog(
+                          title: 'Registrasi Berhasil',
+                          message:
+                              'Akun Anda telah berhasil terdaftar di Gerobaks dengan 15 poin bonus. Silakan login untuk melanjutkan.',
+                          buttonText: 'Login Sekarang',
+                        );
+
+                        // Navigate to sign in with credentials
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/sign-in',
+                          (route) => false,
+                          arguments: {
+                            'email': args['email'],
+                            'password': args['password'],
+                          },
+                        );
                       } catch (e) {
-                        if (mounted) {
-                          ToastHelper.showToast(
-                            context: context,
-                            message: 'Error: ${e.toString()}',
-                            isSuccess: false,
-                          );
+                        if (!context.mounted) {
+                          return;
                         }
+                        ToastHelper.showToast(
+                          context: context,
+                          message: 'Error: ${e.toString()}',
+                          isSuccess: false,
+                        );
                       } finally {
-                        if (mounted) {
+                        if (context.mounted) {
                           setState(() {
                             _isLoading = false;
                           });
