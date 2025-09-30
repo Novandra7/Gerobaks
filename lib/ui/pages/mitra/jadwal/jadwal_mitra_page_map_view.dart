@@ -1017,18 +1017,12 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: chipColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: chipColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
             label.toUpperCase(),
-            style: whiteTextStyle.copyWith(
-              fontSize: 11,
-              fontWeight: semiBold,
-            ),
+            style: whiteTextStyle.copyWith(fontSize: 11, fontWeight: semiBold),
           ),
         ],
       ),
@@ -1052,7 +1046,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
 
     if (label == null) return null;
 
-  final isProcessing = _updatingScheduleIds.contains(schedule.id);
+    final isProcessing = _updatingScheduleIds.contains(schedule.id);
 
     return SizedBox(
       width: double.infinity,
@@ -1066,8 +1060,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        onPressed:
-            isProcessing ? null : () => _handleScheduleAction(schedule),
+        onPressed: isProcessing ? null : () => _handleScheduleAction(schedule),
         child: isProcessing
             ? SizedBox(
                 width: 16,
@@ -1161,15 +1154,17 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
       if (!mounted) return;
 
       setState(() {
-        final index =
-            _schedules.indexWhere((element) => element.id == schedule.id);
+        final index = _schedules.indexWhere(
+          (element) => element.id == schedule.id,
+        );
         if (index != -1) {
           _schedules[index] = updated;
         }
         _updatingScheduleIds.remove(schedule.id);
         final filtered = _getFilteredSchedules();
-        _selectedCardIndex =
-            filtered.indexWhere((element) => element.id == updated.id);
+        _selectedCardIndex = filtered.indexWhere(
+          (element) => element.id == updated.id,
+        );
         if (_selectedCardIndex >= 0 && _pageController.hasClients) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_pageController.hasClients) {
@@ -1221,10 +1216,7 @@ class _JadwalMitraMapViewState extends State<JadwalMitraMapView>
       builder: (context) {
         return AlertDialog(
           title: Text(title, style: blackTextStyle.copyWith(fontWeight: bold)),
-          content: Text(
-            message,
-            style: blackTextStyle.copyWith(fontSize: 14),
-          ),
+          content: Text(message, style: blackTextStyle.copyWith(fontSize: 14)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),

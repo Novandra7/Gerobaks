@@ -141,7 +141,6 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
       setState(() {
         _applySchedules(schedules);
       });
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -303,10 +302,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
       builder: (context) {
         return AlertDialog(
           title: Text(title, style: blackTextStyle.copyWith(fontWeight: bold)),
-          content: Text(
-            message,
-            style: blackTextStyle.copyWith(fontSize: 14),
-          ),
+          content: Text(message, style: blackTextStyle.copyWith(fontSize: 14)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -673,8 +669,11 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
     if (assignedPhone != null && assignedPhone.isNotEmpty) {
       infoChips.add('Kontak: $assignedPhone');
     }
-    final actionButton =
-        _buildActionButton(schedule, normalizedStatus, isSmallScreen);
+    final actionButton = _buildActionButton(
+      schedule,
+      normalizedStatus,
+      isSmallScreen,
+    );
 
     return GestureDetector(
       onTap: () async {
