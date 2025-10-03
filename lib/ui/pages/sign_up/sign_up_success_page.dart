@@ -3,6 +3,7 @@ import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/mixins/app_dialog_mixin.dart';
 
@@ -94,19 +95,42 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                           throw Exception('Data registrasi tidak lengkap');
                         }
 
-                        // The user is already registered in batch 4 page
+                        // Register and login with both API and local storage
+                        debugPrint(
+                          'In sign-up success page for: ${args['email']}',
+                        );
 
+                        // Step 1: Initialize user service
                         final userService = await UserService.getInstance();
                         await userService.init();
                         if (!context.mounted) return;
 
-                        // Get current user
+                        // Step 2: Register with backend API
+                        try {
+                          // Use AuthApiService directly to ensure API registration happens
+                          final authApiService = AuthApiService();
+
+                          try {
+                            await authApiService.register(
+                              name: args['name'] ?? 'New User',
+                              email: args['email'],
+                              password: args['password'],
+                              role: args['role'] ?? 'end_user',
+                            );
+                            debugPrint('Backend API registration successful');
+                          } catch (apiError) {
+                            // Just log the error but continue - could be that user already exists
+                            debugPrint('API registration error: $apiError');
+                            // This is OK - we'll try to login instead
+                          }
+                        } catch (e) {
+                          debugPrint('Error during API registration setup: $e');
+                          // Continue with local auth regardless of API errors
+                        }
+
+                        // Step 3: Get current user or login
                         final user = await userService.getCurrentUser();
                         if (!context.mounted) return;
-
-                        debugPrint(
-                          'In sign-up success page for: ${args['email']}',
-                        );
 
                         if (user == null) {
                           debugPrint(
@@ -127,7 +151,7 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                           }
 
                           debugPrint(
-                            'Login successful for: ${loggedInUser.name}',
+                            'Local login successful for: ${loggedInUser.name}',
                           );
                         } else {
                           debugPrint(

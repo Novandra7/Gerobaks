@@ -16,24 +16,38 @@ class AuthApiService {
     required String password,
     String? role,
   }) async {
-    final resp = await _api.postJson('/api/register', {
-      'name': name,
-      'email': email,
-      'password': password,
-      if (role != null) 'role': role,
-    });
-    return _persistFromResponse(resp);
+    try {
+      print('🔐 Registering user via API: $name ($email)');
+      final resp = await _api.postJson('/api/register', {
+        'name': name,
+        'email': email,
+        'password': password,
+        if (role != null) 'role': role,
+      });
+      print('✅ API registration successful');
+      return _persistFromResponse(resp);
+    } catch (e) {
+      print('❌ API registration failed: $e');
+      throw Exception('Registration failed: $e');
+    }
   }
 
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
-    final resp = await _api.postJson('/api/login', {
-      'email': email,
-      'password': password,
-    });
-    return _persistFromResponse(resp);
+    try {
+      print('🔐 Logging in user via API: $email');
+      final resp = await _api.postJson('/api/login', {
+        'email': email,
+        'password': password,
+      });
+      print('✅ API login successful');
+      return _persistFromResponse(resp);
+    } catch (e) {
+      print('❌ API login failed: $e');
+      throw Exception('Login failed: $e');
+    }
   }
 
   Future<void> logout() async {

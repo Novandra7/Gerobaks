@@ -12,6 +12,7 @@ import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/mixins/app_dialog_mixin.dart';
 
 class ProfileContent extends StatefulWidget {
@@ -372,7 +373,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                     );
                   },
                 ),
-                ResponsiveAppMenu(
+                  ResponsiveAppMenu(
                   iconURL: 'assets/ic_logout_profile.png',
                   title: 'Log out',
                   isHighlighted: false,
@@ -388,8 +389,13 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                     );
                       
                     if (confirm) {
-                      // Logout and redirect to sign in page
+                      // Logout using AuthApiService (API method)
+                      final authService = AuthApiService();
+                      await authService.logout();
+                      
+                      // For backward compatibility, also logout from local services
                       await _userService.logout();
+                      
                       if (mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
@@ -401,9 +407,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                       }
                     }
                   },
-                ),
-
-                const SizedBox(height: 32),
+                ),                const SizedBox(height: 32),
               ],
             ),
           ),

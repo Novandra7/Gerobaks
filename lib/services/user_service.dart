@@ -1,5 +1,6 @@
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -355,9 +356,19 @@ class UserService {
     return await _localStorage.getSavedAddresses();
   }
 
-  // Log out - modified to preserve user data
+  // Log out - now uses AuthApiService as primary method
   Future<void> logout() async {
-    // Log out the user (changing login status) without deleting data
+    try {
+      // Log out from API first (primary method)
+      final authService = AuthApiService();
+      await authService.logout();
+      print("User logged out via API");
+    } catch (e) {
+      print("Error logging out via API: $e");
+      // Continue with local logout even if API fails
+    }
+    
+    // Also log out locally for backward compatibility
     await _localStorage.logout();
 
     // Notify listeners that the user has logged out

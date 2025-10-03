@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
@@ -53,6 +54,31 @@ import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
+
+// Fungsi untuk memeriksa dan membuat file .env jika tidak ada
+Future<void> ensureEnvFileExists() async {
+  try {
+    // Pemeriksaan sederhana menggunakan dotenv.env
+    await dotenv.load(fileName: '.env');
+    print('✓ File .env ditemukan');
+  } catch (e) {
+    print('✗ File .env tidak ditemukan: $e');
+    print('✏️ Membuat file .env baru dengan konfigurasi default');
+
+    // Buat file .env dengan pengaturan default
+    final file = File('.env');
+    await file.writeAsString(
+      '''# Alamat backend API - gunakan 10.0.2.2 untuk emulator Android
+API_BASE_URL=http://10.0.2.2:8000
+''',
+    );
+
+    // Muat ulang file yang baru dibuat
+    await dotenv.load(fileName: '.env');
+    print('✓ File .env berhasil dibuat');
+  }
+}
 
 Future<void> main() async {
   try {
@@ -74,10 +100,35 @@ Future<void> main() async {
       print('Stack trace: ${details.stack}');
     };
 
-    await dotenv.load();
+    // PENTING: Pastikan file .env ada dan load
+    print('Checking .env file...');
+    await ensureEnvFileExists();
+    print('API_BASE_URL: ${dotenv.env['API_BASE_URL'] ?? "not found"}');
+
     await initializeDateFormatting('id_ID', null);
 
-    // Inisialisasi LocalStorage Service
+    // Inisialisasi Auth API Service terlebih dahulu (prioritas)
+    try {
+      // AuthApiService sudah singleton, tidak perlu await getInstance
+      final authService = AuthApiService();
+      final token = await authService.getToken();
+      print(
+        "AuthApiService berhasil diinisialisasi, token exists: ${token != null}",
+      );
+
+      if (token != null) {
+        try {
+          final userData = await authService.me();
+          print("API user data: ${userData['name']} (${userData['email']})");
+        } catch (e) {
+          print("Error saat mengambil user data dari API: $e");
+        }
+      }
+    } catch (e) {
+      print("Error saat inisialisasi AuthApiService: $e");
+    }
+
+    // Inisialisasi LocalStorage Service (masih diperlukan untuk kompatibilitas)
     try {
       await LocalStorageService.getInstance();
       print("LocalStorage berhasil diinisialisasi");

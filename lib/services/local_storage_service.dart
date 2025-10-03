@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/models/user_model.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
 /// Service untuk mengelola penyimpanan lokal (SharedPreferences)
@@ -219,6 +220,10 @@ class LocalStorageService {
     // Save the logout timestamp but don't delete the user data
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
 
+    // Also clear the secure storage token for API auth
+    const secureStorage = FlutterSecureStorage();
+    await secureStorage.delete(key: 'auth_token');
+
     _logger.i("User logged out but data preserved for future auto-login");
   }
 
@@ -229,6 +234,10 @@ class LocalStorageService {
     await remove(_userRoleKey);
     await remove(_credentialsKey);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
+
+    // Also clear the secure storage token for API auth
+    const secureStorage = FlutterSecureStorage();
+    await secureStorage.delete(key: 'auth_token');
 
     _logger.i("User fully logged out with all data cleared");
   }
