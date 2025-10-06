@@ -59,24 +59,44 @@ import 'package:bank_sha/services/auth_api_service.dart';
 // Fungsi untuk memeriksa dan membuat file .env jika tidak ada
 Future<void> ensureEnvFileExists() async {
   try {
-    // Pemeriksaan sederhana menggunakan dotenv.env
+    // Coba load dari path aplikasi terlebih dahulu
     await dotenv.load(fileName: '.env');
     print('✓ File .env ditemukan');
   } catch (e) {
     print('✗ File .env tidak ditemukan: $e');
     print('✏️ Membuat file .env baru dengan konfigurasi default');
 
-    // Buat file .env dengan pengaturan default
-    final file = File('.env');
-    await file.writeAsString(
-      '''# Alamat backend API - gunakan 10.0.2.2 untuk emulator Android
+    try {
+      // Buat file .env dengan pengaturan default
+      final directory = Directory.current;
+      final file = File('${directory.path}/.env');
+      await file.writeAsString(
+        '''# Alamat backend API - gunakan 10.0.2.2 untuk emulator Android
 API_BASE_URL=http://10.0.2.2:8000
 ''',
-    );
+      );
+      print('File .env dibuat di: ${file.path}');
 
-    // Muat ulang file yang baru dibuat
-    await dotenv.load(fileName: '.env');
-    print('✓ File .env berhasil dibuat');
+      // Muat ulang file yang baru dibuat
+      await dotenv.load(fileName: file.path);
+      print('✓ File .env berhasil dibuat dan dimuat');
+    } catch (writeError) {
+      print('Error saat membuat file .env: $writeError');
+
+      // Inisialisasi secara manual jika file tidak dapat dibuat
+      dotenv.env['API_BASE_URL'] = 'http://10.0.2.2:8000';
+      print('✓ dotenv diinisialisasi secara manual (fallback)');
+    }
+  }
+
+  // Verifikasi konfigurasi
+  final apiBaseUrl = dotenv.env['API_BASE_URL'];
+  print('Konfigurasi API_BASE_URL: $apiBaseUrl');
+
+  // Tambahkan fallback jika masih kosong
+  if (apiBaseUrl == null || apiBaseUrl.isEmpty) {
+    dotenv.env['API_BASE_URL'] = 'http://10.0.2.2:8000';
+    print('API_BASE_URL diatur secara manual ke: http://10.0.2.2:8000');
   }
 }
 

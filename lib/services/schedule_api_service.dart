@@ -1,5 +1,6 @@
 import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:bank_sha/services/api_client.dart';
+import 'package:bank_sha/utils/api_routes.dart';
 
 class ScheduleApiService {
   ScheduleApiService._internal();
@@ -10,7 +11,7 @@ class ScheduleApiService {
 
   // Fetch a schedule by ID from backend and return the raw JSON map
   Future<ScheduleApiModel> getScheduleById(int id) async {
-    final json = await _api.getJson('/api/schedules/$id');
+    final json = await _api.getJson(ApiRoutes.schedule(id));
     if (json is Map<String, dynamic>) {
       return ScheduleApiModel.fromJson(json);
     }
@@ -31,7 +32,7 @@ class ScheduleApiService {
         'status': status,
     };
 
-    final json = await _api.getJson('/api/schedules', query: query);
+    final json = await _api.getJson(ApiRoutes.schedules, query: query);
     if (json is! Map<String, dynamic>) {
       throw HttpException('Invalid schedules response: ${json.runtimeType}');
     }
@@ -73,7 +74,7 @@ class ScheduleApiService {
       if (scheduledAt != null) 'scheduled_at': scheduledAt.toIso8601String(),
     };
 
-    final json = await _api.postJson('/api/schedules', body);
+    final json = await _api.postJson(ApiRoutes.schedules, body);
     if (json is Map<String, dynamic>) {
       return ScheduleApiModel.fromJson(json);
     }
@@ -106,7 +107,7 @@ class ScheduleApiService {
       throw ArgumentError('updateSchedule requires at least one field');
     }
 
-    final json = await _api.patchJson('/api/schedules/$id', body);
+    final json = await _api.patchJson(ApiRoutes.schedule(id), body);
     if (json is Map<String, dynamic>) {
       return ScheduleApiModel.fromJson(json);
     }

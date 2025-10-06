@@ -1,4 +1,5 @@
 import 'package:bank_sha/services/api_client.dart';
+import 'package:bank_sha/utils/api_routes.dart';
 
 class TrackingApiService {
   TrackingApiService._internal();
@@ -23,7 +24,7 @@ class TrackingApiService {
       if (heading != null) 'heading': heading,
       if (recordedAt != null) 'recorded_at': recordedAt.toIso8601String(),
     };
-    await _api.postJson('/api/tracking', body);
+    await _api.postJson(ApiRoutes.trackings, body);
   }
 
   Future<List<dynamic>> getHistory({
@@ -38,7 +39,7 @@ class TrackingApiService {
       if (since != null) 'since': since.toIso8601String(),
       if (until != null) 'until': until.toIso8601String(),
     };
-    final json = await _api.getJson('/api/tracking', query: query);
+    final json = await _api.getJson(ApiRoutes.trackings, query: query);
     if (json is List) return json;
     return [];
   }

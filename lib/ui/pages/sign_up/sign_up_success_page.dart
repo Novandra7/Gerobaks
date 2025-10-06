@@ -203,9 +203,29 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                         if (!context.mounted) {
                           return;
                         }
+
+                        // More user-friendly error message
+                        String errorMessage =
+                            'Terjadi kesalahan saat proses registrasi';
+
+                        if (e.toString().contains('NotInitializedError')) {
+                          errorMessage =
+                              'Koneksi server gagal. Silakan coba lagi.';
+                        } else if (e.toString().contains(
+                          'Connection refused',
+                        )) {
+                          errorMessage =
+                              'Server tidak dapat dijangkau. Pastikan server berjalan.';
+                        } else if (e.toString().toLowerCase().contains(
+                          'email',
+                        )) {
+                          errorMessage =
+                              'Email tersebut sudah terdaftar atau tidak valid.';
+                        }
+
                         ToastHelper.showToast(
                           context: context,
-                          message: 'Error: ${e.toString()}',
+                          message: errorMessage,
                           isSuccess: false,
                         );
                       } finally {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/services/api_client.dart';
+import 'package:bank_sha/utils/api_routes.dart';
 
 class BalanceService {
   static const Duration _cacheDuration = Duration(minutes: 5);
@@ -18,7 +19,7 @@ class BalanceService {
 
     try {
       final response = await _api.getJson(
-        '/api/balance/summary',
+        ApiRoutes.balanceSummary,
         query: {'user_id': userId},
       );
 
