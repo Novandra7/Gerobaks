@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
@@ -55,39 +56,14 @@ import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
+import 'package:bank_sha/utils/app_config.dart';
 
 // Fungsi untuk memeriksa dan membuat file .env jika tidak ada
 Future<void> ensureEnvFileExists() async {
-  try {
-    // Coba load dari path aplikasi terlebih dahulu
-    await dotenv.load(fileName: '.env');
-    print('✓ File .env ditemukan');
-  } catch (e) {
-    print('✗ File .env tidak ditemukan: $e');
-    print('✏️ Membuat file .env baru dengan konfigurasi default');
-
-    try {
-      // Buat file .env dengan pengaturan default
-      final directory = Directory.current;
-      final file = File('${directory.path}/.env');
-      await file.writeAsString(
-        '''# Alamat backend API - gunakan 10.0.2.2 untuk emulator Android
-API_BASE_URL=http://10.0.2.2:8000
-''',
-      );
-      print('File .env dibuat di: ${file.path}');
-
-      // Muat ulang file yang baru dibuat
-      await dotenv.load(fileName: file.path);
-      print('✓ File .env berhasil dibuat dan dimuat');
-    } catch (writeError) {
-      print('Error saat membuat file .env: $writeError');
-
-      // Inisialisasi secara manual jika file tidak dapat dibuat
-      dotenv.env['API_BASE_URL'] = 'http://10.0.2.2:8000';
-      print('✓ dotenv diinisialisasi secara manual (fallback)');
-    }
-  }
+  // Menggunakan AppConfig sebagai gantinya
+  await AppConfig.init();
+  print('✓ Konfigurasi aplikasi berhasil diinisialisasi');
+  print('✓ API Base URL: ${AppConfig.apiBaseUrl}');
 
   // Verifikasi konfigurasi
   final apiBaseUrl = dotenv.env['API_BASE_URL'];
@@ -214,6 +190,13 @@ Future<void> main() async {
   } catch (e) {
     print("Error fatal saat inisialisasi aplikasi: $e");
   }
+
+  // Pastikan logging Flutter bekerja dengan benar
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    print('Flutter error: ${details.exception}');
+    print('Flutter stack trace: ${details.stack}');
+  };
 
   runApp(const MyApp());
 }

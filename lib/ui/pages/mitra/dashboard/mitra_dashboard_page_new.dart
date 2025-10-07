@@ -46,7 +46,8 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
     final localStorage = await LocalStorageService.getInstance();
     final userData = await localStorage.getUserData();
     if (userData != null) {
-      final user = UserDataMock.getUserByEmail(userData['email']);
+      final userFuture = UserDataMock.getUserByEmail(userData['email']);
+      final user = await userFuture;
       setState(() {
         currentUser = user;
       });
@@ -71,14 +72,16 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
           setState(() {
             _isOnline = online;
           });
-          
+
           // Display snackbar for status change
           // Show status notification
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(online 
-                ? 'Status Anda sekarang AKTIF' 
-                : 'Status Anda sekarang TIDAK AKTIF'),
+              content: Text(
+                online
+                    ? 'Status Anda sekarang AKTIF'
+                    : 'Status Anda sekarang TIDAK AKTIF',
+              ),
               backgroundColor: online ? const Color(0xFF01A643) : Colors.grey,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
@@ -104,20 +107,22 @@ class MitraDashboardContentNew extends StatefulWidget {
   const MitraDashboardContentNew({super.key});
 
   @override
-  State<MitraDashboardContentNew> createState() => _MitraDashboardContentNewState();
+  State<MitraDashboardContentNew> createState() =>
+      _MitraDashboardContentNewState();
 }
 
 class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
   Map<String, dynamic>? currentUser;
-  final GlobalKey<RefreshIndicatorState> _refreshKey = GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _refreshKey =
+      GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -172,7 +177,7 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                   ),
                 ),
               ),
-              
+
               // Title
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -204,48 +209,48 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Customer details
               _buildDetailItem(
                 icon: Icons.person_outline,
                 title: 'Pelanggan',
                 value: 'Wahyu Indra',
               ),
-              
+
               _buildDetailItem(
                 icon: Icons.phone_outlined,
                 title: 'Telepon',
                 value: '+62 812-3456-7890',
               ),
-              
+
               _buildDetailItem(
                 icon: Icons.location_on_outlined,
                 title: 'Alamat',
                 value: 'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
               ),
-              
+
               _buildDetailItem(
                 icon: Icons.access_time,
                 title: 'Waktu Pengambilan',
                 value: '14:00 - 16:00',
               ),
-              
+
               _buildDetailItem(
                 icon: Icons.delete_outline,
                 title: 'Jenis Sampah',
                 value: 'Organik',
               ),
-              
+
               _buildDetailItem(
                 icon: Icons.scale_outlined,
                 title: 'Perkiraan Berat',
                 value: '2 kg',
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Action buttons
               Row(
                 children: [
@@ -280,9 +285,7 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(
-                            color: Color(0xFF00A643),
-                          ),
+                          side: const BorderSide(color: Color(0xFF00A643)),
                         ),
                       ),
                     ),
@@ -295,7 +298,7 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
       },
     );
   }
-  
+
   Widget _buildDetailItem({
     required IconData icon,
     required String title,
@@ -312,30 +315,16 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
               color: const Color(0xFFE4F9E8),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: const Color(0xFF00A643),
-            ),
+            child: Icon(icon, size: 20, color: const Color(0xFF00A643)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: greyTextStyle.copyWith(
-                    fontSize: 12,
-                  ),
-                ),
+                Text(title, style: greyTextStyle.copyWith(fontSize: 12)),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: blackTextStyle.copyWith(
-                    fontWeight: medium,
-                  ),
-                ),
+                Text(value, style: blackTextStyle.copyWith(fontWeight: medium)),
               ],
             ),
           ),
@@ -346,7 +335,8 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
 
   // Update parent navigation index
   void _updateParentIndex(int index) {
-    final parent = context.findAncestorStateOfType<_MitraDashboardPageNewState>();
+    final parent = context
+        .findAncestorStateOfType<_MitraDashboardPageNewState>();
     if (parent != null) {
       parent.setState(() {
         parent._currentIndex = index;
@@ -379,7 +369,7 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
         _showPickupDetailsBottomSheet(context);
       },
     );
-    
+
     final scheduleCard2 = ScheduleCard(
       time: '17:00 - 18:00',
       status: 'Menunggu',
@@ -458,7 +448,9 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
               children: [
                 // Header Section
                 DashboardHeader(
-                  name: currentUser != null ? currentUser!['name'].split(' ')[0] : 'Fulan bin Fulan',
+                  name: currentUser != null
+                      ? currentUser!['name'].split(' ')[0]
+                      : 'Fulan bin Fulan',
                   vehicleNumber: 'KT 777 WAN',
                   driverId: 'DRV-KTM-214',
                   onChatPressed: () {
@@ -474,32 +466,38 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                     // TODO: Replace with actual notification page when available
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Halaman notifikasi akan segera tersedia'),
+                        content: Text(
+                          'Halaman notifikasi akan segera tersedia',
+                        ),
                         duration: Duration(seconds: 2),
                       ),
                     );
                   },
                   quickActions: quickActions,
                 ),
-                
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 20)),
-                
+
+                SizedBox(
+                  height: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                ),
+
                 // Statistics Section
                 StatisticsGrid(
                   onRefresh: () {
                     _refreshKey.currentState?.show();
                   },
                 ),
-                
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
-                
-                // Schedule Section
-                ScheduleSection(
-                  scheduleCards: [scheduleCard1, scheduleCard2],
+
+                SizedBox(
+                  height: ResponsiveHelper.getResponsiveSpacing(context, 24),
                 ),
-                
+
+                // Schedule Section
+                ScheduleSection(scheduleCards: [scheduleCard1, scheduleCard2]),
+
                 // Bottom spacing for floating action button
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 80)),
+                SizedBox(
+                  height: ResponsiveHelper.getResponsiveSpacing(context, 80),
+                ),
               ],
             ),
           ),

@@ -4,7 +4,11 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+import 'package:bank_sha/ui/widgets/shared/api_config_dialog.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
+import 'package:bank_sha/utils/app_config.dart';
+import 'package:bank_sha/utils/api_routes.dart';
+import 'package:bank_sha/utils/api_helper.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:flutter/material.dart';
@@ -72,13 +76,22 @@ class _SignInPageState extends State<SignInPage> {
           final localStorage = await LocalStorageService.getInstance();
 
           // Pastikan role tersimpan dengan benar
-          if (!userData.containsKey('role')) {
-            print(
-              "WARNING: Role not found in user data from API me(), adding default role",
-            );
+          if (!userData.containsKey('role') || userData['role'] == null) {
+            print("WARNING: Role not found or null, adding default role");
             userData['role'] = 'end_user';
           }
 
+          // Memastikan role valid
+          String role = userData['role'];
+          if (role != 'end_user' && role != 'mitra') {
+            print(
+              "WARNING: Invalid role '${userData['role']}', correcting to 'end_user'",
+            );
+            userData['role'] = 'end_user';
+            role = 'end_user';
+          }
+
+          // Simpan data user dengan role yang benar
           await localStorage.saveUserData(userData);
           print("User data saved with role: ${userData['role']}");
 
@@ -86,8 +99,18 @@ class _SignInPageState extends State<SignInPage> {
           final savedRole = await localStorage.getUserRole();
           print("Verified role from localStorage after save: $savedRole");
 
+          if (savedRole != role) {
+            print(
+              "WARNING: Role mismatch! API role: $role, Saved role: $savedRole",
+            );
+            // Force resave with correct role
+            userData['role'] = role;
+            await localStorage.saveUserData(userData);
+            print("Re-saved user data to fix role mismatch");
+          }
+
           // Navigate based on role
-          if (userData['role'] == 'mitra') {
+          if (role == 'mitra') {
             print("✅ Auto-login: Navigating to MITRA dashboard");
             Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
           } else {
@@ -117,6 +140,100 @@ class _SignInPageState extends State<SignInPage> {
     super.dispose();
   }
 
+  /// Menampilkan dialog untuk konfigurasi API
+  void _showApiConfigDialog() async {
+    await ApiHelper.showApiConfigDialog(context);
+  }
+
+  void _showDemoCredentials() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Kredensial Demo',
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Gunakan kredensial berikut untuk login:'),
+            const SizedBox(height: 16),
+            _buildCredentialCard('User Biasa', 'user@example.com', 'password'),
+            const SizedBox(height: 12),
+            _buildCredentialCard('Mitra', 'mitra@example.com', 'password'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('Tutup', style: blueTextStyle),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCredentialCard(String title, String email, String password) {
+    return Card(
+      color: lightBackgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: blackTextStyle.copyWith(
+                fontWeight: semiBold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  'Email: ',
+                  style: blackTextStyle.copyWith(fontWeight: semiBold),
+                ),
+                Text(email, style: blackTextStyle),
+                IconButton(
+                  icon: Icon(Icons.copy, size: 18, color: greyColor),
+                  onPressed: () {
+                    _emailController.text = email;
+                    Navigator.pop(context);
+                  },
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  'Password: ',
+                  style: blackTextStyle.copyWith(fontWeight: semiBold),
+                ),
+                Text(password, style: blackTextStyle),
+                IconButton(
+                  icon: Icon(Icons.copy, size: 18, color: greyColor),
+                  onPressed: () {
+                    _passwordController.text = password;
+                    Navigator.pop(context);
+                  },
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Handle sign in
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) {
@@ -131,6 +248,9 @@ class _SignInPageState extends State<SignInPage> {
       // Create API service instance
       final authService = AuthApiService();
 
+      print("🔐 Attempting login via API: ${_emailController.text}");
+      print("🔐 API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}");
+
       // Attempt login using the API service
       final userData = await authService.login(
         email: _emailController.text,
@@ -138,7 +258,7 @@ class _SignInPageState extends State<SignInPage> {
       );
 
       print(
-        "Login successful via API for: ${userData['name']} (${userData['email']}) with role: ${userData['role']}",
+        "🔓 Login successful via API for: ${userData['name']} (${userData['email']}) with role: ${userData['role']}",
       );
 
       // For backward compatibility - update local storage
@@ -206,16 +326,34 @@ class _SignInPageState extends State<SignInPage> {
           isSuccess: true,
         );
 
-        // Double-check user role from localStorage untuk memastikan konsistensi
-        final savedRole = await localStorage.getUserRole();
-        print("Stored role in localStorage: $savedRole");
-        print("Role from API response: ${userData['role']}");
+        // Untuk debugging, impor AppLogger jika diperlukan
 
-        // Final role check untuk navigasi
-        final finalRole = userData['role'] ?? savedRole ?? 'end_user';
-        print("Final role used for navigation: $finalRole");
+        // Pastikan role disimpan dengan benar di userData dan localStorage
+        String finalRole = 'end_user'; // Default value
 
-        // Navigate based on role - with additional logging
+        if (userData.containsKey('role') && userData['role'] != null) {
+          finalRole = userData['role'];
+          print("Using role from API response: $finalRole");
+        } else {
+          // Role tidak ada di userData, coba ambil dari localStorage
+          final savedRole = await localStorage.getUserRole();
+          if (savedRole != null) {
+            finalRole = savedRole;
+            print("Using saved role from localStorage: $finalRole");
+            // Pastikan userData juga mengandung role yang benar
+            userData['role'] = finalRole;
+            await localStorage.saveUserData(userData);
+          } else {
+            print("No role found, using default: end_user");
+            // Simpan default role ke userData dan localStorage
+            userData['role'] = finalRole;
+            await localStorage.saveUserData(userData);
+          }
+        }
+
+        print("FINAL ROLE for navigation: $finalRole");
+
+        // Navigate based on role with improved logging
         if (finalRole == 'mitra') {
           print("✅ Navigating to MITRA dashboard");
           Navigator.pushNamedAndRemoveUntil(
@@ -375,22 +513,52 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                   ),
 
-                  // Forgot Password Link
-                  Align(
-                    alignment: Alignment.centerRight,
+                  // Forgot Password Link & API Config Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          showApiConfigDialog(context);
+                        },
+                        child: Text(
+                          'Konfigurasi API',
+                          style: TextStyle(color: blueColor, fontSize: 12),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'Lupa Password?',
+                          style: greentextstyle2.copyWith(
+                            fontSize: 14,
+                            fontWeight: regular,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Demo credentials button
+                  Center(
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _showDemoCredentials();
+                      },
                       child: Text(
-                        'Lupa Password?',
-                        style: greentextstyle2.copyWith(
+                        'Gunakan Kredensial Demo',
+                        style: blueTextStyle.copyWith(
                           fontSize: 14,
-                          fontWeight: regular,
+                          fontWeight: medium,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
 
                   // Sign In Button with loading state
                   _isLoading
@@ -426,7 +594,57 @@ class _SignInPageState extends State<SignInPage> {
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+
+                  // API Config Button
+                  Center(
+                    child: InkWell(
+                      onTap: () {
+                        _showApiConfigDialog();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.settings,
+                              size: 16,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Konfigurasi API',
+                              style: greyTextStyle.copyWith(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Demo Credentials Button
+                  TextButton(
+                    onPressed: () {
+                      _showDemoCredentials();
+                    },
+                    child: Text(
+                      'Gunakan Demo Credentials',
+                      style: blueTextStyle.copyWith(fontSize: 12),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

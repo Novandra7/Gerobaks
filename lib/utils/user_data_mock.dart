@@ -1,6 +1,7 @@
 import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/utils/api_routes.dart';
 import 'package:logger/logger.dart';
 
 /// Class UserDataMock sekarang hanya berfungsi sebagai helper untuk
@@ -10,6 +11,9 @@ class UserDataMock {
   static final _logger = Logger();
   static final ApiClient _api = ApiClient();
   static final AuthApiService _authService = AuthApiService();
+
+  // Variabel di atas tetap disimpan untuk kompatibilitas dengan kode lama
+  // yang mungkin masih mereferensikannya
 
   // Data kosong - semua data sekarang diambil dari API
   static final List<Map<String, dynamic>> endUsers = [];
@@ -64,6 +68,10 @@ class UserDataMock {
   /// Method untuk mendaftarkan user melalui API
   static Future<bool> registerEndUser(Map<String, dynamic> userData) async {
     try {
+      _logger.i(
+        '🔐 Registrasi user via API: ${userData['name']} (${userData['email']})',
+      );
+
       // Gunakan API untuk registrasi
       await AuthApiService().register(
         name: userData['name'],
@@ -71,9 +79,11 @@ class UserDataMock {
         password: userData['password'],
         role: 'end_user', // Set default role
       );
+
+      _logger.i('✅ Registrasi API berhasil');
       return true;
     } catch (e) {
-      print('Registration failed: $e');
+      _logger.e('❌ Registrasi gagal: $e');
       return false;
     }
   }

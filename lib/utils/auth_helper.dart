@@ -18,72 +18,111 @@ class AuthHelper {
   ///   - 'success': boolean yang menunjukkan keberhasilan login
   ///   - 'role': String yang menunjukkan role pengguna ('end_user' atau 'mitra')
   static Future<Map<String, dynamic>> tryAutoLogin() async {
-    print("🔑 [AUTH] Attempting auto-login with saved credentials");
-
+    print("🔑 [AUTH] Attempting auto-login...");
     try {
       // Get AuthApiService instance
       final authService = AuthApiService();
-      final localStorage =
-          await LocalStorageService.getInstance(); // Still needed for transition period
+      final localStorage = await LocalStorageService.getInstance();
+
+      // Debug info
+      print("🔑 [AUTH] API URL: ${authService.getBaseUrl()}");
+      print("🔑 [AUTH] Checking for existing API token...");
 
       // Check if we're already logged in via API token
       final token = await authService.getToken();
       final isLoggedIn = token != null && token.isNotEmpty;
-      print("🔑 [AUTH] isLoggedIn status from token: $isLoggedIn");
+
+      print("🔑 [AUTH] Has valid token: $isLoggedIn");
 
       if (isLoggedIn) {
         try {
+          print("🔑 [AUTH] Token found, fetching user profile via API...");
           // Get user data from API
           final userData = await authService.me();
-          final String? role = userData['role'];
-          print(
-            "🔑 [AUTH] Already logged in with user data: ${userData['name']} (${userData['email']})",
-          );
+          print("🔑 [AUTH] ME API Success: ${userData.toString()}");
+
+          String? role = userData['role'];
           print("🔑 [AUTH] Role from API: $role");
+
+          // Ensure role is valid
+          if (role != null && role != ROLE_END_USER && role != ROLE_MITRA) {
+            print(
+              "🔑 [AUTH] Invalid role '$role' found, defaulting to end_user",
+            );
+            role = ROLE_END_USER; // Default to end_user if role is invalid
+          }
+
+          // Ensure role exists
+          if (role == null) {
+            print("🔑 [AUTH] No role found, defaulting to end_user");
+            role = ROLE_END_USER;
+            userData['role'] = role; // Add role to userData
+          }
 
           // Save to localStorage for backward compatibility during transition
           await localStorage.saveUserData(userData);
           await localStorage.saveBool(localStorage.getLoginKey(), true);
 
-          return {
-            'success': true,
-            'role':
-                role ?? ROLE_END_USER, // Default to end_user if role not found
-          };
+          print(
+            "🔑 [AUTH] Auth success via token. Role: $role, Name: ${userData['name']}",
+          );
+          return {'success': true, 'role': role};
         } catch (e) {
-          print("🔑 [AUTH] Error fetching user data: $e");
           // Token might be invalid, logout
+          print("🔑 [AUTH] Error fetching user profile: $e");
+          print("🔑 [AUTH] Logging out due to invalid token");
           await authService.logout();
         }
       }
 
-      // If not logged in with token, try to login with saved credentials for backward compatibility
+      // If not logged in with token, try to login with saved credentials
+      print("🔑 [AUTH] No valid token, checking for saved credentials...");
       final credentials = await localStorage.getCredentials();
       if (credentials == null) {
         print("🔑 [AUTH] No saved credentials found");
         return {'success': false};
       }
 
+      print(
+        "🔑 [AUTH] Credentials found for ${credentials['email']}, attempting login...",
+      );
+
       // Try to login with saved credentials using API
       try {
-        final loginResponse = await authService.login(
+        final userData = await authService.login(
           email: credentials['email']!,
           password: credentials['password']!,
         );
 
-        final userData = loginResponse;
-        final String? role = userData['role'];
-        print(
-          "🔑 [AUTH] API Login successful for: ${userData['name']} with role: $role",
-        );
+        print("🔑 [AUTH] Login successful with saved credentials");
+        print("🔑 [AUTH] User data: ${userData.toString()}");
+
+        String? role = userData['role'];
+        print("🔑 [AUTH] Role from login response: $role");
+
+        // Ensure role is valid
+        if (role != null && role != ROLE_END_USER && role != ROLE_MITRA) {
+          print("🔑 [AUTH] Invalid role '$role', defaulting to end_user");
+          role = ROLE_END_USER; // Default to end_user if role is invalid
+        }
+
+        // Ensure role exists
+        if (role == null) {
+          print("🔑 [AUTH] No role in login response, defaulting to end_user");
+          role = ROLE_END_USER;
+          userData['role'] = role; // Add role to userData
+        }
 
         // Save to localStorage for backward compatibility
         await localStorage.saveUserData(userData);
         await localStorage.saveBool(localStorage.getLoginKey(), true);
 
-        return {'success': true, 'role': role ?? ROLE_END_USER};
+        print(
+          "🔑 [AUTH] Auth success via credentials. Role: $role, Name: ${userData['name']}",
+        );
+        return {'success': true, 'role': role};
       } catch (e) {
-        print("🔑 [AUTH] API Login failed: $e");
+        print("🔑 [AUTH] Login with saved credentials failed: $e");
         return {'success': false};
       }
     } catch (e) {

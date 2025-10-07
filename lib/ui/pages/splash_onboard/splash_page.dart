@@ -45,31 +45,39 @@ class _SplashPageState extends State<SplashPage>
       if (!mounted) return;
 
       try {
-        print("Attempting auto-login from splash page");
+        print("🚀 [SPLASH] Attempting auto-login from splash page");
 
         // Get LocalStorageService instance for debugging
         final localStorage = await LocalStorageService.getInstance();
-        final isLoggedIn = await localStorage.isLoggedIn();
-        print("isLoggedIn check result: $isLoggedIn");
+        final isLoggedIn = await localStorage.getBool(
+          localStorage.getLoginKey(),
+        );
+        print("🚀 [SPLASH] isLoggedIn check result: $isLoggedIn");
 
         // Check user data directly for debugging
         final userData = await localStorage.getUserData();
         if (userData != null) {
-          print("User data found: ${userData['name']} (${userData['email']})");
-          print("Role in userData: ${userData['role']}");
+          print(
+            "🚀 [SPLASH] User data found: ${userData['name']} (${userData['email']})",
+          );
+          print("🚀 [SPLASH] Role in userData: ${userData['role']}");
+
+          // Debug stored role separately
+          final storedRole = await localStorage.getUserRole();
+          print("🚀 [SPLASH] Explicitly stored role: $storedRole");
         } else {
-          print("No user data found in localStorage");
+          print("🚀 [SPLASH] No user data found in localStorage");
         }
 
         // Try to auto-login with saved credentials
         final Map<String, dynamic> autoLoginResult =
             await AuthHelper.tryAutoLogin();
-        print("Auto-login result: $autoLoginResult");
+        print("🚀 [SPLASH] Auto-login result: $autoLoginResult");
 
         if (autoLoginResult['success'] && mounted) {
           final String role =
               autoLoginResult['role'] ?? AuthHelper.ROLE_END_USER;
-          print("Auto-login successful with role: $role");
+          print("🚀 [SPLASH] Auto-login successful with role: $role");
 
           if (AuthHelper.isMitra(role)) {
             print(

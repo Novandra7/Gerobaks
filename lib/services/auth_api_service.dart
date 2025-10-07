@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/utils/api_routes.dart';
+import 'package:bank_sha/utils/app_config.dart';
 
 class AuthApiService {
   AuthApiService._internal();
@@ -45,6 +46,7 @@ class AuthApiService {
   }) async {
     try {
       print('🔐 Logging in user via API: $email');
+      print('🔐 API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}');
       final resp = await _api.postJson(ApiRoutes.login, {
         'email': email,
         'password': password,
@@ -92,6 +94,11 @@ class AuthApiService {
     }
   }
 
+  /// Mendapatkan base URL yang digunakan API
+  String getBaseUrl() {
+    return _api.getBaseUrl();
+  }
+
   Future<void> logout() async {
     try {
       await _api.postJson(ApiRoutes.logout, {});
@@ -102,7 +109,7 @@ class AuthApiService {
   Future<String?> getToken() => _storage.read(key: _tokenKey);
 
   Future<Map<String, dynamic>> me() async {
-    final json = await _api.getJson(ApiRoutes.me);
+    final json = await _api.get(ApiRoutes.me);
     print('API me() response: $json');
 
     if (json is Map) {
