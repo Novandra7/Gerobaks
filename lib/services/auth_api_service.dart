@@ -1,4 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/utils/api_routes.dart';
 import 'package:bank_sha/utils/app_config.dart';
@@ -9,7 +9,6 @@ class AuthApiService {
   factory AuthApiService() => _instance;
 
   final ApiClient _api = ApiClient();
-  final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
 
   Future<Map<String, dynamic>> register({
@@ -27,7 +26,7 @@ class AuthApiService {
         if (role != null) 'role': role,
       });
       print('✅ API registration successful');
-      return _persistFromResponse(resp);
+      return await _persistFromResponse(resp);
     } catch (e) {
       print('❌ API registration failed: $e');
 
@@ -77,7 +76,7 @@ class AuthApiService {
         }
       }
 
-      return _persistFromResponse(resp);
+      return await _persistFromResponse(resp);
     } catch (e) {
       print('❌ API login failed: $e');
 
@@ -103,10 +102,14 @@ class AuthApiService {
     try {
       await _api.postJson(ApiRoutes.logout, {});
     } catch (_) {}
-    await _storage.delete(key: _tokenKey);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
   }
 
-  Future<String?> getToken() => _storage.read(key: _tokenKey);
+  Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
 
   Future<Map<String, dynamic>> me() async {
     final json = await _api.get(ApiRoutes.me);
@@ -132,14 +135,15 @@ class AuthApiService {
     return {};
   }
 
-  Map<String, dynamic> _persistFromResponse(dynamic json) {
+  Future<Map<String, dynamic>> _persistFromResponse(dynamic json) async {
     if (json is Map && json['data'] is Map) {
       final d = json['data'] as Map;
 
       // Extract token directly from data
       final token = d['token'];
       if (token is String) {
-        _storage.write(key: _tokenKey, value: token);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_tokenKey, token);
       }
 
       // Extract user data from nested structure if available

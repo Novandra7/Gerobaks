@@ -3,6 +3,7 @@ import 'dart:math';
 import '../models/chat_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/gemini_ai_service.dart';
+import '../services/end_user_api_service.dart';
 
 class ChatService {
   static final ChatService _instance = ChatService._internal();
@@ -11,35 +12,83 @@ class ChatService {
 
   final StreamController<List<ChatConversation>> _conversationsController =
       StreamController<List<ChatConversation>>.broadcast();
-  
+
   final StreamController<List<ChatMessage>> _messagesController =
       StreamController<List<ChatMessage>>.broadcast();
 
-  Stream<List<ChatConversation>> get conversationsStream => _conversationsController.stream;
+  Stream<List<ChatConversation>> get conversationsStream =>
+      _conversationsController.stream;
   Stream<List<ChatMessage>> get messagesStream => _messagesController.stream;
 
   List<ChatConversation> _conversations = [];
   List<ChatMessage> _currentMessages = [];
   late LocalStorageService _localStorage;
+  late EndUserApiService _apiService;
 
-  // Initialize with local storage
+  // Initialize with local storage and API service
   Future<void> initializeData() async {
     _localStorage = await LocalStorageService.getInstance();
-    await _loadConversationsFromStorage();
+    _apiService = EndUserApiService();
+    await _loadConversationsFromAPI();
+  }
+
+  // Load conversations from API first, fallback to local storage
+  Future<void> _loadConversationsFromAPI() async {
+    try {
+      // Try to load from API first
+      final apiConversations = await _apiService.getChats();
+
+      if (apiConversations.isNotEmpty) {
+        // Convert API data to ChatConversation objects
+        _conversations = apiConversations
+            .map((data) => _convertApiToConversation(data))
+            .toList();
+      } else {
+        // Fallback to local storage
+        await _loadConversationsFromStorage();
+      }
+
+      _conversationsController.add(_conversations);
+    } catch (e) {
+      print('Error loading conversations from API: $e');
+      // Fallback to local storage on error
+      await _loadConversationsFromStorage();
+    }
+  }
+
+  // Convert API chat data to ChatConversation model
+  ChatConversation _convertApiToConversation(Map<String, dynamic> data) {
+    return ChatConversation(
+      id: data['id']?.toString() ?? _generateId(),
+      title: data['title'] ?? 'Chat Support',
+      lastMessage: data['last_message'] ?? '',
+      lastMessageTime: data['last_message_time'] != null
+          ? DateTime.parse(data['last_message_time'])
+          : DateTime.now(),
+      isUnread: data['is_unread'] ?? false,
+      unreadCount: data['unread_count'] ?? 0,
+      adminName: data['admin_name'] ?? 'Customer Service',
+      adminAvatar: data['admin_avatar'],
+      messages:
+          [], // Messages will be loaded separately when conversation is opened
+    );
   }
 
   Future<void> _loadConversationsFromStorage() async {
     final storedConversations = await _localStorage.getConversations();
-    
+
     if (storedConversations.isNotEmpty) {
-      _conversations = storedConversations.map((data) => ChatConversation.fromJson(data)).toList();
+      _conversations = storedConversations
+          .map((data) => ChatConversation.fromJson(data))
+          .toList();
     } else {
       // Initialize with sample data if no stored data
       _conversations = [
         ChatConversation(
           id: '1',
           title: 'Chat dengan Customer Service',
-          lastMessage: 'Terima kasih telah menghubungi kami. Ada yang bisa kami bantu?',
+          lastMessage:
+              'Terima kasih telah menghubungi kami. Ada yang bisa kami bantu?',
           lastMessageTime: DateTime.now().subtract(const Duration(minutes: 30)),
           isUnread: true,
           unreadCount: 2,
@@ -54,13 +103,15 @@ class ChatService {
             ),
             ChatMessage(
               id: '2',
-              message: 'Halo, saya ingin bertanya tentang jadwal pengangkutan sampah',
+              message:
+                  'Halo, saya ingin bertanya tentang jadwal pengangkutan sampah',
               timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
               isFromUser: true,
             ),
             ChatMessage(
               id: '3',
-              message: 'Terima kasih telah menghubungi kami. Ada yang bisa kami bantu?',
+              message:
+                  'Terima kasih telah menghubungi kami. Ada yang bisa kami bantu?',
               timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
               isFromUser: false,
             ),
@@ -69,12 +120,14 @@ class ChatService {
       ];
       await _saveConversationsToStorage();
     }
-    
+
     _conversationsController.add(_conversations);
   }
 
   Future<void> _saveConversationsToStorage() async {
-    final conversationsData = _conversations.map((conv) => conv.toJson()).toList();
+    final conversationsData = _conversations
+        .map((conv) => conv.toJson())
+        .toList();
     await _localStorage.saveConversations(conversationsData);
   }
 
@@ -108,38 +161,54 @@ class ChatService {
     // Get current user role
     final localStorage = await LocalStorageService.getInstance();
     final userRole = await localStorage.getUserRole() ?? 'end_user';
-    
+
     final bool isMitraUser = userRole == 'mitra';
-    
+
     final newMessage = ChatMessage(
       id: _generateId(),
       message: message,
       timestamp: DateTime.now(),
-      isFromUser: !isMitraUser, // For mitra, they are representing the system/admin side
+      isFromUser:
+          !isMitraUser, // For mitra, they are representing the system/admin side
     );
 
+    // Send message to API first
+    try {
+      await _apiService.sendMessage(
+        1, // Default receiver ID for customer service
+        message,
+      );
+    } catch (e) {
+      print('Error sending message to API: $e');
+      // Continue with local storage even if API fails
+    }
+
     // Add to conversation
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(newMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)
+        ..add(newMessage);
+
       String adminName = conversation.adminName;
       String? adminAvatar = conversation.adminAvatar;
-      
+
       // Update admin info if this is a mitra user
       if (isMitraUser) {
         try {
           final rawUserData = await localStorage.getRawUser();
           if (rawUserData != null) {
             adminName = rawUserData['name'] ?? 'Mitra Gerobaks';
-            adminAvatar = rawUserData['profilePicUrl'] ?? conversation.adminAvatar;
+            adminAvatar =
+                rawUserData['profilePicUrl'] ?? conversation.adminAvatar;
           }
         } catch (e) {
           print('Error getting user data for chat: $e');
         }
       }
-      
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -170,13 +239,15 @@ class ChatService {
   void _generateAIResponse(String conversationId, String userMessage) async {
     try {
       final geminiService = GeminiAIService();
-      
+
       // Get conversation history for context
-      final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+      final conversationIndex = _conversations.indexWhere(
+        (c) => c.id == conversationId,
+      );
       if (conversationIndex == -1) return;
-      
+
       final conversation = _conversations[conversationIndex];
-      
+
       // First show typing indicator
       final typingMessage = ChatMessage(
         id: _generateId(),
@@ -185,9 +256,11 @@ class ChatService {
         isFromUser: false,
         type: MessageType.typing,
       );
-      
-      final updatedMessagesWithTyping = List<ChatMessage>.from(conversation.messages)..add(typingMessage);
-      
+
+      final updatedMessagesWithTyping = List<ChatMessage>.from(
+        conversation.messages,
+      )..add(typingMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -199,19 +272,20 @@ class ChatService {
         adminAvatar: conversation.adminAvatar,
         messages: updatedMessagesWithTyping,
       );
-      
+
       _currentMessages = updatedMessagesWithTyping;
       _messagesController.add(_currentMessages);
-      
+
       // Get context for AI
       final recentMessages = conversation.messages
           .where((m) => m.type == MessageType.text)
           .take(10)
           .map((m) => '${m.isFromUser ? "User" : "Admin"}: ${m.message}')
           .toList();
-      
+
       // Create a more personalized prompt
-      String prompt = '''
+      String prompt =
+          '''
       You are a helpful customer service agent named ${conversation.adminName} for Gerobaks, a waste management service app in Indonesia.
       Be friendly, informative, and speak in Bahasa Indonesia with occasional Indonesian slang for a natural conversation flow.
       Keep responses concise (2-3 sentences max). Use emoji occasionally 😊.
@@ -230,21 +304,21 @@ class ChatService {
       
       Respond as ${conversation.adminName}:
       ''';
-      
+
       // Generate AI response with realistic typing delay
       final baseTypingDelay = 1000 + (userMessage.length * 15).clamp(0, 3000);
       await Future.delayed(Duration(milliseconds: baseTypingDelay));
-      
+
       final aiResponse = await geminiService.generateResponse(
         prompt,
         conversationHistory: recentMessages,
       );
-      
+
       // Remove typing indicator and add actual response
-      final filteredMessages = List<ChatMessage>.from(conversation.messages)
-          .where((m) => m.type != MessageType.typing)
-          .toList();
-      
+      final filteredMessages = List<ChatMessage>.from(
+        conversation.messages,
+      ).where((m) => m.type != MessageType.typing).toList();
+
       final adminMessage = ChatMessage(
         id: _generateId(),
         message: aiResponse,
@@ -253,13 +327,14 @@ class ChatService {
       );
 
       // Add AI response to conversation
-      final updatedMessages = List<ChatMessage>.from(filteredMessages)..add(adminMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(filteredMessages)
+        ..add(adminMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
-        lastMessage: aiResponse.length > 50 
-            ? '${aiResponse.substring(0, 50)}...' 
+        lastMessage: aiResponse.length > 50
+            ? '${aiResponse.substring(0, 50)}...'
             : aiResponse,
         lastMessageTime: DateTime.now(),
         isUnread: true,
@@ -273,7 +348,6 @@ class ChatService {
       _messagesController.add(_currentMessages);
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
-      
     } catch (e) {
       print('Error generating AI response: $e');
       // Fallback to simple response if AI fails
@@ -293,15 +367,17 @@ class ChatService {
       'Terima kasih sudah menghubungi Gerobaks. Kami akan segera memproses permintaan Anda.',
       'Siap! Akan saya bantu selesaikan masalah Anda segera.',
       'Kami sangat menghargai masukan Anda untuk layanan Gerobaks yang lebih baik.',
-      'Mohon maaf atas ketidaknyamanannya. Kami akan berusaha menyelesaikan masalah ini secepatnya.'
+      'Mohon maaf atas ketidaknyamanannya. Kami akan berusaha menyelesaikan masalah ini secepatnya.',
     ];
 
     // Get conversation
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex == -1) return;
-    
+
     final conversation = _conversations[conversationIndex];
-    
+
     // First show typing indicator
     final typingMessage = ChatMessage(
       id: _generateId(),
@@ -310,9 +386,11 @@ class ChatService {
       isFromUser: false,
       type: MessageType.typing,
     );
-    
-    final updatedMessagesWithTyping = List<ChatMessage>.from(conversation.messages)..add(typingMessage);
-    
+
+    final updatedMessagesWithTyping = List<ChatMessage>.from(
+      conversation.messages,
+    )..add(typingMessage);
+
     _conversations[conversationIndex] = ChatConversation(
       id: conversation.id,
       title: conversation.title,
@@ -324,20 +402,20 @@ class ChatService {
       adminAvatar: conversation.adminAvatar,
       messages: updatedMessagesWithTyping,
     );
-    
+
     _currentMessages = updatedMessagesWithTyping;
     _messagesController.add(_currentMessages);
-    
+
     // Add a small delay to simulate typing
     await Future.delayed(Duration(milliseconds: 800 + Random().nextInt(1500)));
-    
+
     final randomResponse = responses[Random().nextInt(responses.length)];
-    
+
     // Remove typing indicator and add actual response
-    final filteredMessages = List<ChatMessage>.from(conversation.messages)
-        .where((m) => m.type != MessageType.typing)
-        .toList();
-    
+    final filteredMessages = List<ChatMessage>.from(
+      conversation.messages,
+    ).where((m) => m.type != MessageType.typing).toList();
+
     final adminMessage = ChatMessage(
       id: _generateId(),
       message: randomResponse,
@@ -345,8 +423,9 @@ class ChatService {
       isFromUser: false,
     );
 
-    final updatedMessages = List<ChatMessage>.from(filteredMessages)..add(adminMessage);
-    
+    final updatedMessages = List<ChatMessage>.from(filteredMessages)
+      ..add(adminMessage);
+
     _conversations[conversationIndex] = ChatConversation(
       id: conversation.id,
       title: conversation.title,
@@ -367,10 +446,12 @@ class ChatService {
 
   // Mark conversation as read
   Future<void> markConversationAsRead(String conversationId) async {
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      
+
       if (conversation.isUnread) {
         _conversations[conversationIndex] = ChatConversation(
           id: conversation.id,
@@ -383,24 +464,26 @@ class ChatService {
           adminAvatar: conversation.adminAvatar,
           messages: conversation.messages,
         );
-        
+
         _conversationsController.add(_conversations);
         await _saveConversationsToStorage();
       }
     }
   }
-  
+
   // For backward compatibility
   Future<void> markAsRead(String conversationId) async {
     return markConversationAsRead(conversationId);
   }
-  
+
   // Clear conversation (delete all messages)
   Future<void> clearConversation(String conversationId) async {
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      
+
       final initialMessage = ChatMessage(
         id: _generateId(),
         message: 'Riwayat chat telah dihapus',
@@ -408,7 +491,7 @@ class ChatService {
         isFromUser: false,
         type: MessageType.system,
       );
-      
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -420,14 +503,14 @@ class ChatService {
         adminAvatar: conversation.adminAvatar,
         messages: [initialMessage],
       );
-      
+
       _currentMessages = [initialMessage];
       _messagesController.add(_currentMessages);
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
     }
   }
-  
+
   // Simulate admin response
   Future<void> simulateAdminResponse(String conversationId) async {
     final adminResponses = [
@@ -436,23 +519,27 @@ class ChatService {
       'Kami sudah menerima pesan Anda dan akan menindaklanjuti segera.',
       'Apakah ada informasi tambahan yang dapat Anda berikan?',
       'Untuk mempercepat proses, mohon sertakan ID transaksi jika ada.',
-      'Kami akan segera menghubungi tim lapangan untuk menindaklanjuti laporan Anda.'
+      'Kami akan segera menghubungi tim lapangan untuk menindaklanjuti laporan Anda.',
     ];
-    
-    final randomResponse = adminResponses[Random().nextInt(adminResponses.length)];
-    
+
+    final randomResponse =
+        adminResponses[Random().nextInt(adminResponses.length)];
+
     final adminMessage = ChatMessage(
       id: _generateId(),
       message: randomResponse,
       timestamp: DateTime.now(),
       isFromUser: false,
     );
-    
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(adminMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)
+        ..add(adminMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -464,14 +551,14 @@ class ChatService {
         adminAvatar: conversation.adminAvatar,
         messages: updatedMessages,
       );
-      
+
       _currentMessages = updatedMessages;
       _messagesController.add(_currentMessages);
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
     }
   }
-  
+
   // Simulate user response
   Future<void> simulateUserResponse(String conversationId) async {
     final userResponses = [
@@ -480,23 +567,27 @@ class ChatService {
       'Saya mengalami masalah dengan aplikasi, bisa dibantu?',
       'Sampah saya belum diambil sesuai jadwal, bagaimana tindak lanjutnya?',
       'Saya ingin memberikan masukan untuk pelayanan Gerobaks.',
-      'Mohon bantuan untuk konfirmasi pembayaran saya.'
+      'Mohon bantuan untuk konfirmasi pembayaran saya.',
     ];
-    
-    final randomResponse = userResponses[Random().nextInt(userResponses.length)];
-    
+
+    final randomResponse =
+        userResponses[Random().nextInt(userResponses.length)];
+
     final userMessage = ChatMessage(
       id: _generateId(),
       message: randomResponse,
       timestamp: DateTime.now(),
       isFromUser: false,
     );
-    
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(userMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)
+        ..add(userMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -508,7 +599,7 @@ class ChatService {
         adminAvatar: conversation.adminAvatar,
         messages: updatedMessages,
       );
-      
+
       _currentMessages = updatedMessages;
       _messagesController.add(_currentMessages);
       _conversationsController.add(_conversations);
@@ -524,7 +615,7 @@ class ChatService {
   }) async {
     final String conversationId = _generateId();
     final now = DateTime.now();
-    
+
     final initialMessage = ChatMessage(
       id: _generateId(),
       message: 'Halo, selamat datang di Gerobaks!',
@@ -554,7 +645,10 @@ class ChatService {
 
   // Get total unread count
   int getTotalUnreadCount() {
-    return _conversations.fold(0, (sum, conversation) => sum + conversation.unreadCount);
+    return _conversations.fold(
+      0,
+      (sum, conversation) => sum + conversation.unreadCount,
+    );
   }
 
   // Send image message
@@ -569,11 +663,14 @@ class ChatService {
     );
 
     // Add to conversation
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(newMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)
+        ..add(newMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,
@@ -592,9 +689,13 @@ class ChatService {
       await _saveConversationsToStorage();
     }
   }
-  
+
   // Send voice message
-  Future<void> sendVoiceMessage(String conversationId, String voiceUrl, int durationInSeconds) async {
+  Future<void> sendVoiceMessage(
+    String conversationId,
+    String voiceUrl,
+    int durationInSeconds,
+  ) async {
     final newMessage = ChatMessage(
       id: _generateId(),
       message: 'Voice message',
@@ -606,11 +707,14 @@ class ChatService {
     );
 
     // Add to conversation
-    final conversationIndex = _conversations.indexWhere((c) => c.id == conversationId);
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
     if (conversationIndex != -1) {
       final conversation = _conversations[conversationIndex];
-      final updatedMessages = List<ChatMessage>.from(conversation.messages)..add(newMessage);
-      
+      final updatedMessages = List<ChatMessage>.from(conversation.messages)
+        ..add(newMessage);
+
       _conversations[conversationIndex] = ChatConversation(
         id: conversation.id,
         title: conversation.title,

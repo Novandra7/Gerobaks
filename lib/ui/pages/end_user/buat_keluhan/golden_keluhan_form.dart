@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
-import 'package:intl/intl.dart';
-import 'dart:math';
+import 'package:bank_sha/services/end_user_api_service.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 
 class GoldenKeluhanForm extends StatefulWidget {
   const GoldenKeluhanForm({super.key});
@@ -13,14 +13,46 @@ class GoldenKeluhanForm extends StatefulWidget {
 
 class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Form data
   final TextEditingController _judulController = TextEditingController();
   final TextEditingController _deskripsiController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
   String _selectedKategori = 'Pengambilan Sampah';
   String _selectedPrioritas = 'Normal';
-  
+
+  // API and user data
+  late EndUserApiService _apiService;
+  late LocalStorageService _localStorage;
+  Map<String, dynamic>? _userData;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    _apiService = EndUserApiService();
+    await _apiService.initialize();
+    _localStorage = await LocalStorageService.getInstance();
+    await _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final userData = await _localStorage.getUserData();
+      if (mounted) {
+        setState(() {
+          _userData = userData;
+        });
+      }
+    } catch (e) {
+      print("Error loading user data: $e");
+    }
+  }
+
   // List of kategori
   final List<String> _kategoriList = [
     'Pengambilan Sampah',
@@ -30,17 +62,12 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
     'Petugas',
     'Lainnya',
   ];
-  
+
   // List of prioritas
-  final List<String> _prioritasList = [
-    'Rendah',
-    'Normal',
-    'Tinggi',
-    'Urgent',
-  ];
-  
+  final List<String> _prioritasList = ['Rendah', 'Normal', 'Tinggi', 'Urgent'];
+
   // Loading state
-  bool _isLoading = false;
+  // Removed _isLoading since we now use _isSubmitting
 
   @override
   void dispose() {
@@ -49,55 +76,88 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
     _lokasiController.dispose();
     super.dispose();
   }
-  
-  // Generate random ID for the keluhan
-  String _generateKeluhanId() {
-    final random = Random();
-    final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10);
-    final randomDigits = random.nextInt(999).toString().padLeft(3, '0');
-    return timestamp + randomDigits;
-  }
 
   // Submit the form
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _isLoading = true;
+        _isSubmitting = true;
       });
-      
-      // Simulate API request
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        
+
+      try {
         // Create keluhan data
         final keluhanData = {
-          'id': _generateKeluhanId(),
-          'nama': 'Ghani', // Dummy user name
-          'judul': _judulController.text,
-          'deskripsi': _deskripsiController.text,
-          'kategori': _selectedKategori,
-          'prioritas': _selectedPrioritas,
-          'lokasi': _lokasiController.text,
-          'tanggal': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-          'status': 'Menunggu',
+          'title': _judulController.text,
+          'description': _deskripsiController.text,
+          'category': _selectedKategori,
+          'priority': _selectedPrioritas,
+          'location': _lokasiController.text,
         };
-        
-        setState(() {
-          _isLoading = false;
-        });
-        
-        // Return to previous screen with the new keluhan data
-        Navigator.pop(context, keluhanData);
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('Keluhan berhasil dibuat!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      });
+
+        // Submit to API
+        final result = await _apiService.createFeedback(keluhanData);
+
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          if (result != null) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Keluhan berhasil dikirim!',
+                  style: whiteTextStyle.copyWith(fontWeight: medium),
+                ),
+                backgroundColor: greenColor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+
+            // Return to previous page with success result
+            Navigator.of(context).pop(true);
+          } else {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Gagal mengirim keluhan. Silakan coba lagi.',
+                  style: whiteTextStyle.copyWith(fontWeight: medium),
+                ),
+                backgroundColor: redcolor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Terjadi kesalahan: $e',
+                style: whiteTextStyle.copyWith(fontWeight: medium),
+              ),
+              backgroundColor: redcolor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -109,45 +169,37 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         title: 'Buat Keluhan Baru',
         showBackButton: true,
       ),
-      body: _isLoading 
-          ? _buildLoadingState() 
-          : _buildFormContent(),
+      body: _isSubmitting ? _buildLoadingState() : _buildFormContent(),
     );
   }
-  
+
   Widget _buildLoadingState() {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(
-            color: greenColor,
-            strokeWidth: 4,
-          ),
+          CircularProgressIndicator(color: greenColor, strokeWidth: 4),
           const SizedBox(height: 20),
           Text(
             'Mengirim Keluhan...',
-            style: blackTextStyle.copyWith(
-              fontSize: 16,
-              fontWeight: medium,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 16, fontWeight: medium),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildFormContent() {
     // Calculate golden ratio dimensions
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = 24.0;
     final contentWidth = screenWidth - (horizontalPadding * 2);
-    
+
     // Using golden ratio for consistent spacing
     final largeSpace = 24.0; // Base spacing
     final mediumSpace = largeSpace * 0.618; // Golden ratio applied
     final smallSpace = mediumSpace * 0.618; // Golden ratio applied again
-    
+
     return Form(
       key: _formKey,
       child: ListView(
@@ -163,10 +215,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.blue.shade700,
-                ),
+                Icon(Icons.info_outline, color: Colors.blue.shade700),
                 SizedBox(width: smallSpace),
                 Expanded(
                   child: Text(
@@ -180,9 +229,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               ],
             ),
           ),
-          
+
           SizedBox(height: largeSpace),
-          
+
           // Judul field - larger font as the main field
           _buildInputLabel('Judul Keluhan', isRequired: true),
           SizedBox(height: smallSpace),
@@ -199,9 +248,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
             },
             fontSize: 16.0, // Larger font size for emphasis
           ),
-          
+
           SizedBox(height: mediumSpace),
-          
+
           // Kategori field
           _buildInputLabel('Kategori', isRequired: true),
           SizedBox(height: smallSpace),
@@ -217,16 +266,16 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
             },
             getLabel: (value) => value,
           ),
-          
+
           SizedBox(height: mediumSpace),
-          
+
           // Prioritas field
           _buildInputLabel('Prioritas', isRequired: true),
           SizedBox(height: smallSpace),
           _buildPrioritasSelector(),
-          
+
           SizedBox(height: mediumSpace),
-          
+
           // Lokasi field
           _buildInputLabel('Lokasi', isRequired: true),
           SizedBox(height: smallSpace),
@@ -241,9 +290,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               return null;
             },
           ),
-          
+
           SizedBox(height: mediumSpace),
-          
+
           // Deskripsi field - larger box for detailed input
           _buildInputLabel('Deskripsi Keluhan', isRequired: true),
           SizedBox(height: smallSpace),
@@ -260,9 +309,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               return null;
             },
           ),
-          
+
           SizedBox(height: largeSpace * 1.5),
-          
+
           // Submit button - follows golden ratio width
           SizedBox(
             width: contentWidth,
@@ -286,9 +335,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               ),
             ),
           ),
-          
+
           SizedBox(height: mediumSpace),
-          
+
           // Cancel button
           SizedBox(
             width: contentWidth,
@@ -303,9 +352,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               ),
               child: Text(
                 'Batal',
-                style: greyTextStyle.copyWith(
-                  fontWeight: semiBold,
-                ),
+                style: greyTextStyle.copyWith(fontWeight: semiBold),
               ),
             ),
           ),
@@ -313,31 +360,25 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
       ),
     );
   }
-  
+
   Widget _buildInputLabel(String label, {bool isRequired = false}) {
     return Row(
       children: [
         Text(
           label,
-          style: blackTextStyle.copyWith(
-            fontWeight: semiBold,
-            fontSize: 14,
-          ),
+          style: blackTextStyle.copyWith(fontWeight: semiBold, fontSize: 14),
         ),
         if (isRequired) ...[
           const SizedBox(width: 4),
           Text(
             '*',
-            style: TextStyle(
-              color: Colors.red,
-              fontWeight: semiBold,
-            ),
+            style: TextStyle(color: Colors.red, fontWeight: semiBold),
           ),
         ],
       ],
     );
   }
-  
+
   Widget _buildTextFormField({
     required TextEditingController controller,
     required String hintText,
@@ -354,7 +395,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
       decoration: InputDecoration(
         hintText: hintText,
         hintStyle: greyTextStyle.copyWith(fontSize: fontSize - 1),
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: greyColor) : null,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: greyColor)
+            : null,
         fillColor: whiteColor,
         filled: true,
         contentPadding: const EdgeInsets.symmetric(
@@ -410,10 +453,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         items: items.map((T item) {
           return DropdownMenuItem<T>(
             value: item,
-            child: Text(
-              getLabel(item),
-              style: blackTextStyle,
-            ),
+            child: Text(getLabel(item), style: blackTextStyle),
           );
         }).toList(),
         onChanged: onChanged,
@@ -425,8 +465,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
     // Using golden ratio to determine width proportions
     final screenWidth = MediaQuery.of(context).size.width;
     final contentWidth = screenWidth - 48.0; // Total width minus padding
-    final itemWidth = (contentWidth / 4).floor(); // Roughly 1/4 of screen for each item
-    
+    final itemWidth = (contentWidth / 4)
+        .floor(); // Roughly 1/4 of screen for each item
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(8),
@@ -440,7 +481,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         children: _prioritasList.map((prioritas) {
           final isSelected = _selectedPrioritas == prioritas;
           final color = _getPrioritasColor(prioritas);
-          
+
           return GestureDetector(
             onTap: () {
               setState(() {
@@ -451,7 +492,9 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
               width: itemWidth - 8, // Subtracting for margins
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+                color: isSelected
+                    ? color.withOpacity(0.15)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected ? color : Colors.transparent,
@@ -467,13 +510,15 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
-                      boxShadow: isSelected ? [
-                        BoxShadow(
-                          color: color.withOpacity(0.3),
-                          blurRadius: 6,
-                          spreadRadius: 2,
-                        ),
-                      ] : null,
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: color.withOpacity(0.3),
+                                blurRadius: 6,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 8),

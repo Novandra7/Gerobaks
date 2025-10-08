@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/models/user_model.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
 /// Service untuk mengelola penyimpanan lokal (SharedPreferences)
@@ -220,9 +219,8 @@ class LocalStorageService {
     // Save the logout timestamp but don't delete the user data
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
 
-    // Also clear the secure storage token for API auth
-    const secureStorage = FlutterSecureStorage();
-    await secureStorage.delete(key: 'auth_token');
+    // Hapus auth token dari shared preferences
+    await _preferences!.remove('auth_token');
 
     _logger.i("User logged out but data preserved for future auto-login");
   }
@@ -235,9 +233,8 @@ class LocalStorageService {
     await remove(_credentialsKey);
     await saveString(_lastLoginKey, DateTime.now().toIso8601String());
 
-    // Also clear the secure storage token for API auth
-    const secureStorage = FlutterSecureStorage();
-    await secureStorage.delete(key: 'auth_token');
+    // Hapus auth token dari shared preferences
+    await _preferences!.remove('auth_token');
 
     _logger.i("User fully logged out with all data cleared");
   }
@@ -249,6 +246,19 @@ class LocalStorageService {
 
   Future<String?> getString(String key) async {
     return _preferences!.getString(key);
+  }
+
+  // Auth token methods
+  Future<void> saveToken(String token) async {
+    await _preferences!.setString('auth_token', token);
+  }
+
+  Future<String?> getToken() async {
+    return _preferences!.getString('auth_token');
+  }
+
+  Future<void> removeToken() async {
+    await _preferences!.remove('auth_token');
   }
 
   Future<void> saveBool(String key, bool value) async {
