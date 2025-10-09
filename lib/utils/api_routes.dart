@@ -94,6 +94,19 @@ class ApiRoutes {
   static const String settings = '/api/settings';
   static const String settingsApiConfig = '/api/settings/api-config';
 
+  // Report Routes
+  static const String reports = '/api/reports';
+  static String report(int id) => '/api/reports/$id';
+
+  // Admin Routes
+  static const String adminStats = '/api/admin/stats';
+  static const String adminUsers = '/api/admin/users';
+  static String adminUser(int id) => '/api/admin/users/$id';
+  static const String adminLogs = '/api/admin/logs';
+  static const String adminExport = '/api/admin/export';
+  static const String adminNotifications = '/api/admin/notifications';
+  static const String adminHealth = '/api/admin/health';
+
   // Health Check Routes
   static const String ping = '/api/ping';
   static const String health = '/api/health';
