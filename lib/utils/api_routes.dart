@@ -22,6 +22,16 @@ class ApiRoutes {
   static const String dashboard = '/api/dashboard';
   static String dashboardMitra(int id) => '/api/dashboard/mitra/$id';
   static String dashboardUser(int id) => '/api/dashboard/user/$id';
+  
+  // Mitra Routes
+  static const String mitraSchedules = '/api/mitra/schedules';
+  static const String mitraActivities = '/api/mitra/activities';
+  static const String mitraOrders = '/api/mitra/orders';
+  static String mitraDashboard(int id) => '/api/dashboard/mitra/$id';
+  
+  // Activity Routes
+  static const String activities = '/api/activities';
+  static String activity(int id) => '/api/activities/$id';
 
   // Schedule Routes
   static const String schedules = '/api/schedules';
