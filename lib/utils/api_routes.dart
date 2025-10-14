@@ -2,10 +2,14 @@
 // Memisahkan endpoint API ke dalam satu file untuk kemudahan pengelolaan
 // dan konsistensi di seluruh aplikasi
 
+import 'package:bank_sha/utils/app_config.dart';
+
 class ApiRoutes {
-  // Base URL - can be changed for different environments
-  static const String baseUrl =
-      'http://127.0.0.1:8000'; // Default development URL
+  // Base URL - Use production API by default from AppConfig
+  static String get baseUrl => AppConfig.apiBaseUrl;
+
+  // Development fallback for testing
+  static const String devBaseUrl = 'http://127.0.0.1:8000';
 
   // Authentication Routes
   static const String register = '/api/register';
@@ -22,13 +26,13 @@ class ApiRoutes {
   static const String dashboard = '/api/dashboard';
   static String dashboardMitra(int id) => '/api/dashboard/mitra/$id';
   static String dashboardUser(int id) => '/api/dashboard/user/$id';
-  
+
   // Mitra Routes
   static const String mitraSchedules = '/api/mitra/schedules';
   static const String mitraActivities = '/api/mitra/activities';
   static const String mitraOrders = '/api/mitra/orders';
   static String mitraDashboard(int id) => '/api/dashboard/mitra/$id';
-  
+
   // Activity Routes
   static const String activities = '/api/activities';
   static String activity(int id) => '/api/activities/$id';

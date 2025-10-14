@@ -4,11 +4,9 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/ui/widgets/shared/api_config_dialog.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/utils/app_config.dart';
 import 'package:bank_sha/utils/api_routes.dart';
-import 'package:bank_sha/utils/api_helper.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:flutter/material.dart';
@@ -138,11 +136,6 @@ class _SignInPageState extends State<SignInPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  /// Menampilkan dialog untuk konfigurasi API
-  void _showApiConfigDialog() async {
-    await ApiHelper.showApiConfigDialog(context);
   }
 
   void _showDemoCredentials() {
@@ -326,44 +319,46 @@ class _SignInPageState extends State<SignInPage> {
           isSuccess: true,
         );
 
-        // Untuk debugging, impor AppLogger jika diperlukan
+        // Navigasi berdasarkan role dengan validasi yang lebih baik
+        String userRole = userData['role'] ?? 'end_user';
+        print("🚀 User role for navigation: $userRole");
 
-        // Pastikan role disimpan dengan benar di userData dan localStorage
-        String finalRole = 'end_user'; // Default value
-
-        if (userData.containsKey('role') && userData['role'] != null) {
-          finalRole = userData['role'];
-          print("Using role from API response: $finalRole");
-        } else {
-          // Role tidak ada di userData, coba ambil dari localStorage
-          final savedRole = await localStorage.getUserRole();
-          if (savedRole != null) {
-            finalRole = savedRole;
-            print("Using saved role from localStorage: $finalRole");
-            // Pastikan userData juga mengandung role yang benar
-            userData['role'] = finalRole;
-            await localStorage.saveUserData(userData);
-          } else {
-            print("No role found, using default: end_user");
-            // Simpan default role ke userData dan localStorage
-            userData['role'] = finalRole;
-            await localStorage.saveUserData(userData);
-          }
+        // Validasi dan normalisasi role
+        if (!['end_user', 'mitra', 'admin'].contains(userRole)) {
+          print("⚠️ Invalid role detected: $userRole, defaulting to end_user");
+          userRole = 'end_user';
+          userData['role'] = userRole;
+          await localStorage.saveUserData(userData);
         }
 
-        print("FINAL ROLE for navigation: $finalRole");
-
-        // Navigate based on role with improved logging
-        if (finalRole == 'mitra') {
-          print("✅ Navigating to MITRA dashboard");
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/mitra-dashboard-new',
-            (route) => false,
-          );
-        } else {
-          print("✅ Navigating to END USER dashboard");
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        // Navigate berdasarkan role
+        switch (userRole) {
+          case 'mitra':
+            print("✅ Navigating to MITRA dashboard");
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/mitra-dashboard-new',
+              (route) => false,
+            );
+            break;
+          case 'admin':
+            print("✅ Navigating to ADMIN dashboard");
+            // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/mitra-dashboard-new',
+              (route) => false,
+            );
+            break;
+          case 'end_user':
+          default:
+            print("✅ Navigating to END USER home");
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/home',
+              (route) => false,
+            );
+            break;
         }
       }
     } catch (e) {
@@ -513,19 +508,10 @@ class _SignInPageState extends State<SignInPage> {
                     ),
                   ),
 
-                  // Forgot Password Link & API Config Link
+                  // Forgot Password Link
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      TextButton(
-                        onPressed: () {
-                          showApiConfigDialog(context);
-                        },
-                        child: Text(
-                          'Konfigurasi API',
-                          style: TextStyle(color: blueColor, fontSize: 12),
-                        ),
-                      ),
                       TextButton(
                         onPressed: () {},
                         child: Text(
@@ -595,43 +581,6 @@ class _SignInPageState extends State<SignInPage> {
                   ),
 
                   const SizedBox(height: 24),
-
-                  // API Config Button
-                  Center(
-                    child: InkWell(
-                      onTap: () {
-                        _showApiConfigDialog();
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.settings,
-                              size: 16,
-                              color: Colors.grey.shade700,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Konfigurasi API',
-                              style: greyTextStyle.copyWith(
-                                fontSize: 12,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
 
                   // Demo Credentials Button
                   TextButton(

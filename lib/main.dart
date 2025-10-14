@@ -62,17 +62,20 @@ import 'package:bank_sha/utils/app_config.dart';
 Future<void> ensureEnvFileExists() async {
   // Menggunakan AppConfig sebagai gantinya
   await AppConfig.init();
+
+  // Load stored API URL from SharedPreferences if available
+  await AppConfig.loadStoredApiUrl();
+
   print('✓ Konfigurasi aplikasi berhasil diinisialisasi');
   print('✓ API Base URL: ${AppConfig.apiBaseUrl}');
 
   // Verifikasi konfigurasi
   final apiBaseUrl = dotenv.env['API_BASE_URL'];
-  print('Konfigurasi API_BASE_URL: $apiBaseUrl');
+  print('Konfigurasi API_BASE_URL dari .env: $apiBaseUrl');
 
-  // Tambahkan fallback jika masih kosong
-  if (apiBaseUrl == null || apiBaseUrl.isEmpty) {
-    dotenv.env['API_BASE_URL'] = 'http://10.0.2.2:8000';
-    print('API_BASE_URL diatur secara manual ke: http://10.0.2.2:8000');
+  // Show if using custom URL
+  if (AppConfig.isUsingCustomApiUrl) {
+    print('✓ Menggunakan custom API URL yang tersimpan');
   }
 }
 

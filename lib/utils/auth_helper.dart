@@ -7,6 +7,7 @@ class AuthHelper {
   // Konstanta untuk role
   static const String ROLE_END_USER = 'end_user';
   static const String ROLE_MITRA = 'mitra';
+  static const String ROLE_ADMIN = 'admin';
 
   // Private constructor to prevent instantiation
   AuthHelper._();
@@ -44,8 +45,9 @@ class AuthHelper {
           String? role = userData['role'];
           print("🔑 [AUTH] Role from API: $role");
 
-          // Ensure role is valid
-          if (role != null && role != ROLE_END_USER && role != ROLE_MITRA) {
+          // Validasi dan normalisasi role
+          if (role != null &&
+              ![ROLE_END_USER, ROLE_MITRA, ROLE_ADMIN].contains(role)) {
             print(
               "🔑 [AUTH] Invalid role '$role' found, defaulting to end_user",
             );
@@ -100,8 +102,9 @@ class AuthHelper {
         String? role = userData['role'];
         print("🔑 [AUTH] Role from login response: $role");
 
-        // Ensure role is valid
-        if (role != null && role != ROLE_END_USER && role != ROLE_MITRA) {
+        // Validasi dan normalisasi role
+        if (role != null &&
+            ![ROLE_END_USER, ROLE_MITRA, ROLE_ADMIN].contains(role)) {
           print("🔑 [AUTH] Invalid role '$role', defaulting to end_user");
           role = ROLE_END_USER; // Default to end_user if role is invalid
         }
@@ -136,8 +139,18 @@ class AuthHelper {
     return role == ROLE_MITRA;
   }
 
+  /// Memeriksa apakah role adalah admin
+  static bool isAdmin(String? role) {
+    return role == ROLE_ADMIN;
+  }
+
   /// Memeriksa apakah role adalah end user
   static bool isEndUser(String? role) {
     return role == ROLE_END_USER || role == null; // Default to end_user if null
+  }
+
+  /// Memeriksa apakah user memiliki akses admin atau mitra
+  static bool hasAdminAccess(String? role) {
+    return role == ROLE_ADMIN || role == ROLE_MITRA;
   }
 }

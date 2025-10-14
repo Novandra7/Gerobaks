@@ -79,9 +79,19 @@ class _SplashPageState extends State<SplashPage>
               autoLoginResult['role'] ?? AuthHelper.ROLE_END_USER;
           print("🚀 [SPLASH] Auto-login successful with role: $role");
 
+          // Navigate berdasarkan role
           if (AuthHelper.isMitra(role)) {
             print(
               "🚀 [SPLASH] Auto-login successful for mitra, navigating to mitra dashboard",
+            );
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/mitra-dashboard-new',
+              (route) => false,
+            );
+          } else if (AuthHelper.isAdmin(role)) {
+            print(
+              "🚀 [SPLASH] Auto-login successful for admin, navigating to mitra dashboard (temporary)",
             );
             Navigator.pushNamedAndRemoveUntil(
               context,

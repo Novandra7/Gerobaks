@@ -1,5 +1,7 @@
+import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/services/user_service.dart';
@@ -105,11 +107,11 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                         await userService.init();
                         if (!context.mounted) return;
 
+                        final authApiService = AuthApiService();
+
                         // Step 2: Register with backend API
                         try {
                           // Use AuthApiService directly to ensure API registration happens
-                          final authApiService = AuthApiService();
-
                           try {
                             await authApiService.register(
                               name: args['name'] ?? 'New User',
@@ -128,34 +130,62 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                           // Continue with local auth regardless of API errors
                         }
 
-                        // Step 3: Get current user or login
-                        final user = await userService.getCurrentUser();
-                        if (!context.mounted) return;
+                        // Step 3: Login via API to persist authenticated session
+                        Map<String, dynamic>? loginData;
+                        try {
+                          debugPrint('Attempting auto-login via API...');
 
-                        if (user == null) {
-                          debugPrint(
-                            'User not found in sign-up success page, attempting login',
-                          );
-
-                          // Try logging in with provided credentials
-                          final loggedInUser = await userService.loginUser(
+                          loginData = await authApiService.login(
                             email: args['email'],
                             password: args['password'],
                           );
                           if (!context.mounted) return;
 
-                          if (loggedInUser == null) {
+                          final localStorage =
+                              await LocalStorageService.getInstance();
+
+                          // Persist raw API response for compatibility (token, role, etc)
+                          await localStorage.saveUserData(loginData);
+                          await localStorage.saveBool(
+                            localStorage.getLoginKey(),
+                            true,
+                          );
+                          await localStorage.saveCredentials(
+                            args['email'],
+                            args['password'],
+                          );
+
+                          // Update UserService listeners with normalized model
+                          final userModel = UserModel.fromJson(
+                            Map<String, dynamic>.from(loginData),
+                          );
+                          await userService.updateUserData(userModel);
+
+                          // Ensure token remains available after updateUserData overwrite
+                          await localStorage.saveUserData(loginData);
+
+                          debugPrint(
+                            'Auto-login successful for: ${loginData['name']} with role ${loginData['role']}',
+                          );
+                        } catch (loginError) {
+                          debugPrint(
+                            'API auto-login failed: $loginError. Falling back to local login.',
+                          );
+
+                          final fallbackUser = await userService.loginUser(
+                            email: args['email'],
+                            password: args['password'],
+                          );
+                          if (!context.mounted) return;
+
+                          if (fallbackUser == null) {
                             throw Exception(
-                              'Gagal login, akun tidak ditemukan',
+                              'Gagal login otomatis. Silakan login secara manual.',
                             );
                           }
 
                           debugPrint(
-                            'Local login successful for: ${loggedInUser.name}',
-                          );
-                        } else {
-                          debugPrint(
-                            'User found: ${user.name} (${user.email})',
+                            'Fallback local login successful for: ${fallbackUser.name}',
                           );
                         }
 

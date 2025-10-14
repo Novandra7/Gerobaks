@@ -9,9 +9,13 @@ class AppConfig {
   factory AppConfig() => _instance;
   AppConfig._internal();
 
-  // Default values
-  static const String DEFAULT_API_URL = 'http://10.0.2.2:8000';
+  // Default values - Updated to use production
+  static const String DEFAULT_API_URL = 'https://gerobaks.dumeg.com';
+  static const String DEVELOPMENT_API_URL = 'http://10.0.2.2:8000';
+  static const String STAGING_API_URL = 'https://staging-gerobaks.dumeg.com';
+  static const String PRODUCTION_API_URL = 'https://gerobaks.dumeg.com';
   static const String CUSTOM_API_URL_KEY = 'custom_api_url';
+  static const String ENVIRONMENT_KEY = 'app_environment';
 
   // Initialize config - call this before using any methods
   static bool _isInitialized = false;
@@ -37,10 +41,10 @@ class AppConfig {
   // Set API URL secara manual dan simpan ke SharedPreferences
   static Future<void> setApiBaseUrl(String url) async {
     _customApiUrl = url;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(CUSTOM_API_URL_KEY, url);
-    
+
     print('🌐 API URL diubah dan disimpan: $url');
   }
 
@@ -102,10 +106,10 @@ class AppConfig {
   // Reset API URL to default
   static Future<void> resetApiBaseUrl() async {
     _customApiUrl = '';
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(CUSTOM_API_URL_KEY);
-    
+
     print('🌐 API URL direset ke default');
   }
 
