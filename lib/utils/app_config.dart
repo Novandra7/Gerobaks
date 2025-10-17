@@ -9,9 +9,12 @@ class AppConfig {
   factory AppConfig() => _instance;
   AppConfig._internal();
 
-  // Default values - Updated to use production
-  static const String DEFAULT_API_URL = 'https://gerobaks.dumeg.com';
-  static const String DEVELOPMENT_API_URL = 'http://10.0.2.2:8000';
+  // Default values - Updated to use LOCAL SERVER with ONLINE DATABASE
+  static const String DEFAULT_API_URL = 'http://localhost:8000';
+  static const String DEVELOPMENT_API_URL =
+      'http://10.0.2.2:8000'; // Android emulator
+  static const String LOCALHOST_API_URL =
+      'http://localhost:8000'; // Local development
   static const String STAGING_API_URL = 'https://staging-gerobaks.dumeg.com';
   static const String PRODUCTION_API_URL = 'https://gerobaks.dumeg.com';
   static const String CUSTOM_API_URL_KEY = 'custom_api_url';
