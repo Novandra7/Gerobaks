@@ -36,12 +36,14 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
       final data = response['data'] as Map<String, dynamic>?;
 
       if (data != null) {
-        emit(BalanceState.loaded(
-          balanceSummary: data,
-          ledgerTransactions: state.ledgerTransactions,
-          hasMoreTransactions: state.hasMoreTransactions,
-          currentPage: state.currentPage,
-        ));
+        emit(
+          BalanceState.loaded(
+            balanceSummary: data,
+            ledgerTransactions: state.ledgerTransactions,
+            hasMoreTransactions: state.hasMoreTransactions,
+            currentPage: state.currentPage,
+          ),
+        );
       } else {
         emit(BalanceState.error('Data balance tidak ditemukan'));
       }
@@ -83,7 +85,9 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
       if (data != null) {
         // If paginating, append to existing transactions
         List<dynamic> updatedTransactions;
-        if (event.page != null && event.page! > 1 && state.ledgerTransactions != null) {
+        if (event.page != null &&
+            event.page! > 1 &&
+            state.ledgerTransactions != null) {
           updatedTransactions = [...state.ledgerTransactions!, ...data];
         } else {
           updatedTransactions = data;
@@ -99,24 +103,27 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
           }
         }
 
-        emit(state.copyWith(
-          status: BalanceStatus.loaded,
-          ledgerTransactions: updatedTransactions,
-          hasMoreTransactions: hasMore,
-          currentPage: event.page ?? 1,
-        ));
+        emit(
+          state.copyWith(
+            status: BalanceStatus.loaded,
+            ledgerTransactions: updatedTransactions,
+            hasMoreTransactions: hasMore,
+            currentPage: event.page ?? 1,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          status: BalanceStatus.error,
-          errorMessage: 'Data ledger tidak ditemukan',
-        ));
+        emit(
+          state.copyWith(
+            status: BalanceStatus.error,
+            errorMessage: 'Data ledger tidak ditemukan',
+          ),
+        );
       }
     } catch (e) {
       print('❌ BalanceBloc: Failed to fetch balance ledger - $e');
-      emit(state.copyWith(
-        status: BalanceStatus.error,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: BalanceStatus.error, errorMessage: e.toString()),
+      );
     }
   }
 
@@ -143,10 +150,12 @@ class BalanceBloc extends Bloc<BalanceEvent, BalanceState> {
       final updatedSummary = summaryResponse['data'] as Map<String, dynamic>?;
 
       if (updatedSummary != null) {
-        emit(state.copyWith(
-          status: BalanceStatus.topUpSuccess,
-          balanceSummary: updatedSummary,
-        ));
+        emit(
+          state.copyWith(
+            status: BalanceStatus.topUpSuccess,
+            balanceSummary: updatedSummary,
+          ),
+        );
 
         // Also refresh ledger to show the new transaction
         add(const FetchBalanceLedger(page: 1));

@@ -27,7 +27,9 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     }
 
     try {
-      print('🔔 NotificationBloc: Fetching notifications page ${event.page ?? 1}');
+      print(
+        '🔔 NotificationBloc: Fetching notifications page ${event.page ?? 1}',
+      );
 
       // GET /api/notifications?page=1&per_page=20
       String endpoint = ApiRoutes.notifications;
@@ -48,14 +50,18 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       if (data != null) {
         // If paginating, append to existing notifications
         List<dynamic> updatedNotifications;
-        if (event.page != null && event.page! > 1 && state.notifications != null) {
+        if (event.page != null &&
+            event.page! > 1 &&
+            state.notifications != null) {
           updatedNotifications = [...state.notifications!, ...data];
         } else {
           updatedNotifications = data;
         }
 
         // Count unread notifications
-        final unreadCount = updatedNotifications.where((n) => n['read_at'] == null).length;
+        final unreadCount = updatedNotifications
+            .where((n) => n['read_at'] == null)
+            .length;
 
         // Check if there are more pages
         bool hasMore = true;
@@ -67,12 +73,14 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           }
         }
 
-        emit(NotificationState.loaded(
-          notifications: updatedNotifications,
-          unreadCount: unreadCount,
-          hasMoreNotifications: hasMore,
-          currentPage: event.page ?? 1,
-        ));
+        emit(
+          NotificationState.loaded(
+            notifications: updatedNotifications,
+            unreadCount: unreadCount,
+            hasMoreNotifications: hasMore,
+            currentPage: event.page ?? 1,
+          ),
+        );
       } else {
         emit(NotificationState.error('Data notifikasi tidak ditemukan'));
       }
@@ -90,10 +98,15 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     emit(NotificationState.markingAsRead());
 
     try {
-      print('🔔 NotificationBloc: Marking notification ${event.notificationId} as read');
+      print(
+        '🔔 NotificationBloc: Marking notification ${event.notificationId} as read',
+      );
 
       // POST /api/notifications/mark-read (marks specific notification)
-      await _api.postJson('${ApiRoutes.notificationMarkRead}/${event.notificationId}', {});
+      await _api.postJson(
+        '${ApiRoutes.notificationMarkRead}/${event.notificationId}',
+        {},
+      );
 
       print('✅ NotificationBloc: Notification marked as read');
 
@@ -106,12 +119,16 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           return n;
         }).toList();
 
-        final unreadCount = updatedNotifications.where((n) => n['read_at'] == null).length;
+        final unreadCount = updatedNotifications
+            .where((n) => n['read_at'] == null)
+            .length;
 
-        emit(NotificationState.markedAsRead(
-          notifications: updatedNotifications,
-          unreadCount: unreadCount,
-        ));
+        emit(
+          NotificationState.markedAsRead(
+            notifications: updatedNotifications,
+            unreadCount: unreadCount,
+          ),
+        );
       } else {
         emit(state.copyWith(status: NotificationStatus.markedAsRead));
       }
@@ -142,15 +159,24 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
           return {...n, 'read_at': DateTime.now().toIso8601String()};
         }).toList();
 
-        emit(NotificationState.markedAsRead(
-          notifications: updatedNotifications,
-          unreadCount: 0,
-        ));
+        emit(
+          NotificationState.markedAsRead(
+            notifications: updatedNotifications,
+            unreadCount: 0,
+          ),
+        );
       } else {
-        emit(state.copyWith(status: NotificationStatus.markedAsRead, unreadCount: 0));
+        emit(
+          state.copyWith(
+            status: NotificationStatus.markedAsRead,
+            unreadCount: 0,
+          ),
+        );
       }
     } catch (e) {
-      print('❌ NotificationBloc: Failed to mark all notifications as read - $e');
+      print(
+        '❌ NotificationBloc: Failed to mark all notifications as read - $e',
+      );
       emit(NotificationState.error(e.toString()));
     }
   }

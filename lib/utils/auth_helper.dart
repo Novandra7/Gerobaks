@@ -7,10 +7,7 @@ class AuthHelper {
   // Konstanta untuk role
   static const String ROLE_END_USER = 'end_user';
   static const String ROLE_MITRA = 'mitra';
-<<<<<<< HEAD
   static const String ROLE_ADMIN = 'admin';
-=======
->>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
 
   // Private constructor to prevent instantiation
   AuthHelper._();
@@ -22,18 +19,12 @@ class AuthHelper {
   ///   - 'success': boolean yang menunjukkan keberhasilan login
   ///   - 'role': String yang menunjukkan role pengguna ('end_user' atau 'mitra')
   static Future<Map<String, dynamic>> tryAutoLogin() async {
-<<<<<<< HEAD
     print("🔑 [AUTH] Attempting auto-login...");
-=======
-    print("🔑 [AUTH] Attempting auto-login with saved credentials");
-
->>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
     try {
       // Get AuthApiService instance
       final authService = AuthApiService();
       final localStorage = await LocalStorageService.getInstance();
 
-<<<<<<< HEAD
       // Debug info
       print("🔑 [AUTH] API URL: ${authService.getBaseUrl()}");
       print("🔑 [AUTH] Checking for existing API token...");
@@ -137,36 +128,6 @@ class AuthHelper {
         print("🔑 [AUTH] Login with saved credentials failed: $e");
         return {'success': false};
       }
-=======
-      // Check if we're already logged in
-      final isLoggedIn = await localStorage.isLoggedIn();
-      print("🔑 [AUTH] isLoggedIn status: $isLoggedIn");
-
-      // If user is not logged in (manually logged out), don't attempt auto-login
-      if (!isLoggedIn) {
-        print("🔑 [AUTH] User is not logged in, skipping auto-login");
-        return {'success': false};
-      }
-
-      if (isLoggedIn) {
-        // Get user data to determine role
-        final userData = await localStorage.getUserData();
-        final String? role = userData?['role'];
-        print(
-          "🔑 [AUTH] Already logged in with user data: ${userData?['name']} (${userData?['email']})",
-        );
-        print("🔑 [AUTH] Role from user data: $role");
-        return {
-          'success': true,
-          'role':
-              role ?? ROLE_END_USER, // Default to end_user if role not found
-        };
-      }
-
-      // This block will never be reached due to the logic above, but keeping for clarity
-      print("🔑 [AUTH] No valid login session found");
-      return {'success': false};
->>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
     } catch (e) {
       print("🔑 [AUTH] Auto-login error: $e");
       return {'success': false};
@@ -178,14 +139,11 @@ class AuthHelper {
     return role == ROLE_MITRA;
   }
 
-<<<<<<< HEAD
   /// Memeriksa apakah role adalah admin
   static bool isAdmin(String? role) {
     return role == ROLE_ADMIN;
   }
 
-=======
->>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
   /// Memeriksa apakah role adalah end user
   static bool isEndUser(String? role) {
     return role == ROLE_END_USER || role == null; // Default to end_user if null

@@ -185,7 +185,3 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     return jsonDecode(json) as Map<String, dynamic>;
   }
 }
-
-// Import for compute function
-import 'dart:convert';
-import 'package:flutter/foundation.dart' show compute;

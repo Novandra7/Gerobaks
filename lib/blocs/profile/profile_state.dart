@@ -39,18 +39,12 @@ class ProfileState extends Equatable {
 
   /// Loaded state
   factory ProfileState.loaded(Map<String, dynamic> userData) {
-    return ProfileState(
-      status: ProfileStatus.loaded,
-      userData: userData,
-    );
+    return ProfileState(status: ProfileStatus.loaded, userData: userData);
   }
 
   /// Error state
   factory ProfileState.error(String message) {
-    return ProfileState(
-      status: ProfileStatus.error,
-      errorMessage: message,
-    );
+    return ProfileState(status: ProfileStatus.error, errorMessage: message);
   }
 
   /// Updating state

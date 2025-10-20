@@ -3,11 +3,13 @@
 ## ✅ Apa yang Sudah Selesai
 
 ### 1. API Configuration
+
 - ✅ Updated `lib/utils/app_config.dart`
 - ✅ Default API: `https://gerobaks.dumeg.com` (Production)
 - ✅ Previous: `http://localhost:8000`
 
 ### 2. BLoC Architecture (6 Modules)
+
 ```
 ✅ AuthBloc          - Login, Register, Logout, Check Status
 ✅ BalanceBloc       - Summary, Ledger, Top-up
@@ -18,6 +20,7 @@
 ```
 
 ### 3. Dependencies
+
 - ✅ `equatable: ^2.0.5` installed
 - ✅ `flutter_bloc: ^9.1.1` (already installed)
 - ✅ `flutter pub get` successful
@@ -27,6 +30,7 @@
 ## 📦 Files Created
 
 ### BLoC Files (18 files)
+
 ```
 lib/blocs/
 ├── auth/
@@ -48,6 +52,7 @@ lib/blocs/
 ```
 
 ### Documentation
+
 ```
 ✅ MVP_END_USER_IMPLEMENTATION_GUIDE.md (Complete guide)
 ✅ QUICK_SUMMARY.md (This file)
@@ -58,11 +63,12 @@ lib/blocs/
 ## 🚀 Next Steps (Yang Perlu Dilakukan)
 
 ### Step 1: Update main.dart
+
 ```dart
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.init();
-  
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -81,15 +87,18 @@ void main() async {
 ### Step 2: Create UI Pages (Priority Order)
 
 #### 🔴 HIGH Priority
+
 1. **Login Page** → `lib/ui/pages/auth/login_page.dart`
 2. **Dashboard** → `lib/ui/pages/end_user/dashboard_page.dart`
 
 #### 🟡 MEDIUM Priority
+
 3. **Balance Page** → `lib/ui/pages/end_user/balance/balance_page.dart`
 4. **Notification Page** → `lib/ui/pages/end_user/notification/notification_list_page.dart`
 5. **Profile Page** → `lib/ui/pages/end_user/profile/profile_page.dart`
 
 #### 🟢 LOW Priority
+
 6. Tracking Pages
 7. Schedule Pages
 8. Additional features
@@ -101,6 +110,7 @@ void main() async {
 **Production API**: `https://gerobaks.dumeg.com`
 
 **End User Account**:
+
 - Email: `daffa@gmail.com`
 - Password: `password`
 - Role: `end_user`
@@ -110,6 +120,7 @@ void main() async {
 ## 📚 API Endpoints Ready to Use
 
 ### Authentication (AuthBloc)
+
 ```
 POST /api/login
 POST /api/register
@@ -118,6 +129,7 @@ GET  /api/auth/me
 ```
 
 ### Balance (BalanceBloc)
+
 ```
 GET  /api/balance/summary
 GET  /api/balance/ledger
@@ -125,12 +137,14 @@ POST /api/balance/topup
 ```
 
 ### Notifications (NotificationBloc)
+
 ```
 GET  /api/notifications
 POST /api/notifications/mark-read
 ```
 
 ### Profile (ProfileBloc)
+
 ```
 GET  /api/auth/me
 POST /api/user/update-profile
@@ -143,15 +157,18 @@ POST /api/user/change-password
 ## 🧪 How to Test
 
 1. **Run the app**:
+
    ```bash
    flutter run --verbose
    ```
 
 2. **Test Login**:
+
    - Email: `daffa@gmail.com`
    - Password: `password`
 
 3. **Check Console**:
+
    - Look for: `🔐 AuthBloc: Starting login`
    - Should see: `✅ AuthBloc: Login successful`
 
@@ -164,6 +181,7 @@ POST /api/user/change-password
 ## 💡 Quick Usage Examples
 
 ### Login
+
 ```dart
 context.read<AuthBloc>().add(
   LoginRequested(
@@ -174,16 +192,19 @@ context.read<AuthBloc>().add(
 ```
 
 ### Get Balance
+
 ```dart
 context.read<BalanceBloc>().add(const FetchBalanceSummary());
 ```
 
 ### Get Notifications
+
 ```dart
 context.read<NotificationBloc>().add(const FetchNotifications());
 ```
 
 ### Get Profile
+
 ```dart
 context.read<ProfileBloc>().add(const FetchUserProfile());
 ```
@@ -193,18 +214,21 @@ context.read<ProfileBloc>().add(const FetchUserProfile());
 ## 📊 Progress Tracker
 
 ### Backend API
+
 - ✅ 25/25 endpoints working (100%)
 - ✅ Production API ready
 - ✅ Test user created
 - ✅ Authentication working
 
 ### Mobile App
+
 - ✅ BLoC architecture complete
 - ✅ API configuration updated
 - ⏳ UI Pages (pending)
 - ⏳ Integration testing (pending)
 
 ### Overall MVP Progress
+
 ```
 Backend:  ████████████████████ 100%
 BLoC:     ████████████████████ 100%
@@ -219,6 +243,7 @@ Total:    ██████████░░░░░░░░░░  50%
 ## 🎯 MVP Scope - End User Only
 
 ### In Scope ✅
+
 - Authentication (Login, Register, Logout)
 - Dashboard (Balance summary, recent activity)
 - Balance (View, Topup, Ledger)
@@ -228,6 +253,7 @@ Total:    ██████████░░░░░░░░░░  50%
 - Schedule (List, Create)
 
 ### Out of Scope ❌
+
 - Mitra role features
 - Admin role features
 - Advanced reporting
@@ -239,6 +265,7 @@ Total:    ██████████░░░░░░░░░░  50%
 ## 🔥 Next Immediate Action
 
 **PRIORITAS 1**: Buat Login Page
+
 ```dart
 // lib/ui/pages/auth/login_page.dart
 

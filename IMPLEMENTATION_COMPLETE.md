@@ -9,28 +9,31 @@ Implementasi **Backend API** ke **Mobile App** dengan **BLoC Pattern** untuk rol
 ## 📊 What's Done
 
 ### 1. API Configuration ✅
+
 - **File**: `lib/utils/app_config.dart`
 - **Changed**: `DEFAULT_API_URL` → `https://gerobaks.dumeg.com`
 - **Status**: Production API ready
 
 ### 2. BLoC Architecture ✅ (6 Modules)
 
-| Module | Events | States | Bloc | Status |
-|--------|--------|--------|------|--------|
-| Auth | ✅ 5 events | ✅ 6 states | ✅ Complete | 🟢 READY |
-| Balance | ✅ 4 events | ✅ 7 states | ✅ Complete | 🟢 READY |
+| Module       | Events      | States      | Bloc        | Status   |
+| ------------ | ----------- | ----------- | ----------- | -------- |
+| Auth         | ✅ 5 events | ✅ 6 states | ✅ Complete | 🟢 READY |
+| Balance      | ✅ 4 events | ✅ 7 states | ✅ Complete | 🟢 READY |
 | Notification | ✅ 4 events | ✅ 6 states | ✅ Complete | 🟢 READY |
-| Profile | ✅ 5 events | ✅ 8 states | ✅ Complete | 🟢 READY |
-| Tracking | ✅ Exists | ✅ Exists | ✅ Exists | 🟢 READY |
-| Schedule | ✅ Exists | ✅ Exists | ✅ Exists | 🟢 READY |
+| Profile      | ✅ 5 events | ✅ 8 states | ✅ Complete | 🟢 READY |
+| Tracking     | ✅ Exists   | ✅ Exists   | ✅ Exists   | 🟢 READY |
+| Schedule     | ✅ Exists   | ✅ Exists   | ✅ Exists   | 🟢 READY |
 
 ### 3. Dependencies ✅
+
 ```yaml
-flutter_bloc: ^9.1.1  # Already installed
-equatable: ^2.0.5     # Newly installed
+flutter_bloc: ^9.1.1 # Already installed
+equatable: ^2.0.5 # Newly installed
 ```
 
 ### 4. File Structure ✅
+
 ```
 lib/
 ├── blocs/
@@ -56,6 +59,7 @@ lib/
 ```
 
 ### 5. Documentation ✅
+
 - `MVP_END_USER_IMPLEMENTATION_GUIDE.md` - Complete guide
 - `QUICK_SUMMARY_MVP.md` - Quick reference
 - `IMPLEMENTATION_COMPLETE.md` - This file
@@ -77,13 +81,13 @@ import 'package:bank_sha/blocs/blocs.dart'; // Import all BLoCs
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize app config
   await AppConfig.init();
-  
+
   // Load environment variables
   await dotenv.load(fileName: '.env');
-  
+
   runApp(const MyApp());
 }
 
@@ -98,16 +102,16 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (_) => AuthBloc()..add(const CheckAuthStatus()),
         ),
-        
+
         // Balance BLoC
         BlocProvider(create: (_) => BalanceBloc()),
-        
+
         // Notification BLoC
         BlocProvider(create: (_) => NotificationBloc()),
-        
+
         // Profile BLoC
         BlocProvider(create: (_) => ProfileBloc()),
-        
+
         // Add existing BLoCs if not already there
         BlocProvider(create: (_) => TrackingBloc()),
         BlocProvider(create: (_) => ScheduleBloc()),
@@ -149,7 +153,7 @@ class AuthWrapper extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        
+
         // Navigate based on auth status
         if (state.status == AuthStatus.authenticated) {
           // Check user role
@@ -164,7 +168,7 @@ class AuthWrapper extends StatelessWidget {
             );
           }
         }
-        
+
         // Show login page if not authenticated
         return const LoginPage();
       },
@@ -200,6 +204,7 @@ class AuthWrapper extends StatelessWidget {
 ## 🔑 API Endpoints Ready
 
 ### Authentication (AuthBloc)
+
 ```
 ✅ POST /api/login
 ✅ POST /api/register
@@ -208,6 +213,7 @@ class AuthWrapper extends StatelessWidget {
 ```
 
 ### Balance (BalanceBloc)
+
 ```
 ✅ GET  /api/balance/summary
 ✅ GET  /api/balance/ledger
@@ -215,12 +221,14 @@ class AuthWrapper extends StatelessWidget {
 ```
 
 ### Notifications (NotificationBloc)
+
 ```
 ✅ GET  /api/notifications
 ✅ POST /api/notifications/mark-read
 ```
 
 ### Profile (ProfileBloc)
+
 ```
 ✅ GET  /api/auth/me
 ✅ POST /api/user/update-profile
@@ -235,6 +243,7 @@ class AuthWrapper extends StatelessWidget {
 **Production API:** `https://gerobaks.dumeg.com`
 
 **End User:**
+
 - Email: `daffa@gmail.com`
 - Password: `password`
 - Role: `end_user`
@@ -244,11 +253,13 @@ class AuthWrapper extends StatelessWidget {
 ## 📝 Quick Usage Examples
 
 ### Import BLoCs
+
 ```dart
 import 'package:bank_sha/blocs/blocs.dart';
 ```
 
 ### Login
+
 ```dart
 context.read<AuthBloc>().add(
   LoginRequested(
@@ -259,6 +270,7 @@ context.read<AuthBloc>().add(
 ```
 
 ### Listen to Auth State
+
 ```dart
 BlocListener<AuthBloc, AuthState>(
   listener: (context, state) {
@@ -271,11 +283,13 @@ BlocListener<AuthBloc, AuthState>(
 ```
 
 ### Get Balance
+
 ```dart
 context.read<BalanceBloc>().add(const FetchBalanceSummary());
 ```
 
 ### Display Balance
+
 ```dart
 BlocBuilder<BalanceBloc, BalanceState>(
   builder: (context, state) {
@@ -303,6 +317,7 @@ Before proceeding to UI implementation:
 - [x] ✅ Documentation complete
 
 **Next:**
+
 - [ ] ⏳ Update main.dart with MultiBlocProvider
 - [ ] ⏳ Create AuthWrapper
 - [ ] ⏳ Create Login Page
@@ -314,6 +329,7 @@ Before proceeding to UI implementation:
 ## 🎯 MVP Scope - End User Only
 
 ### Included ✅
+
 - Authentication (Login, Register, Logout)
 - Dashboard (Balance summary, recent activity)
 - Balance (View, Topup, Ledger)
@@ -323,6 +339,7 @@ Before proceeding to UI implementation:
 - Schedule (List, Create)
 
 ### Excluded ❌
+
 - Mitra role features
 - Admin role features
 - Advanced analytics
@@ -363,6 +380,7 @@ Before proceeding to UI implementation:
 ## 🎉 Achievement Unlocked!
 
 ✅ **BLoC Architecture Complete**
+
 - 6 BLoCs implemented
 - Production API configured
 - Full state management ready

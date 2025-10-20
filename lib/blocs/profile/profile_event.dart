@@ -20,12 +20,7 @@ class UpdateProfile extends ProfileEvent {
   final String? phone;
   final String? address;
 
-  const UpdateProfile({
-    this.name,
-    this.email,
-    this.phone,
-    this.address,
-  });
+  const UpdateProfile({this.name, this.email, this.phone, this.address});
 
   @override
   List<Object?> get props => [name, email, phone, address];

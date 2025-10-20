@@ -13,10 +13,7 @@ class FetchNotifications extends NotificationEvent {
   final int? page;
   final int? perPage;
 
-  const FetchNotifications({
-    this.page,
-    this.perPage,
-  });
+  const FetchNotifications({this.page, this.perPage});
 
   @override
   List<Object?> get props => [page, perPage];

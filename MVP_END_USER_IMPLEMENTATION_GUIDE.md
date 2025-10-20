@@ -1,16 +1,19 @@
 # 🚀 Mobile App MVP - End User Integration Guide
 
 ## 📋 Overview
+
 Implementasi Backend API ke Mobile App dengan fokus pada **MVP (Minimum Viable Product)** untuk role **end_user** menggunakan **BLoC Pattern**.
 
 ### ✅ Perubahan Yang Sudah Dilakukan
 
 1. **✓ Update API Configuration ke Production**
+
    - File: `lib/utils/app_config.dart`
    - Default API URL: `https://gerobaks.dumeg.com`
    - Previous: `http://localhost:8000`
 
 2. **✓ Membuat BLoC Architecture untuk End User**
+
    - Auth BLoC (Login, Register, Logout)
    - Balance BLoC (Summary, Ledger, Top-up)
    - Notification BLoC (List, Mark as Read)
@@ -58,6 +61,7 @@ lib/blocs/
 ## 🔐 1. Authentication BLoC
 
 ### Features:
+
 - ✅ Login
 - ✅ Register (default role: end_user)
 - ✅ Logout
@@ -100,17 +104,17 @@ BlocBuilder<AuthBloc, AuthState>(
     if (state.status == AuthStatus.loading) {
       return CircularProgressIndicator();
     }
-    
+
     if (state.status == AuthStatus.authenticated) {
       // Navigate to home
       return HomePage();
     }
-    
+
     if (state.status == AuthStatus.error) {
       // Show error
       return Text(state.errorMessage ?? 'Error');
     }
-    
+
     return LoginPage();
   },
 )
@@ -121,6 +125,7 @@ BlocBuilder<AuthBloc, AuthState>(
 ## 💰 2. Balance BLoC
 
 ### Features:
+
 - ✅ Fetch Balance Summary
 - ✅ Fetch Balance Ledger (with pagination)
 - ✅ Top-up Balance
@@ -158,13 +163,13 @@ BlocBuilder<BalanceBloc, BalanceState>(
     if (state.status == BalanceStatus.loading) {
       return CircularProgressIndicator();
     }
-    
+
     if (state.status == BalanceStatus.loaded) {
       return Column(
         children: [
           Text('Balance: Rp ${state.currentBalance}'),
           Text('Pending: Rp ${state.pendingBalance}'),
-          
+
           // Ledger transactions
           ListView.builder(
             itemCount: state.ledgerTransactions?.length ?? 0,
@@ -180,7 +185,7 @@ BlocBuilder<BalanceBloc, BalanceState>(
         ],
       );
     }
-    
+
     return Container();
   },
 )
@@ -191,6 +196,7 @@ BlocBuilder<BalanceBloc, BalanceState>(
 ## 🔔 3. Notification BLoC
 
 ### Features:
+
 - ✅ Fetch Notifications (with pagination)
 - ✅ Mark Notification as Read
 - ✅ Mark All Notifications as Read
@@ -228,14 +234,14 @@ BlocBuilder<NotificationBloc, NotificationState>(
             label: Text('${state.unreadCount}'),
             child: Icon(Icons.notifications),
           ),
-          
+
           // Notification list
           ListView.builder(
             itemCount: state.notifications?.length ?? 0,
             itemBuilder: (context, index) {
               final notification = state.notifications![index];
               final isRead = notification['read_at'] != null;
-              
+
               return ListTile(
                 title: Text(notification['title']),
                 subtitle: Text(notification['message']),
@@ -251,7 +257,7 @@ BlocBuilder<NotificationBloc, NotificationState>(
         ],
       );
     }
-    
+
     return Container();
   },
 )
@@ -262,6 +268,7 @@ BlocBuilder<NotificationBloc, NotificationState>(
 ## 👤 4. Profile BLoC
 
 ### Features:
+
 - ✅ Fetch User Profile
 - ✅ Update Profile
 - ✅ Upload Profile Image
@@ -319,7 +326,7 @@ BlocBuilder<ProfileBloc, ProfileState>(
         ],
       );
     }
-    
+
     if (state.status == ProfileStatus.updated) {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -327,7 +334,7 @@ BlocBuilder<ProfileBloc, ProfileState>(
       );
       return ProfileView(user: state.userData);
     }
-    
+
     return Container();
   },
 )
@@ -345,7 +352,7 @@ BlocBuilder<ProfileBloc, ProfileState>(
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.init();
-  
+
   runApp(
     MultiBlocProvider(
       providers: [
@@ -365,27 +372,33 @@ void main() async {
 ### Phase 2: Create End User Pages (Priority: 🔴 HIGH)
 
 1. **Authentication Pages**
+
    - `lib/ui/pages/auth/login_page.dart`
    - `lib/ui/pages/auth/register_page.dart`
 
 2. **Dashboard Page**
+
    - `lib/ui/pages/end_user/dashboard_page.dart`
    - Shows: Balance summary, recent tracking, notifications
 
 3. **Balance Pages**
+
    - `lib/ui/pages/end_user/balance/balance_page.dart`
    - `lib/ui/pages/end_user/balance/topup_page.dart`
    - `lib/ui/pages/end_user/balance/ledger_page.dart`
 
 4. **Notification Pages**
+
    - `lib/ui/pages/end_user/notification/notification_list_page.dart`
 
 5. **Profile Pages**
+
    - `lib/ui/pages/end_user/profile/profile_page.dart`
    - `lib/ui/pages/end_user/profile/edit_profile_page.dart`
    - `lib/ui/pages/end_user/profile/change_password_page.dart`
 
 6. **Tracking Pages**
+
    - `lib/ui/pages/end_user/tracking/tracking_list_page.dart`
    - `lib/ui/pages/end_user/tracking/tracking_detail_page.dart`
 
@@ -396,6 +409,7 @@ void main() async {
 ### Phase 3: Test with Production API (Priority: 🟡 MEDIUM)
 
 1. **Test User Credentials**
+
    - Email: `daffa@gmail.com`
    - Password: `password`
    - Role: `end_user`
@@ -411,11 +425,13 @@ void main() async {
 ### Phase 4: Error Handling & UX (Priority: 🟢 LOW)
 
 1. **Error States**
+
    - Network errors
    - Validation errors
    - Server errors
 
 2. **Loading States**
+
    - Shimmer loading
    - Pull-to-refresh
    - Infinite scroll
@@ -430,31 +446,37 @@ void main() async {
 ## 🔑 API Endpoints Documentation
 
 ### Authentication
+
 - `POST /api/login` - Login
 - `POST /api/register` - Register
 - `POST /api/auth/logout` - Logout
 - `GET /api/auth/me` - Get current user
 
 ### Balance
+
 - `GET /api/balance/summary` - Get balance summary
 - `GET /api/balance/ledger` - Get transaction history
 - `POST /api/balance/topup` - Top-up balance
 
 ### Notifications
+
 - `GET /api/notifications` - Get notifications
 - `POST /api/notifications/mark-read` - Mark as read (all unread)
 
 ### Profile
+
 - `GET /api/auth/me` - Get user profile
 - `POST /api/user/update-profile` - Update profile
 - `POST /api/user/upload-profile-image` - Upload image
 - `POST /api/user/change-password` - Change password
 
 ### Tracking
+
 - `GET /api/trackings` - Get tracking list
 - `POST /api/trackings` - Create tracking
 
 ### Schedules
+
 - `GET /api/schedules` - Get schedule list
 - `POST /api/schedules` - Create schedule
 
@@ -465,20 +487,24 @@ void main() async {
 ### Manual Testing Steps:
 
 1. **Install Dependencies**
+
    ```bash
    flutter pub get
    ```
 
 2. **Check API Configuration**
+
    - Verify `lib/utils/app_config.dart`
    - DEFAULT_API_URL should be `https://gerobaks.dumeg.com`
 
 3. **Run App**
+
    ```bash
    flutter run --verbose
    ```
 
 4. **Test Authentication**
+
    - Login with test credentials
    - Check token storage in SharedPreferences
    - Verify user data in state
@@ -505,17 +531,20 @@ void main() async {
 ## ⚠️ Important Reminders
 
 1. **BLoC Pattern**
+
    - Always use `context.read<>()` for events
    - Use `BlocBuilder` for state updates
    - Use `BlocListener` for side effects (navigation, snackbar)
    - Use `BlocConsumer` for both
 
 2. **Error Handling**
+
    - Wrap API calls in try-catch
    - Show user-friendly error messages
    - Log errors for debugging
 
 3. **State Management**
+
    - Don't mutate state directly
    - Use `copyWith()` for state updates
    - Use `Equatable` for comparison
@@ -530,6 +559,7 @@ void main() async {
 ## 🚀 Ready to Implement!
 
 Semua BLoC sudah siap. Tinggal:
+
 1. ✅ Update `main.dart` dengan MultiBlocProvider
 2. ✅ Buat UI Pages
 3. ✅ Integrasikan BLoC dengan UI

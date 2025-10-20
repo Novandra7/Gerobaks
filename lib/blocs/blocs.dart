@@ -18,17 +18,15 @@ export 'profile/profile_bloc.dart';
 export 'profile/profile_event.dart';
 export 'profile/profile_state.dart';
 
-// Tracking BLoC (existing)
+// Tracking BLoC (existing) - with hiding FetchRoute and UpdateTruckLocation
 export 'tracking/tracking_bloc.dart';
-export 'tracking/tracking_event.dart';
+export 'tracking/tracking_event.dart' hide FetchRoute, UpdateTruckLocation;
 export 'tracking/tracking_state.dart';
 
-// Schedule BLoC (existing)
+// Schedule BLoC (existing - events and states are inline in the bloc file)
 export 'schedule/schedule_bloc.dart';
-export 'schedule/schedule_event.dart';
-export 'schedule/schedule_state.dart';
 
-// Wilayah BLoC (existing)
+// Wilayah BLoC (existing) - with hiding FetchRoute and UpdateTruckLocation
 export 'wilayah/wilayah_bloc.dart';
-export 'wilayah/wilayah_event.dart';
+export 'wilayah/wilayah_event.dart' hide FetchRoute, UpdateTruckLocation;
 export 'wilayah/wilayah_state.dart';

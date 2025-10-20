@@ -18,10 +18,7 @@ class FetchBalanceLedger extends BalanceEvent {
   final int? page;
   final int? perPage;
 
-  const FetchBalanceLedger({
-    this.page,
-    this.perPage,
-  });
+  const FetchBalanceLedger({this.page, this.perPage});
 
   @override
   List<Object?> get props => [page, perPage];
@@ -32,10 +29,7 @@ class TopUpBalance extends BalanceEvent {
   final double amount;
   final String paymentMethod;
 
-  const TopUpBalance({
-    required this.amount,
-    required this.paymentMethod,
-  });
+  const TopUpBalance({required this.amount, required this.paymentMethod});
 
   @override
   List<Object?> get props => [amount, paymentMethod];

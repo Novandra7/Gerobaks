@@ -56,10 +56,7 @@ class BalanceState extends Equatable {
 
   /// Error state
   factory BalanceState.error(String message) {
-    return BalanceState(
-      status: BalanceStatus.error,
-      errorMessage: message,
-    );
+    return BalanceState(status: BalanceStatus.error, errorMessage: message);
   }
 
   /// Top-up in progress
@@ -122,11 +119,11 @@ class BalanceState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        balanceSummary,
-        ledgerTransactions,
-        errorMessage,
-        hasMoreTransactions,
-        currentPage,
-      ];
+    status,
+    balanceSummary,
+    ledgerTransactions,
+    errorMessage,
+    hasMoreTransactions,
+    currentPage,
+  ];
 }

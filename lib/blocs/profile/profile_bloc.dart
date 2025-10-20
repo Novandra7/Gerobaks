@@ -96,12 +96,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       print('👤 ProfileBloc: Uploading profile image');
 
       // Use multipart request for image upload
-      final uri = Uri.parse('${_api.getBaseUrl()}${ApiRoutes.uploadProfileImage}');
+      final uri = Uri.parse(
+        '${_api.getBaseUrl()}${ApiRoutes.uploadProfileImage}',
+      );
       final request = http.MultipartRequest('POST', uri);
-      
+
       // Add file
-      request.files.add(await http.MultipartFile.fromPath('image', event.imagePath));
-      
+      request.files.add(
+        await http.MultipartFile.fromPath('image', event.imagePath),
+      );
+
       // Add auth token
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
