@@ -1,6 +1,7 @@
 # 📁 FOLDER RESTRUCTURING PLAN - Gerobaks Project
 
 ## 🎯 Current Problem
+
 - **100+ files di root folder** (sangat berantakan!)
 - Documentation files scattered everywhere
 - Test scripts tidak terorganisir
@@ -214,6 +215,7 @@ Gerobaks/
 ## 📋 Migration Steps
 
 ### Phase 1: Create New Folders ✅
+
 ```powershell
 # Create new folder structure
 mkdir docs\api, docs\implementation, docs\testing, docs\features, docs\architecture
@@ -226,6 +228,7 @@ mkdir test-results, database\sql, database\docs, screenshots
 ```
 
 ### Phase 2: Move Documentation Files
+
 ```powershell
 # API Docs
 Move-Item API_*.md docs\api\
@@ -290,6 +293,7 @@ Move-Item updates.md docs\changelog\
 ```
 
 ### Phase 3: Move Scripts
+
 ```powershell
 # Test scripts
 Move-Item test-*.ps1 scripts\test\
@@ -309,6 +313,7 @@ Move-Item test_api_connection.bat scripts\utils\
 ```
 
 ### Phase 4: Move Test Results & Database Files
+
 ```powershell
 # Test results
 Move-Item test-results-*.json test-results\
@@ -319,6 +324,7 @@ Move-Item LOCAL_API_SETUP*.md database\docs\
 ```
 
 ### Phase 5: Move Screenshots
+
 ```powershell
 Move-Item flutter_*.png screenshots\
 ```
@@ -328,16 +334,19 @@ Move-Item flutter_*.png screenshots\
 ## ✅ Benefits After Restructuring
 
 1. **Easy Navigation** 🎯
+
    - Find docs instantly: `docs/api/`, `docs/testing/`, etc.
    - All scripts in one place: `scripts/`
    - Clean root folder (only 15 files vs 100+)
 
 2. **Better Organization** 📁
+
    - Grouped by purpose (api, features, testing)
    - Easy to maintain
    - Easy for new developers
 
 3. **Professional Structure** 💼
+
    - Industry standard folder layout
    - Similar to popular projects
    - Easy CI/CD integration
@@ -352,6 +361,7 @@ Move-Item flutter_*.png screenshots\
 ## 🚨 Important Notes
 
 - **DON'T TOUCH** these folders (already good):
+
   - `lib/` (Flutter source)
   - `android/`, `ios/`, `web/`, `windows/`, `linux/`, `macos/`
   - `backend/` (Laravel)

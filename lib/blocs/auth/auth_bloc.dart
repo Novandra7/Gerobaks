@@ -45,10 +45,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         print('✅ AuthBloc: Token and user data found');
         print('User role: ${user['role']}');
 
-        emit(AuthState.authenticated(
-          token: token,
-          user: user,
-        ));
+        emit(AuthState.authenticated(token: token, user: user));
       } else {
         print('❌ AuthBloc: Token or user data missing');
         emit(AuthState.error('Data login tidak lengkap'));
@@ -83,10 +80,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = response['user'] as Map<String, dynamic>?;
 
       if (token != null && user != null) {
-        emit(AuthState.authenticated(
-          token: token,
-          user: user,
-        ));
+        emit(AuthState.authenticated(token: token, user: user));
       } else {
         emit(AuthState.error('Data registrasi tidak lengkap'));
       }
@@ -148,10 +142,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         print('✅ AuthBloc: User authenticated from local storage');
         print('User role: ${user['role']}');
 
-        emit(AuthState.authenticated(
-          token: token,
-          user: user,
-        ));
+        emit(AuthState.authenticated(token: token, user: user));
       } else {
         print('ℹ️ AuthBloc: No stored credentials found');
         emit(AuthState.unauthenticated());
