@@ -436,7 +436,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         border: Border.all(color: greyColor.withOpacity(0.3)),
       ),
       child: DropdownButtonFormField<T>(
-        initialValue: value,
+        value: value,
         isExpanded: true,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
