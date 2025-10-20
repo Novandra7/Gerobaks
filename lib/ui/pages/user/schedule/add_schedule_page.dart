@@ -43,8 +43,12 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     -6.2088,
     106.8456,
   ); // Default to Jakarta
-  String _selectedWasteType = 'Campuran';
+  final List<String> _selectedWasteTypes =
+      []; // Changed to list for multi-select
   final ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
+
+  // Dynamic weight controllers for each waste type
+  final Map<String, TextEditingController> _weightControllers = {};
 
   final List<String> _wasteTypes = [
     'Campuran',
@@ -67,6 +71,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     _weightController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    // Dispose dynamic weight controllers
+    for (var controller in _weightControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -180,10 +188,11 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           status: ScheduleStatus.pending,
           frequency: _selectedFrequency,
           createdAt: DateTime.now(),
-          wasteType: _hasAdditionalWaste ? _selectedWasteType : null,
-          estimatedWeight:
-              _hasAdditionalWaste && _weightController.text.isNotEmpty
-              ? double.parse(_weightController.text)
+          wasteType: _hasAdditionalWaste && _selectedWasteTypes.isNotEmpty
+              ? _selectedWasteTypes.join(', ')
+              : null,
+          estimatedWeight: _hasAdditionalWaste && _selectedWasteTypes.isNotEmpty
+              ? _calculateTotalWeight()
               : null,
           isPaid: false,
           contactName: 'Andi Wijaya',
@@ -268,6 +277,26 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         }
       }
     }
+  }
+
+  // Calculate total weight from all selected waste types
+  double? _calculateTotalWeight() {
+    double total = 0.0;
+    bool hasValidWeight = false;
+
+    for (String type in _selectedWasteTypes) {
+      final controller = _weightControllers[type];
+      if (controller != null && controller.text.isNotEmpty) {
+        try {
+          total += double.parse(controller.text);
+          hasValidWeight = true;
+        } catch (e) {
+          // Skip invalid numbers
+        }
+      }
+    }
+
+    return hasValidWeight ? total : null;
   }
 
   @override
@@ -815,8 +844,14 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                       _hasAdditionalWaste = value;
                                       if (!value) {
                                         // Reset values when turned off
-                                        _selectedWasteType = 'Campuran';
+                                        _selectedWasteTypes.clear();
                                         _weightController.clear();
+                                        // Clear dynamic weight controllers
+                                        for (var controller
+                                            in _weightControllers.values) {
+                                          controller.dispose();
+                                        }
+                                        _weightControllers.clear();
                                       }
                                     });
                                   },
@@ -885,114 +920,343 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Waste type dropdown
-                            DropdownButtonFormField<String>(
-                              value: _selectedWasteType,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                labelText: 'Jenis Sampah',
-                                labelStyle: greyTextStyle.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: medium,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: greyColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: greyColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: greenColor),
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.category_outlined,
-                                  color: greenColor,
-                                ),
-                              ),
-                              style: blackTextStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: medium,
-                              ),
-                              items: _wasteTypes.map((type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        _getWasteTypeIcon(type),
-                                        color: greenColor,
-                                        size: 20,
+                            // Multi-select dropdown
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Multi-select dropdown field
+                                DropdownButtonFormField<String>(
+                                  value: null, // Always null for multi-select
+                                  isExpanded: true,
+                                  decoration: InputDecoration(
+                                    labelText: 'Jenis Sampah',
+                                    hintText: _selectedWasteTypes.isEmpty
+                                        ? 'Pilih jenis sampah (dapat memilih lebih dari 1)'
+                                        : '${_selectedWasteTypes.length} jenis sampah dipilih',
+                                    labelStyle: greyTextStyle.copyWith(
+                                      fontSize: 14,
+                                      fontWeight: medium,
+                                    ),
+                                    hintStyle: _selectedWasteTypes.isEmpty
+                                        ? greyTextStyle.copyWith(fontSize: 14)
+                                        : blackTextStyle.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: medium,
+                                          ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: greyColor.withOpacity(0.3),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Text(type),
-                                    ],
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: greyColor.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: greenColor),
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.category_outlined,
+                                      color: greenColor,
+                                    ),
                                   ),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                if (value != null) {
-                                  setState(() {
-                                    _selectedWasteType = value;
-                                  });
-                                }
-                              },
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: medium,
+                                  ),
+                                  items: _wasteTypes.map((type) {
+                                    final isSelected = _selectedWasteTypes
+                                        .contains(type);
+                                    return DropdownMenuItem<String>(
+                                      value: type,
+                                      child: StatefulBuilder(
+                                        builder: (context, setMenuState) {
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                if (isSelected) {
+                                                  _selectedWasteTypes.remove(
+                                                    type,
+                                                  );
+                                                  // Remove and dispose controller for this type
+                                                  _weightControllers[type]
+                                                      ?.dispose();
+                                                  _weightControllers.remove(
+                                                    type,
+                                                  );
+                                                } else {
+                                                  _selectedWasteTypes.add(type);
+                                                  // Create new controller for this type
+                                                  _weightControllers[type] =
+                                                      TextEditingController();
+                                                }
+                                              });
+                                              setMenuState(
+                                                () {},
+                                              ); // Update checkbox state
+                                            },
+                                            child: Container(
+                                              width: double.infinity,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 4,
+                                                  ),
+                                              child: Row(
+                                                children: [
+                                                  Checkbox(
+                                                    value: _selectedWasteTypes
+                                                        .contains(type),
+                                                    onChanged: (bool? value) {
+                                                      setState(() {
+                                                        if (value == true) {
+                                                          _selectedWasteTypes
+                                                              .add(type);
+                                                          // Create new controller for this type
+                                                          _weightControllers[type] =
+                                                              TextEditingController();
+                                                        } else {
+                                                          _selectedWasteTypes
+                                                              .remove(type);
+                                                          // Remove and dispose controller for this type
+                                                          _weightControllers[type]
+                                                              ?.dispose();
+                                                          _weightControllers
+                                                              .remove(type);
+                                                        }
+                                                      });
+                                                      setMenuState(
+                                                        () {},
+                                                      ); // Update checkbox state
+                                                    },
+                                                    activeColor: greenColor,
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Icon(
+                                                    _getWasteTypeIcon(type),
+                                                    color:
+                                                        _selectedWasteTypes
+                                                            .contains(type)
+                                                        ? greenColor
+                                                        : greyColor,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      type,
+                                                      style: TextStyle(
+                                                        color:
+                                                            _selectedWasteTypes
+                                                                .contains(type)
+                                                            ? greenColor
+                                                            : blackColor,
+                                                        fontWeight:
+                                                            _selectedWasteTypes
+                                                                .contains(type)
+                                                            ? semiBold
+                                                            : medium,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? value) {
+                                    // This prevents the dropdown from closing when an item is selected
+                                    // The actual selection is handled in the onTap of each item
+                                  },
+                                  validator: (value) {
+                                    if (_selectedWasteTypes.isEmpty) {
+                                      return 'Pilih minimal satu jenis sampah';
+                                    }
+                                    return null;
+                                  },
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Selected waste types chips
+                                if (_selectedWasteTypes.isNotEmpty) ...[
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _selectedWasteTypes.map((type) {
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: greenColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: greenColor.withOpacity(0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _getWasteTypeIcon(type),
+                                              color: greenColor,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              type,
+                                              style: TextStyle(
+                                                color: greenColor,
+                                                fontSize: 14,
+                                                fontWeight: medium,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  _selectedWasteTypes.remove(
+                                                    type,
+                                                  );
+                                                  // Remove and dispose controller for this type
+                                                  _weightControllers[type]
+                                                      ?.dispose();
+                                                  _weightControllers.remove(
+                                                    type,
+                                                  );
+                                                });
+                                              },
+                                              child: Icon(
+                                                Icons.close,
+                                                color: greenColor,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ],
                             ),
 
                             const SizedBox(height: 16),
 
-                            // Estimated weight
-                            TextFormField(
-                              controller: _weightController,
-                              decoration: InputDecoration(
-                                labelText: 'Perkiraan Berat (kg)',
-                                labelStyle: greyTextStyle.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: medium,
+                            // Dynamic weight inputs for each selected waste type
+                            if (_selectedWasteTypes.isNotEmpty) ...[
+                              Text(
+                                'Perkiraan Berat per Jenis Sampah',
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: semiBold,
                                 ),
-                                hintText: 'Masukkan perkiraan berat sampah',
-                                hintStyle: greyTextStyle.copyWith(fontSize: 14),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: greyColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: greyColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: greenColor),
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.scale_outlined,
-                                  color: greenColor,
-                                ),
-                                suffixText: 'kg',
                               ),
-                              style: blackTextStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: medium,
-                              ),
-                              keyboardType: TextInputType.number,
-                              validator: (value) {
-                                if (_hasAdditionalWaste &&
-                                    (value == null || value.isEmpty)) {
-                                  return 'Masukkan perkiraan berat sampah';
-                                }
-                                return null;
-                              },
-                            ),
+                              const SizedBox(height: 12),
+
+                              ...(_selectedWasteTypes.map((type) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header for each waste type
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            _getWasteTypeIcon(type),
+                                            color: greenColor,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Sampah $type',
+                                            style: blackTextStyle.copyWith(
+                                              fontSize: 14,
+                                              fontWeight: medium,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Weight input for this waste type
+                                      TextFormField(
+                                        controller: _weightControllers[type],
+                                        decoration: InputDecoration(
+                                          labelText: 'Perkiraan Berat (kg)',
+                                          labelStyle: greyTextStyle.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: medium,
+                                          ),
+                                          hintText:
+                                              'Masukkan berat untuk sampah $type',
+                                          hintStyle: greyTextStyle.copyWith(
+                                            fontSize: 14,
+                                          ),
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: greyColor.withOpacity(0.3),
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: greyColor.withOpacity(0.3),
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: greenColor,
+                                            ),
+                                          ),
+                                          prefixIcon: Icon(
+                                            Icons.scale_outlined,
+                                            color: greenColor,
+                                          ),
+                                          suffixText: 'kg',
+                                        ),
+                                        style: blackTextStyle.copyWith(
+                                          fontSize: 16,
+                                          fontWeight: medium,
+                                        ),
+                                        keyboardType: TextInputType.number,
+                                        validator: (value) {
+                                          if (_hasAdditionalWaste &&
+                                              (value == null ||
+                                                  value.isEmpty)) {
+                                            return 'Masukkan berat untuk sampah $type';
+                                          }
+                                          return null;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList()),
+                            ],
                           ] else ...[
                             // Inactive state info
                             Container(
@@ -1143,28 +1407,43 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                       ],
                       if (_hasAdditionalWaste) ...[
                         if (_hasScheduledWaste) const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              _getWasteTypeIcon(_selectedWasteType),
-                              color: Colors.orange,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Sampah $_selectedWasteType (${_weightController.text}kg)',
-                              style: blackTextStyle.copyWith(fontSize: 14),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'Berbayar',
-                              style: TextStyle(
-                                color: Colors.orange,
-                                fontSize: 12,
-                                fontWeight: bold,
+                        Column(
+                          children: _selectedWasteTypes.map((type) {
+                            final controller = _weightControllers[type];
+                            final weight =
+                                controller != null && controller.text.isNotEmpty
+                                ? controller.text
+                                : '0';
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getWasteTypeIcon(type),
+                                    color: Colors.orange,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Sampah $type: ${weight}kg',
+                                      style: blackTextStyle.copyWith(
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Berbayar',
+                                    style: TextStyle(
+                                      color: Colors.orange,
+                                      fontSize: 12,
+                                      fontWeight: bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                            );
+                          }).toList(),
                         ),
                       ],
                     ],
