@@ -2,13 +2,7 @@ import 'package:equatable/equatable.dart';
 
 /// States untuk authentication
 /// Menggunakan Equatable untuk memudahkan comparison
-enum AuthStatus {
-  initial,
-  loading,
-  authenticated,
-  unauthenticated,
-  error,
-}
+enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 
 class AuthState extends Equatable {
   final AuthStatus status;
@@ -52,10 +46,7 @@ class AuthState extends Equatable {
 
   /// Error state
   factory AuthState.error(String message) {
-    return AuthState(
-      status: AuthStatus.error,
-      errorMessage: message,
-    );
+    return AuthState(status: AuthStatus.error, errorMessage: message);
   }
 
   /// Copy with method for easy state updates

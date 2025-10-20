@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:bloc/bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
