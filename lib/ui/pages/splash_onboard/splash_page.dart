@@ -45,6 +45,7 @@ class _SplashPageState extends State<SplashPage>
       if (!mounted) return;
 
       try {
+<<<<<<< HEAD
         print("🚀 [SPLASH] Attempting auto-login from splash page");
 
         // Get LocalStorageService instance for debugging
@@ -53,6 +54,14 @@ class _SplashPageState extends State<SplashPage>
           localStorage.getLoginKey(),
         );
         print("🚀 [SPLASH] isLoggedIn check result: $isLoggedIn");
+=======
+        print("Attempting auto-login from splash page");
+
+        // Get LocalStorageService instance for debugging
+        final localStorage = await LocalStorageService.getInstance();
+        final isLoggedIn = await localStorage.isLoggedIn();
+        print("isLoggedIn check result: $isLoggedIn");
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
 
         // Check user data directly for debugging
         final userData = await localStorage.getUserData();
@@ -72,20 +81,30 @@ class _SplashPageState extends State<SplashPage>
         // Try to auto-login with saved credentials
         final Map<String, dynamic> autoLoginResult =
             await AuthHelper.tryAutoLogin();
+<<<<<<< HEAD
         print("🚀 [SPLASH] Auto-login result: $autoLoginResult");
+=======
+        print("Auto-login result: $autoLoginResult");
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
 
         if (autoLoginResult['success'] && mounted) {
           final String role =
               autoLoginResult['role'] ?? AuthHelper.ROLE_END_USER;
+<<<<<<< HEAD
           print("🚀 [SPLASH] Auto-login successful with role: $role");
 
           // Navigate berdasarkan role
+=======
+          print("Auto-login successful with role: $role");
+
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
           if (AuthHelper.isMitra(role)) {
             print(
               "🚀 [SPLASH] Auto-login successful for mitra, navigating to mitra dashboard",
             );
             Navigator.pushNamedAndRemoveUntil(
               context,
+<<<<<<< HEAD
               '/mitra-dashboard-new',
               (route) => false,
             );
@@ -95,6 +114,8 @@ class _SplashPageState extends State<SplashPage>
             );
             Navigator.pushNamedAndRemoveUntil(
               context,
+=======
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
               '/mitra-dashboard-new',
               (route) => false,
             );
@@ -109,6 +130,7 @@ class _SplashPageState extends State<SplashPage>
             );
           }
         } else if (mounted) {
+<<<<<<< HEAD
           print(
             "🚀 [SPLASH] Auto-login failed or not attempted, navigating to onboarding",
           );
@@ -117,15 +139,74 @@ class _SplashPageState extends State<SplashPage>
             '/onboarding',
             (route) => false,
           );
+=======
+          // Check if this is first time user or logged out user
+          final localStorage = await LocalStorageService.getInstance();
+          final hasUserData = await localStorage.getUserData() != null;
+
+          if (hasUserData) {
+            // User has been here before (logged out user) - go to login
+            print(
+              "🚀 [SPLASH] Existing user detected, navigating to login page",
+            );
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/sign-in',
+              (route) => false,
+            );
+          } else {
+            // First time user - go to onboarding
+            print(
+              "🚀 [SPLASH] First time user detected, navigating to onboarding",
+            );
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/onboarding',
+              (route) => false,
+            );
+          }
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
         }
       } catch (e) {
         print("🚀 [SPLASH] Error during auto-login: $e");
         if (mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/onboarding',
-            (route) => false,
-          );
+          // Check if this is first time user or logged out user
+          try {
+            final localStorage = await LocalStorageService.getInstance();
+            final hasUserData = await localStorage.getUserData() != null;
+
+            if (hasUserData) {
+              // User has been here before (logged out user) - go to login
+              print(
+                "🚀 [SPLASH] Error: Existing user detected, navigating to login page",
+              );
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/sign-in',
+                (route) => false,
+              );
+            } else {
+              // First time user - go to onboarding
+              print(
+                "🚀 [SPLASH] Error: First time user detected, navigating to onboarding",
+              );
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/onboarding',
+                (route) => false,
+              );
+            }
+          } catch (storageError) {
+            // If we can't check storage, assume first time user
+            print(
+              "🚀 [SPLASH] Storage error: $storageError, navigating to onboarding",
+            );
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/onboarding',
+              (route) => false,
+            );
+          }
         }
       }
     });

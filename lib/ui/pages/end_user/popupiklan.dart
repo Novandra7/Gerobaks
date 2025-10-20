@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-void showIklanPopup(BuildContext context) {
-  showDialog(
+Future<void> showIklanPopup(BuildContext context) {
+  return showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
       contentPadding: EdgeInsets.zero,

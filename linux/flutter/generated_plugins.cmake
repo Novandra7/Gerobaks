@@ -5,7 +5,11 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   file_selector_linux
+<<<<<<< HEAD
   flutter_secure_storage_linux
+=======
+  record_linux
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
   url_launcher_linux
 )
 

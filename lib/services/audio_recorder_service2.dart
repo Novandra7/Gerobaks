@@ -150,7 +150,7 @@ class AudioRecorderService2 {
       }
 
       // Check if already recording
-      if (_recorder!.isRecording()) {
+      if (await _recorder!.isRecording()) {
         debugPrint('Recorder is already recording, stopping first');
         await _recorder!.stop();
       }
@@ -163,25 +163,20 @@ class AudioRecorderService2 {
       debugPrint('Starting recording to: $_path');
 
       // Start recording - menggunakan API sederhana dari local record package
-      final result = await _recorder!.start();
+      await _recorder!.start();
 
-      if (result) {
-        _isRecording = true;
-        _recordDuration = 0;
+      _isRecording = true;
+      _recordDuration = 0;
 
-        // Start a timer that emits duration updates
-        _timer?.cancel();
-        _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
-          _recordDuration++;
-          _durationController.add(_recordDuration);
-        });
+      // Start a timer that emits duration updates
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+        _recordDuration++;
+        _durationController.add(_recordDuration);
+      });
 
-        debugPrint('Recording started successfully, duration tracking enabled');
-        return true;
-      } else {
-        debugPrint('Failed to start recording - recorder returned false');
-        return false;
-      }
+      debugPrint('Recording started successfully, duration tracking enabled');
+      return true;
     } catch (e) {
       debugPrint('Exception during startRecording: $e');
       _isRecording = false;

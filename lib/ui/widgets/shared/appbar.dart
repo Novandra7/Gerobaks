@@ -1,5 +1,6 @@
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_full_screen.dart';
 import 'package:bank_sha/ui/widgets/shared/chat_icon_with_badge.dart';
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 
@@ -112,7 +113,10 @@ class CustomAppNotif extends StatelessWidget implements PreferredSizeWidget {
                   alignment: Alignment.centerLeft,
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.arrow_back, color: Colors.black),
+                    child: const Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
             ],
@@ -163,38 +167,11 @@ class CustomAppBarHome extends StatelessWidget implements PreferredSizeWidget {
                     },
                   ),
                   const SizedBox(width: 12),
-                  // Notification icon
-                  GestureDetector(
+                  // Notification icon with dynamic badge
+                  NotificationIconWithBadge(
                     onTap: () {
                       Navigator.pushNamed(context, '/notif');
                     },
-                    child: Stack(
-                      children: [
-                        Image.asset(
-                          'assets/ic_notification.png',
-                          width: 32,
-                          height: 32,
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: redcolor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '3',
-                              style: whiteTextStyle.copyWith(
-                                fontSize: 10,
-                                fontWeight: bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),

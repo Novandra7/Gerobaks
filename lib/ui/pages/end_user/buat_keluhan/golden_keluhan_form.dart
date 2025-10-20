@@ -21,6 +21,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
   String _selectedKategori = 'Pengambilan Sampah';
   String _selectedPrioritas = 'Normal';
 
+<<<<<<< HEAD
   // API and user data
   late EndUserApiService _apiService;
   late LocalStorageService _localStorage;
@@ -53,6 +54,8 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
     }
   }
 
+=======
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
   // List of kategori
   final List<String> _kategoriList = [
     'Pengambilan Sampah',
@@ -76,6 +79,19 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
     _lokasiController.dispose();
     super.dispose();
   }
+<<<<<<< HEAD
+=======
+
+  // Generate random ID for the keluhan
+  String _generateKeluhanId() {
+    final random = Random();
+    final timestamp = DateTime.now().millisecondsSinceEpoch
+        .toString()
+        .substring(0, 10);
+    final randomDigits = random.nextInt(999).toString().padLeft(3, '0');
+    return timestamp + randomDigits;
+  }
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
 
   // Submit the form
   Future<void> _submitForm() async {
@@ -84,7 +100,14 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         _isSubmitting = true;
       });
 
+<<<<<<< HEAD
       try {
+=======
+      // Simulate API request
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
         // Create keluhan data
         final keluhanData = {
           'title': _judulController.text,
@@ -94,6 +117,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
           'location': _lokasiController.text,
         };
 
+<<<<<<< HEAD
         // Submit to API
         final result = await _apiService.createFeedback(keluhanData);
 
@@ -158,6 +182,24 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
           );
         }
       }
+=======
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Return to previous screen with the new keluhan data
+        Navigator.pop(context, keluhanData);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text('Keluhan berhasil dibuat!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      });
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
     }
   }
 
@@ -169,7 +211,11 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         title: 'Buat Keluhan Baru',
         showBackButton: true,
       ),
+<<<<<<< HEAD
       body: _isSubmitting ? _buildLoadingState() : _buildFormContent(),
+=======
+      body: _isLoading ? _buildLoadingState() : _buildFormContent(),
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
     );
   }
 
@@ -437,7 +483,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         border: Border.all(color: greyColor.withOpacity(0.3)),
       ),
       child: DropdownButtonFormField<T>(
-        initialValue: value,
+        value: value,
         isExpanded: true,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(

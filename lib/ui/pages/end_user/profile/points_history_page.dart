@@ -40,9 +40,47 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
 
       final user = await _userService.getCurrentUser();
 
+<<<<<<< HEAD
       // Load data from API instead of mock data
       final balanceSummary = await _apiService.getBalanceSummary();
       final pointsHistory = await _apiService.getBalanceLedger();
+=======
+      // Simulate loading point history
+      await Future.delayed(const Duration(milliseconds: 800));
+
+      // Mock points history data
+      // In a real app, this would come from an API or local database
+      final List<Map<String, dynamic>> mockHistory = [
+        {
+          'id': '1',
+          'type': 'earned',
+          'amount': 15,
+          'description': 'Pendaftaran akun baru',
+          'date': DateTime.now().subtract(const Duration(days: 7)),
+        },
+        {
+          'id': '2',
+          'type': 'earned',
+          'amount': 10,
+          'description': 'Pengambilan sampah plastik',
+          'date': DateTime.now().subtract(const Duration(days: 5)),
+        },
+        {
+          'id': '3',
+          'type': 'spent',
+          'amount': 5,
+          'description': 'Penukaran voucher diskon',
+          'date': DateTime.now().subtract(const Duration(days: 2)),
+        },
+        {
+          'id': '4',
+          'type': 'earned',
+          'amount': 8,
+          'description': 'Pengambilan sampah kertas',
+          'date': DateTime.now().subtract(const Duration(days: 1)),
+        },
+      ];
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
 
       if (mounted) {
         setState(() {
@@ -88,7 +126,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: uicolor,
+<<<<<<< HEAD
       appBar: const CustomAppHeader(title: 'Riwayat Poin'),
+=======
+      appBar: const CustomAppBar(title: 'Riwayat Poin', showBackButton: true),
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
       body: _isLoading
           ? _buildSkeletonLoading()
           : RefreshIndicator(

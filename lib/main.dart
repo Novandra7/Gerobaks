@@ -15,6 +15,7 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_success_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
+import 'package:bank_sha/ui/pages/end_user/schedule/weekly_schedule_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
@@ -24,6 +25,7 @@ import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/user_schedules_page_updated.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/otp_service.dart';
@@ -37,7 +39,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:bank_sha/ui/pages/end_user/home/home_page.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_page.dart';
-import 'package:bank_sha/ui/pages/end_user/noftification_page.dart';
+import 'package:bank_sha/ui/pages/end_user/notification_page.dart';
 import 'package:bank_sha/ui/pages/splash_onboard/onboarding_page.dart';
 import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_success_page.dart';
@@ -267,6 +269,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/my-subscription': (context) => MySubscriptionPage(),
           '/tambah-jadwal': (context) => const TambahJadwalPage(),
           '/user-add-schedule': (context) => const CreateSchedulePage(),
+          '/add-schedule': (context) => const AddSchedulePage(),
+          '/weekly-schedule': (context) => const WeeklySchedulePage(),
           '/jadwal': (context) => const UserSchedulesPageNew(),
           '/tracking': (context) => const TrackingPage(),
           '/wilayah': (context) => const WilayahPage(),

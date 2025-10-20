@@ -7,6 +7,7 @@ import 'package:bank_sha/ui/pages/end_user/subscription/subscription_plans_page.
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -647,6 +648,36 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
               ),
             ],
           ),
+          const SizedBox(height: 6),
+
+          // Waste schedule info for today
+          if (WasteScheduleService.hasTodayPickup()) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: greenColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: greenColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.eco_outlined, color: greenColor, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Hari ini pengambilan sampah ${WasteScheduleService.getTodayWasteType()?.toLowerCase()} - ${WasteScheduleService.getTodayPickupTime()}',
+                      style: greenTextStyle.copyWith(
+                        fontSize: 13,
+                        fontWeight: medium,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
           const SizedBox(height: 6),
           // Subscription Badge dan Tanggal dalam satu row
           Container(
