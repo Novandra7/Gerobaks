@@ -8,22 +8,22 @@ class VoiceRecorder extends StatefulWidget {
   final VoidCallback onCancel;
 
   const VoiceRecorder({
-    Key? key,
+    super.key,
     required this.recorderService,
     required this.onRecordingComplete,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceRecorder> createState() => _VoiceRecorderState();
 }
 
-class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProviderStateMixin {
+class _VoiceRecorderState extends State<VoiceRecorder>
+    with SingleTickerProviderStateMixin {
   bool _isRecording = false;
   int _recordDuration = 0;
   late AnimationController _animationController;
   bool _isLocked = false;
-  bool _isDragging = false;
   bool _showLockUI = false;
   double _dragOffset = 0;
 
@@ -53,7 +53,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
 
   void _startRecording() async {
     final hasPermission = await widget.recorderService.requestPermissions();
-    
+
     if (hasPermission) {
       final success = await widget.recorderService.startRecording();
       if (success) {
@@ -68,7 +68,9 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission is required to record audio')),
+        const SnackBar(
+          content: Text('Microphone permission is required to record audio'),
+        ),
       );
     }
   }
@@ -106,9 +108,8 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
 
   void _onDragUpdate(DragUpdateDetails details) {
     if (_isLocked) return;
-    
+
     setState(() {
-      _isDragging = true;
       _dragOffset += details.delta.dy;
       // Limit drag to reasonable bounds
       _dragOffset = _dragOffset.clamp(-100.0, 0.0);
@@ -120,13 +121,11 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
       // Lock the recording
       setState(() {
         _isLocked = true;
-        _isDragging = false;
         _dragOffset = 0;
       });
     } else {
       // Reset position
       setState(() {
-        _isDragging = false;
         _dragOffset = 0;
       });
     }
@@ -134,25 +133,16 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return _isRecording
-        ? _buildRecordingUI()
-        : _buildStartButton();
+    return _isRecording ? _buildRecordingUI() : _buildStartButton();
   }
 
   Widget _buildStartButton() {
     return GestureDetector(
       onLongPress: _startRecording,
       child: Container(
-        decoration: BoxDecoration(
-          color: greenColor,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          Icons.mic,
-          color: whiteColor,
-          size: 24,
-        ),
+        decoration: BoxDecoration(color: greenColor, shape: BoxShape.circle),
         padding: const EdgeInsets.all(12),
+        child: Icon(Icons.mic, color: whiteColor, size: 24),
       ),
     );
   }
@@ -188,14 +178,12 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
                     height: 32,
                     margin: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: greenColor.withOpacity(0.2 + _animationController.value * 0.3),
+                      color: greenColor.withOpacity(
+                        0.2 + _animationController.value * 0.3,
+                      ),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.mic,
-                      color: greenColor,
-                      size: 18,
-                    ),
+                    child: Icon(Icons.mic, color: greenColor, size: 18),
                   );
                 },
               ),
@@ -209,11 +197,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
                 onTap: _cancelRecording,
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.close,
-                    color: Colors.red[400],
-                    size: 20,
-                  ),
+                  child: Icon(Icons.close, color: Colors.red[400], size: 20),
                 ),
               ),
               const SizedBox(width: 8),
@@ -221,11 +205,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
                 onTap: _stopRecording,
                 child: Container(
                   padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.send,
-                    color: greenColor,
-                    size: 20,
-                  ),
+                  child: Icon(Icons.send, color: greenColor, size: 20),
                 ),
               ),
               const SizedBox(width: 4),
@@ -240,11 +220,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
                   color: greenColor,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.lock,
-                  color: whiteColor,
-                  size: 14,
-                ),
+                child: Icon(Icons.lock, color: whiteColor, size: 14),
               ),
             ),
         ],
@@ -263,14 +239,12 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
               height: 32,
               margin: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: greenColor.withOpacity(0.2 + _animationController.value * 0.3),
+                color: greenColor.withOpacity(
+                  0.2 + _animationController.value * 0.3,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.mic,
-                color: greenColor,
-                size: 18,
-              ),
+              child: Icon(Icons.mic, color: greenColor, size: 18),
             );
           },
         ),
@@ -284,11 +258,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
           onTap: _cancelRecording,
           child: Container(
             padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.close,
-              color: Colors.red[400],
-              size: 20,
-            ),
+            child: Icon(Icons.close, color: Colors.red[400], size: 20),
           ),
         ),
         const SizedBox(width: 8),
@@ -296,11 +266,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> with SingleTickerProvider
           onTap: _stopRecording,
           child: Container(
             padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.send,
-              color: greenColor,
-              size: 20,
-            ),
+            child: Icon(Icons.send, color: greenColor, size: 20),
           ),
         ),
         const SizedBox(width: 4),

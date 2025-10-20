@@ -1,6 +1,7 @@
 # PSD (Product Specification Document) - Aplikasi Gerobaks
 
 ## 📋 Informasi Dokumen
+
 - **Nama Produk**: Gerobaks
 - **Versi**: 1.0
 - **Tanggal**: 28 Agustus 2025
@@ -13,6 +14,7 @@
 ## 🏗️ Arsitektur Sistem
 
 ### Tech Stack Overview
+
 ```
 Frontend: Flutter (Dart)
 Backend: Node.js / Firebase
@@ -26,6 +28,7 @@ Push Notifications: Firebase Cloud Messaging
 ```
 
 ### Arsitektur Aplikasi
+
 ```
 ┌─────────────────────────────────────────┐
 │              Presentation Layer         │
@@ -53,12 +56,14 @@ Push Notifications: Firebase Cloud Messaging
 ## 📱 Spesifikasi Teknis Aplikasi
 
 ### Platform Support
+
 - **Android**: Minimum API 21 (Android 5.0)
 - **iOS**: Minimum iOS 12.0
 - **Flutter Version**: 3.19.0+
 - **Dart Version**: 3.3.0+
 
 ### Dependencies Utama
+
 ```yaml
 dependencies:
   flutter: ^3.19.0
@@ -82,6 +87,7 @@ dependencies:
 ## 🗄️ Struktur Database
 
 ### Local Database (SQLite)
+
 ```sql
 -- Users Table
 CREATE TABLE users (
@@ -154,6 +160,7 @@ CREATE TABLE points_history (
 ```
 
 ### Cloud Database (Firestore)
+
 ```javascript
 // Users Collection
 users: {
@@ -264,6 +271,7 @@ petugas: {
 ## 🔌 API Specification
 
 ### Authentication Endpoints
+
 ```typescript
 // Register User
 POST /api/auth/register
@@ -305,6 +313,7 @@ Response: {
 ```
 
 ### User Management
+
 ```typescript
 // Get User Profile
 GET /api/users/profile
@@ -335,6 +344,7 @@ Response: {
 ```
 
 ### Orders Management
+
 ```typescript
 // Create Order
 POST /api/orders
@@ -378,6 +388,7 @@ Response: {
 ```
 
 ### Real-time Tracking
+
 ```typescript
 // WebSocket Events
 // Client -> Server
@@ -416,6 +427,7 @@ Response: {
 ## 📐 Data Models
 
 ### User Model
+
 ```dart
 class UserModel {
   final String id;
@@ -447,6 +459,7 @@ class UserModel {
 ```
 
 ### Order Model
+
 ```dart
 class OrderModel {
   final String id;
@@ -488,6 +501,7 @@ enum OrderStatus {
 ```
 
 ### Location Model
+
 ```dart
 class LocationModel {
   final double latitude;
@@ -507,6 +521,7 @@ class LocationModel {
 ```
 
 ### Subscription Model
+
 ```dart
 class SubscriptionPlan {
   final String id;
@@ -538,10 +553,10 @@ class UserSubscription {
   final String status; // 'active', 'expired', 'cancelled'
   final String? paymentMethod;
 
-  bool get isActive => 
+  bool get isActive =>
     status == 'active' && DateTime.now().isBefore(endDate);
-  
-  int get daysRemaining => 
+
+  int get daysRemaining =>
     isActive ? endDate.difference(DateTime.now()).inDays : 0;
 }
 ```
@@ -551,12 +566,13 @@ class UserSubscription {
 ## 🔧 Services Architecture
 
 ### LocalStorageService
+
 ```dart
 class LocalStorageService {
   static LocalStorageService? _instance;
   static const String _userKey = 'user_data';
   static const String _isLoggedInKey = 'is_logged_in';
-  
+
   static Future<LocalStorageService> getInstance() async {
     _instance ??= LocalStorageService._();
     await _instance!._init();
@@ -568,16 +584,16 @@ class LocalStorageService {
   Future<Map<String, dynamic>?> getUserData();
   Future<void> saveUser(UserModel user);
   Future<UserModel?> getUser();
-  
+
   // Points Management
   Future<void> updateUserPoints(int points);
   Future<int> getUserPoints();
   Future<void> addPoints(int amount);
-  
+
   // Address Management
   Future<void> saveAddress(String address);
   Future<List<String>> getSavedAddresses();
-  
+
   // Session Management
   Future<bool> isLoggedIn();
   Future<void> logout();
@@ -585,11 +601,12 @@ class LocalStorageService {
 ```
 
 ### UserService
+
 ```dart
 class UserService {
   static UserService? _instance;
   late LocalStorageService _localStorage;
-  
+
   static Future<UserService> getInstance() async {
     _instance ??= UserService._();
     await _instance!.init();
@@ -602,7 +619,7 @@ class UserService {
   Future<UserModel?> loginUser({required String email, required String password});
   Future<void> updateUser(UserModel user);
   Future<void> logout();
-  
+
   // User change notifications
   void addUserChangeListener(Function(UserModel?) listener);
   void removeUserChangeListener(Function(UserModel?) listener);
@@ -610,10 +627,11 @@ class UserService {
 ```
 
 ### SubscriptionService
+
 ```dart
 class SubscriptionService {
   late LocalStorageService _localStorage;
-  
+
   Future<void> initialize();
   List<SubscriptionPlan> getAvailablePlans();
   UserSubscription? getCurrentSubscription();
@@ -624,10 +642,11 @@ class SubscriptionService {
 ```
 
 ### NotificationService
+
 ```dart
 class NotificationService {
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-  
+
   Future<void> initialize();
   Future<void> requestPermission();
   Future<String?> getToken();
@@ -637,7 +656,7 @@ class NotificationService {
     required String body,
     String? payload,
   });
-  
+
   // Local notifications
   Future<void> scheduleNotification({
     required int id,
@@ -645,7 +664,7 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   });
-  
+
   // Push notification handlers
   void handleForegroundMessage(RemoteMessage message);
   void handleBackgroundMessage(RemoteMessage message);
@@ -653,13 +672,14 @@ class NotificationService {
 ```
 
 ### TrackingService
+
 ```dart
 class TrackingService {
   late StreamController<LocationModel> _locationController;
   late Timer _locationTimer;
-  
+
   Stream<LocationModel> get locationStream => _locationController.stream;
-  
+
   Future<void> startTracking(String orderId);
   Future<void> stopTracking();
   Future<LocationModel> getCurrentLocation();
@@ -667,7 +687,7 @@ class TrackingService {
     LocationModel origin,
     LocationModel destination,
   );
-  
+
   // Real-time updates via WebSocket
   void connectToOrderTracking(String orderId);
   void disconnectFromOrderTracking();
@@ -679,6 +699,7 @@ class TrackingService {
 ## 🎨 UI/UX Specifications
 
 ### Design System
+
 ```dart
 // Colors
 class AppColors {
@@ -690,7 +711,7 @@ class AppColors {
   static const Color error = Color(0xFFE74C3C);
   static const Color warning = Color(0xFFF39C12);
   static const Color success = Color(0xFF27AE60);
-  
+
   // Text Colors
   static const Color textPrimary = Color(0xFF2C3E50);
   static const Color textSecondary = Color(0xFF7F8C8D);
@@ -704,19 +725,19 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
-  
+
   static const TextStyle h2 = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
   );
-  
+
   static const TextStyle body1 = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.normal,
     color: AppColors.textPrimary,
   );
-  
+
   static const TextStyle body2 = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.normal,
@@ -735,22 +756,23 @@ class AppSpacing {
 ```
 
 ### Responsive Design
+
 ```dart
 class ResponsiveHelper {
   static bool isTablet(BuildContext context) {
     return MediaQuery.of(context).size.width > 600;
   }
-  
+
   static bool isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width > 1200;
   }
-  
+
   static double getResponsiveFontSize(BuildContext context, double baseSize) {
     if (isTablet(context)) return baseSize * 1.2;
     if (isDesktop(context)) return baseSize * 1.4;
     return baseSize;
   }
-  
+
   static EdgeInsets getResponsivePadding(BuildContext context) {
     if (isTablet(context)) return const EdgeInsets.all(24);
     if (isDesktop(context)) return const EdgeInsets.all(32);
@@ -760,6 +782,7 @@ class ResponsiveHelper {
 ```
 
 ### Component Specifications
+
 ```dart
 // Custom App Bar
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -767,7 +790,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final List<Widget>? actions;
   final Color? backgroundColor;
-  
+
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
@@ -776,7 +799,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 class LoadingWidget extends StatelessWidget {
   final String? message;
   final bool showMessage;
-  
+
   const LoadingWidget({
     this.message,
     this.showMessage = true,
@@ -806,21 +829,22 @@ class ErrorStateWidget extends StatelessWidget {
 ## 🔒 Security Specifications
 
 ### Authentication Security
+
 ```dart
 class SecurityService {
   // Token Management
   static Future<void> saveSecureToken(String token);
   static Future<String?> getSecureToken();
   static Future<void> clearSecureToken();
-  
+
   // Data Encryption
   static String encryptSensitiveData(String data);
   static String decryptSensitiveData(String encryptedData);
-  
+
   // Biometric Authentication
   static Future<bool> isBiometricAvailable();
   static Future<bool> authenticateWithBiometric();
-  
+
   // Session Management
   static Future<void> validateSession();
   static Future<void> refreshToken();
@@ -828,19 +852,21 @@ class SecurityService {
 ```
 
 ### Data Protection
+
 - **Local Storage**: Encrypt sensitive data using AES-256
 - **Network Communication**: HTTPS only with certificate pinning
 - **User Data**: GDPR compliant data handling
 - **Payment Data**: PCI DSS compliance for payment information
 
 ### Permission Management
+
 ```dart
 class PermissionService {
   static Future<bool> requestLocationPermission();
   static Future<bool> requestCameraPermission();
   static Future<bool> requestStoragePermission();
   static Future<bool> requestNotificationPermission();
-  
+
   static Future<bool> checkLocationPermission();
   static Future<bool> checkCameraPermission();
   static Future<bool> checkStoragePermission();
@@ -852,6 +878,7 @@ class PermissionService {
 ## 📊 Performance Specifications
 
 ### App Performance Targets
+
 - **Cold Start Time**: <3 seconds
 - **Hot Start Time**: <1 second
 - **Navigation Time**: <300ms between screens
@@ -859,6 +886,7 @@ class PermissionService {
 - **Map Loading Time**: <5 seconds with cached tiles
 
 ### Memory Management
+
 ```dart
 class PerformanceOptimizer {
   // Image Caching
@@ -866,12 +894,12 @@ class PerformanceOptimizer {
     PaintingBinding.instance.imageCache.maximumSize = 100;
     PaintingBinding.instance.imageCache.maximumSizeBytes = 50 << 20; // 50MB
   }
-  
+
   // Memory Monitoring
   static void monitorMemoryUsage() {
     // Implementation for memory monitoring
   }
-  
+
   // Resource Cleanup
   static void cleanupResources() {
     // Cleanup unused resources
@@ -880,16 +908,17 @@ class PerformanceOptimizer {
 ```
 
 ### Offline Capability
+
 ```dart
 class OfflineService {
   // Cache Management
   static Future<void> cacheEssentialData();
   static Future<void> syncWhenOnline();
-  
+
   // Offline Storage
   static Future<void> saveOfflineOrder(OrderModel order);
   static Future<List<OrderModel>> getOfflineOrders();
-  
+
   // Network Status
   static Stream<bool> get connectivityStream;
   static Future<bool> get isOnline;
@@ -901,6 +930,7 @@ class OfflineService {
 ## 🧪 Testing Specifications
 
 ### Unit Testing
+
 ```dart
 // User Service Tests
 class UserServiceTest {
@@ -908,11 +938,11 @@ class UserServiceTest {
     test('should register user successfully', () async {
       // Test implementation
     });
-    
+
     test('should login user with valid credentials', () async {
       // Test implementation
     });
-    
+
     test('should handle invalid login credentials', () async {
       // Test implementation
     });
@@ -921,6 +951,7 @@ class UserServiceTest {
 ```
 
 ### Integration Testing
+
 ```dart
 // Order Flow Integration Test
 class OrderFlowTest {
@@ -928,7 +959,7 @@ class OrderFlowTest {
     testWidgets('complete order creation flow', (tester) async {
       // Test complete order creation from UI to database
     });
-    
+
     testWidgets('petugas order acceptance flow', (tester) async {
       // Test petugas accepting and completing orders
     });
@@ -937,16 +968,17 @@ class OrderFlowTest {
 ```
 
 ### Performance Testing
+
 ```dart
 class PerformanceTest {
   test('app launch performance', () async {
     // Measure app launch time
   });
-  
+
   test('API response time', () async {
     // Test API response times
   });
-  
+
   test('memory usage under load', () async {
     // Test memory consumption
   });
@@ -958,48 +990,51 @@ class PerformanceTest {
 ## 🚀 Deployment Specifications
 
 ### Build Configuration
+
 ```yaml
 # Flutter Build Settings
 flutter:
   version: 3.19.0
-  
+
 android:
   minSdkVersion: 21
   targetSdkVersion: 34
   buildToolsVersion: 34.0.0
-  
+
 ios:
   platform: ios, '12.0'
   deployment_target: 12.0
 ```
 
 ### Environment Configuration
+
 ```dart
 class Environment {
   static const String development = 'development';
   static const String staging = 'staging';
   static const String production = 'production';
-  
+
   static String get currentEnvironment {
     return const String.fromEnvironment('ENVIRONMENT', defaultValue: development);
   }
-  
+
   static String get apiBaseUrl {
     switch (currentEnvironment) {
       case development:
-        return 'https://dev-api.gerobaks.com';
+        return 'https://dev-gerobaks.dumeg.com';
       case staging:
-        return 'https://staging-api.gerobaks.com';
+        return 'https://staging-gerobaks.dumeg.com';
       case production:
-        return 'https://api.gerobaks.com';
+        return 'https://gerobaks.dumeg.com';
       default:
-        return 'https://dev-api.gerobaks.com';
+        return 'https://dev-gerobaks.dumeg.com';
     }
   }
 }
 ```
 
 ### CI/CD Pipeline
+
 ```yaml
 # GitHub Actions Configuration
 name: Build and Deploy
@@ -1014,7 +1049,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: subosito/flutter-action@v2
       - run: flutter test
-      
+
   build:
     runs-on: ubuntu-latest
     needs: test
@@ -1023,7 +1058,7 @@ jobs:
       - uses: subosito/flutter-action@v2
       - run: flutter build apk --release
       - run: flutter build ios --release
-      
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
@@ -1039,17 +1074,18 @@ jobs:
 ## 📈 Analytics & Monitoring
 
 ### Analytics Implementation
+
 ```dart
 class AnalyticsService {
   // Event Tracking
   static void trackEvent(String eventName, Map<String, dynamic> parameters);
   static void trackScreenView(String screenName);
   static void trackUserAction(String action, Map<String, dynamic> context);
-  
+
   // User Properties
   static void setUserProperty(String name, String value);
   static void setUserId(String userId);
-  
+
   // Custom Metrics
   static void trackOrderCompletion(OrderModel order);
   static void trackSubscriptionPurchase(SubscriptionPlan plan);
@@ -1058,6 +1094,7 @@ class AnalyticsService {
 ```
 
 ### Crash Reporting
+
 ```dart
 class CrashReportingService {
   static Future<void> initialize();
@@ -1072,6 +1109,7 @@ class CrashReportingService {
 ## 🔗 External Integrations
 
 ### Payment Integration
+
 ```dart
 class PaymentService {
   // Midtrans Integration
@@ -1080,16 +1118,17 @@ class PaymentService {
     required String orderId,
     required PaymentMethod method,
   });
-  
+
   // QRIS Integration
   static Future<String> generateQRISCode(double amount);
-  
+
   // Payment Status
   static Future<PaymentStatus> checkPaymentStatus(String transactionId);
 }
 ```
 
 ### Maps Integration
+
 ```dart
 class MapsService {
   // Google Maps
@@ -1099,7 +1138,7 @@ class MapsService {
     LocationModel origin,
     LocationModel destination,
   );
-  
+
   // Geocoding
   static Future<String> getAddressFromCoordinates(double lat, double lng);
   static Future<LocationModel> getCoordinatesFromAddress(String address);
@@ -1111,24 +1150,26 @@ class MapsService {
 ## 📋 Development Guidelines
 
 ### Code Standards
+
 ```dart
 // Naming Conventions
 class NamingConventions {
   // Classes: PascalCase
   class UserService {}
-  
+
   // Variables: camelCase
   String userName = '';
-  
+
   // Constants: UPPER_SNAKE_CASE
   static const String API_BASE_URL = '';
-  
+
   // Files: snake_case
   // user_service.dart, order_model.dart
 }
 ```
 
 ### Project Structure
+
 ```
 lib/
 ├── main.dart
@@ -1159,6 +1200,7 @@ lib/
 ```
 
 ### Git Workflow
+
 ```bash
 # Branch Naming
 feature/user-authentication
@@ -1179,24 +1221,27 @@ test: add unit tests for order service
 ## 🔒 Lisensi dan Keamanan Source Code
 
 ### Status Lisensi
+
 🔴 **"CLOSED SOURCE"** - Aplikasi Gerobaks adalah produk proprietary yang sepenuhnya dimiliki dan dilisensikan kepada Gerobaks.
 
 ### Perlindungan Kode
+
 - **Copyright**: © 2025 Gerobaks. All rights reserved.
 - **Confidentiality**: Source code bersifat strictly confidential
 - **Access Control**: Hanya authorized developers yang memiliki akses
 - **Code Distribution**: Dilarang mendistribusikan atau membagikan source code
 
 ### Security Measures
+
 ```dart
 // Code Obfuscation
 class CodeProtection {
   // Production builds menggunakan code obfuscation
   static bool get isObfuscated => kReleaseMode;
-  
+
   // API keys dan secrets terenkripsi
   static String get encryptedApiKey => Platform.environment['ENCRYPTED_API_KEY'] ?? '';
-  
+
   // Source code protection
   static void validateSourceIntegrity() {
     // Implementasi validasi integritas kode
@@ -1205,12 +1250,14 @@ class CodeProtection {
 ```
 
 ### Repository Guidelines
+
 - **Private Repository**: Semua repository bersifat private
 - **Access Management**: Role-based access dengan minimal privilege
 - **Audit Trail**: Semua perubahan code tracked dan logged
 - **Branch Protection**: Main/production branch dilindungi dari direct push
 
 ### Intellectual Property
+
 - **Trade Secrets**: Algoritma dan business logic adalah trade secret
 - **Proprietary Technology**: Custom framework dan tools milik Gerobaks
 - **Third-party Licenses**: Compliance dengan license third-party libraries
@@ -1218,4 +1265,4 @@ class CodeProtection {
 
 ---
 
-*Dokumen ini merupakan spesifikasi teknis lengkap untuk pengembangan aplikasi Gerobaks dan akan terus diperbarui seiring dengan perkembangan produk.*
+_Dokumen ini merupakan spesifikasi teknis lengkap untuk pengembangan aplikasi Gerobaks dan akan terus diperbarui seiring dengan perkembangan produk._

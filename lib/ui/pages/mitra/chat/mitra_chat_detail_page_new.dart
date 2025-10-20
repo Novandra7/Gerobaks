@@ -16,10 +16,7 @@ import 'package:intl/intl.dart';
 class MitraChatDetailPage extends StatefulWidget {
   final String conversationId;
 
-  const MitraChatDetailPage({
-    Key? key,
-    required this.conversationId,
-  }) : super(key: key);
+  const MitraChatDetailPage({super.key, required this.conversationId});
 
   @override
   State<MitraChatDetailPage> createState() => _MitraChatDetailPageState();
@@ -34,24 +31,23 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   final AudioServiceManager _audioServiceManager = AudioServiceManager();
   late final AudioRecorderService _audioRecorderService;
   late final AudioPlayerService _audioPlayerService;
-  
+
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _showVoiceRecorder = false;
-  File? _selectedImage;
   ChatConversation? _conversation;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Inisialisasi audio services
     _audioRecorderService = _audioServiceManager.getAudioRecorderService();
     _audioPlayerService = _audioServiceManager.getAudioPlayerService();
-    
+
     _loadMessages();
     _markAsRead();
-    
+
     // Listen to message updates
     _chatService.messagesStream.listen((messages) {
       if (mounted) {
@@ -103,7 +99,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       Permission.microphone,
       Permission.storage,
     ].request();
-    
+
     if (statuses[Permission.camera]!.isPermanentlyDenied ||
         statuses[Permission.storage]!.isPermanentlyDenied) {
       // Show dialog suggesting to open app settings
@@ -144,7 +140,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     });
 
     _messageController.clear();
-    
+
     try {
       await _chatService.sendMessage(widget.conversationId, message);
     } finally {
@@ -161,43 +157,35 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         imageQuality: 70,
         maxWidth: 1024,
       );
-      
+
       if (pickedImage != null) {
-        setState(() {
-          _selectedImage = File(pickedImage.path);
-        });
-        
         // Send the image
         await _sendImageMessage(pickedImage);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
       }
     }
   }
-  
+
   Future<void> _sendImageMessage(XFile imageFile) async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // In a real app, upload the image to a server and get a URL
       // Here we'll simulate it with a local path
       final String imageUrl = imageFile.path;
       await _chatService.sendImageMessage(widget.conversationId, imageUrl);
-      
-      setState(() {
-        _selectedImage = null;
-      });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send image: $e')));
       }
     } finally {
       setState(() {
@@ -205,19 +193,23 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       });
     }
   }
-  
+
   void _handleVoiceRecordingComplete(String path, int durationInSeconds) {
     _sendVoiceMessage(path, durationInSeconds);
   }
-  
+
   Future<void> _sendVoiceMessage(String path, int durationInSeconds) async {
     setState(() {
       _isLoading = true;
       _showVoiceRecorder = false;
     });
-    
+
     try {
-      await _chatService.sendVoiceMessage(widget.conversationId, path, durationInSeconds);
+      await _chatService.sendVoiceMessage(
+        widget.conversationId,
+        path,
+        durationInSeconds,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -230,7 +222,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       });
     }
   }
-  
+
   void _showAttachmentOptions() {
     showModalBottomSheet(
       context: context,
@@ -259,7 +251,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                   label: 'Kamera',
                   onTap: () {
                     Navigator.pop(context);
-                    _requestPermissions().then((_) => _pickImage(ImageSource.camera));
+                    _requestPermissions().then(
+                      (_) => _pickImage(ImageSource.camera),
+                    );
                   },
                 ),
                 _buildAttachmentOption(
@@ -267,7 +261,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                   label: 'Galeri',
                   onTap: () {
                     Navigator.pop(context);
-                    _requestPermissions().then((_) => _pickImage(ImageSource.gallery));
+                    _requestPermissions().then(
+                      (_) => _pickImage(ImageSource.gallery),
+                    );
                   },
                 ),
               ],
@@ -278,7 +274,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       ),
     );
   }
-  
+
   Widget _buildAttachmentOption({
     required IconData icon,
     required String label,
@@ -295,19 +291,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
               color: greenColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: greenColor,
-              size: 32,
-            ),
+            child: Icon(icon, color: greenColor, size: 32),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: blackTextStyle.copyWith(
-              fontSize: 14,
-              fontWeight: medium,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 14, fontWeight: medium),
           ),
         ],
       ),
@@ -321,7 +310,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   String _formatDateHeader(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime).inDays;
-    
+
     if (difference == 0) {
       return 'Hari ini';
     } else if (difference == 1) {
@@ -333,24 +322,21 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
 
   bool _shouldShowDateHeader(int index) {
     if (index == 0) return true;
-    
+
     final currentMessage = _messages[index];
     final previousMessage = _messages[index - 1];
-    
+
     return currentMessage.timestamp.day != previousMessage.timestamp.day ||
-           currentMessage.timestamp.month != previousMessage.timestamp.month ||
-           currentMessage.timestamp.year != previousMessage.timestamp.year;
+        currentMessage.timestamp.month != previousMessage.timestamp.month ||
+        currentMessage.timestamp.year != previousMessage.timestamp.year;
   }
 
   @override
   Widget build(BuildContext context) {
     final userName = _conversation?.adminName ?? 'Pengguna';
-    
+
     return Scaffold(
-      appBar: CustomAppNotif(
-        title: userName,
-        showBackButton: true,
-      ),
+      appBar: CustomAppNotif(title: userName, showBackButton: true),
       backgroundColor: uicolor,
       body: Column(
         children: [
@@ -366,7 +352,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                       return Column(
                         children: [
                           if (_shouldShowDateHeader(index))
-                            _buildDateHeader(_formatDateHeader(message.timestamp)),
+                            _buildDateHeader(
+                              _formatDateHeader(message.timestamp),
+                            ),
                           _buildMessageBubble(message),
                         ],
                       );
@@ -389,10 +377,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               text,
-              style: greyTextStyle.copyWith(
-                fontSize: 12,
-                fontWeight: medium,
-              ),
+              style: greyTextStyle.copyWith(fontSize: 12, fontWeight: medium),
             ),
           ),
           Expanded(child: Divider(color: Colors.grey[300])),
@@ -406,18 +391,11 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 80,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'Belum ada pesan',
-            style: blackTextStyle.copyWith(
-              fontSize: 16,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -436,7 +414,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   Widget _buildMessageBubble(ChatMessage message) {
     // For mitra view, mitra/admin messages should appear on the right (as "me")
     // and user messages should appear on the left
-    final isFromMe = message.isFromUser == false; // Messages from admin (isFromUser=false) are from "me" as mitra
+    final isFromMe =
+        message.isFromUser ==
+        false; // Messages from admin (isFromUser=false) are from "me" as mitra
     final isSystem = message.type == MessageType.system;
     final isTyping = message.type == MessageType.typing;
 
@@ -459,7 +439,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         ),
       );
     }
-    
+
     // Handle typing indicator
     if (isTyping) {
       return Container(
@@ -472,11 +452,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
             CircleAvatar(
               radius: 16,
               backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(
-                Icons.person,
-                color: greenColor,
-                size: 16,
-              ),
+              child: Icon(Icons.person, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
             Container(
@@ -520,7 +496,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         ),
       );
     }
-    
+
     // Handle voice message
     if (message.type == MessageType.voice && message.voiceUrl != null) {
       return VoiceMessageBubble(
@@ -531,7 +507,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         audioPlayerService: _audioPlayerService,
       );
     }
-    
+
     // Handle image message
     if (message.type == MessageType.image && message.imageUrl != null) {
       return _buildImageBubble(message, isFromMe);
@@ -540,7 +516,9 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isFromMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isFromMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isFromMe) ...[
@@ -561,17 +539,26 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
               child: Column(
-                crossAxisAlignment: isFromMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isFromMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: isFromMe ? greenColor : whiteColor,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft: isFromMe ? const Radius.circular(16) : const Radius.circular(4),
-                        bottomRight: isFromMe ? const Radius.circular(4) : const Radius.circular(16),
+                        bottomLeft: isFromMe
+                            ? const Radius.circular(16)
+                            : const Radius.circular(4),
+                        bottomRight: isFromMe
+                            ? const Radius.circular(4)
+                            : const Radius.circular(16),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -583,10 +570,8 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                     ),
                     child: Text(
                       message.message,
-                      style: (isFromMe ? whiteTextStyle : blackTextStyle).copyWith(
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
+                      style: (isFromMe ? whiteTextStyle : blackTextStyle)
+                          .copyWith(fontSize: 14, height: 1.4),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -603,40 +588,36 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
             CircleAvatar(
               radius: 16,
               backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(
-                Icons.support_agent,
-                color: greenColor,
-                size: 16,
-              ),
+              child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
           ],
         ],
       ),
     );
   }
-  
+
   Widget _buildImageBubble(ChatMessage message, bool isFromMe) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isFromMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isFromMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isFromMe) ...[
             CircleAvatar(
               radius: 16,
               backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(
-                Icons.person,
-                color: greenColor,
-                size: 16,
-              ),
+              child: Icon(Icons.person, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isFromMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isFromMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Container(
                   constraints: BoxConstraints(
@@ -647,8 +628,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
-                      bottomLeft: isFromMe ? const Radius.circular(16) : const Radius.circular(4),
-                      bottomRight: isFromMe ? const Radius.circular(4) : const Radius.circular(16),
+                      bottomLeft: isFromMe
+                          ? const Radius.circular(16)
+                          : const Radius.circular(4),
+                      bottomRight: isFromMe
+                          ? const Radius.circular(4)
+                          : const Radius.circular(16),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -662,8 +647,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
-                      bottomLeft: isFromMe ? const Radius.circular(16) : const Radius.circular(4),
-                      bottomRight: isFromMe ? const Radius.circular(4) : const Radius.circular(16),
+                      bottomLeft: isFromMe
+                          ? const Radius.circular(16)
+                          : const Radius.circular(4),
+                      bottomRight: isFromMe
+                          ? const Radius.circular(4)
+                          : const Radius.circular(16),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,8 +667,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                                   appBar: AppBar(
                                     backgroundColor: Colors.black,
                                     leading: IconButton(
-                                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                                      onPressed: () => Navigator.of(context).pop(),
+                                      icon: const Icon(
+                                        Icons.arrow_back,
+                                        color: Colors.white,
+                                      ),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(),
                                     ),
                                     title: Text(
                                       'Image Preview',
@@ -738,11 +731,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
             CircleAvatar(
               radius: 16,
               backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(
-                Icons.support_agent,
-                color: greenColor,
-                size: 16,
-              ),
+              child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
           ],
         ],
@@ -766,7 +755,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       child: SafeArea(
         child: Column(
           children: [
-            if (_showVoiceRecorder) 
+            if (_showVoiceRecorder)
               VoiceRecorder(
                 recorderService: _audioRecorderService,
                 onRecordingComplete: _handleVoiceRecordingComplete,
@@ -822,8 +811,10 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                   _messageController.text.trim().isNotEmpty
                       ? Container(
                           decoration: BoxDecoration(
-                            color: _messageController.text.trim().isNotEmpty || _isLoading 
-                                ? greenColor 
+                            color:
+                                _messageController.text.trim().isNotEmpty ||
+                                    _isLoading
+                                ? greenColor
                                 : Colors.grey[400],
                             shape: BoxShape.circle,
                           ),
@@ -835,14 +826,12 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(whiteColor),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        whiteColor,
+                                      ),
                                     ),
                                   )
-                                : Icon(
-                                    Icons.send,
-                                    color: whiteColor,
-                                    size: 20,
-                                  ),
+                                : Icon(Icons.send, color: whiteColor, size: 20),
                           ),
                         )
                       : GestureDetector(
@@ -857,11 +846,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                               shape: BoxShape.circle,
                             ),
                             padding: const EdgeInsets.all(12),
-                            child: Icon(
-                              Icons.mic,
-                              color: whiteColor,
-                              size: 20,
-                            ),
+                            child: Icon(Icons.mic, color: whiteColor, size: 20),
                           ),
                         ),
                 ],

@@ -1,0 +1,230 @@
+import 'dart:convert';
+import 'dart:async';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage';
+import 'package:bank_sha/utils/api_routes.dart';
+
+/// Mencoba mengekstrak JSON dari respons yang mungkin tercampur dengan HTML
+dynamic _tryExtractJson(String body) {
+  try {
+    return jsonDecode(body);
+  } catch (_) {
+    // Jika gagal, coba cari JSON dengan regex
+    final jsonPattern = RegExp(r'\{".*\}');
+    final match = jsonPattern.firstMatch(body);
+    if (match != null) {
+      final jsonStr = match.group(0);
+      if (jsonStr != null) {
+        try {
+          print('🔍 Menemukan JSON dalam respons campuran HTML+JSON');
+          return jsonDecode(jsonStr);
+        } catch (e) {
+          print('❌ Gagal mem-parse JSON yang diekstrak: $e');
+        }
+      }
+    }
+    
+    throw FormatException(
+      'Tidak dapat mengekstrak JSON valid dari respons: $body',
+    );
+  }
+}
+
+class ApiClient {
+  ApiClient._internal();
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+
+  final _storage = const FlutterSecureStorage();
+  
+  // Caching baseUrl untuk mengurangi overhead
+  static String? _cachedBaseUrl;
+
+  String get _baseUrl {
+    // Return cached value jika sudah ada
+    if (_cachedBaseUrl != null) {
+      return _cachedBaseUrl!;
+    }
+
+    // Default URLs berdasarkan jenis perangkat
+    // 10.0.2.2 adalah alamat khusus yang merujuk ke localhost untuk emulator Android
+    // 127.0.0.1 untuk iOS simulator
+    // IP LAN komputer untuk perangkat fisik (misal: 192.168.1.x)
+    const String defaultUrl = 'http://10.0.2.2:8000';
+
+    try {
+      // Prefer .env configuration. Example: API_BASE_URL=http://127.0.0.1:8000
+      _cachedBaseUrl = dotenv.get('API_BASE_URL', fallback: defaultUrl);
+      return _cachedBaseUrl!;
+    } catch (e) {
+      // .env mungkin belum di-load
+      _cachedBaseUrl = defaultUrl;
+      return defaultUrl;
+    }
+  }
+
+  Uri _buildUri(String path) {
+    final baseUrl = _baseUrl;
+    final fullUrl = '$baseUrl$path';
+    return Uri.parse(fullUrl);
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final token = await _storage.read(key: 'auth_token');
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // GET request
+  Future<dynamic> get(String path) async {
+    try {
+      final uri = _buildUri(path);
+      final headers = await _headers();
+      
+      print('🌐 GET $uri');
+      final resp = await http.get(uri, headers: headers)
+        .timeout(const Duration(seconds: 15));
+      
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        if (resp.body.isEmpty) return null;
+        return _tryExtractJson(resp.body);
+      }
+      
+      throw HttpException(
+        'GET ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+        statusCode: resp.statusCode,
+      );
+    } catch (e) {
+      if (e is http.ClientException) {
+        print('🚨 HTTP Client Error: ${e.toString()}');
+        throw HttpException('Koneksi ke server gagal: ${e.toString()}');
+      } else if (e is TimeoutException) {
+        print('⏱️ Request Timeout: ${e.toString()}');
+        throw HttpException('Koneksi timeout: Server tidak merespons');
+      }
+      print('🚨 Unknown Error: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  // POST request dengan JSON body
+  Future<dynamic> postJson(String path, Map<String, dynamic> body) async {
+    try {
+      final uri = _buildUri(path);
+      final headers = await _headers();
+      
+      print('🌐 POST $uri');
+      print('📦 Request body: ${jsonEncode(body)}');
+      
+      final resp = await http.post(
+        uri, 
+        headers: headers,
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+      
+      print('📡 Response status: ${resp.statusCode}');
+      print('📡 Response body: ${resp.body}');
+      
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        if (resp.body.isEmpty) return null;
+        return _tryExtractJson(resp.body);
+      }
+      
+      throw HttpException(
+        'POST ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+        statusCode: resp.statusCode,
+      );
+    } catch (e) {
+      if (e is http.ClientException) {
+        print('🚨 HTTP Client Error: ${e.toString()}');
+        throw HttpException('Koneksi ke server gagal: ${e.toString()}');
+      } else if (e is TimeoutException) {
+        print('⏱️ Request Timeout: ${e.toString()}');
+        throw HttpException('Koneksi timeout: Server tidak merespons');
+      }
+      print('🚨 Unknown Error: ${e.toString()}');
+      rethrow;
+    }
+  }
+
+  Future<dynamic> putJson(String path, Map<String, dynamic> body) async {
+    final uri = _buildUri(path);
+    final headers = await _headers();
+    final resp = await http
+        .put(uri, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (resp.body.isEmpty) return null;
+      return _tryExtractJson(resp.body);
+    }
+    throw HttpException(
+      'PUT ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+      statusCode: resp.statusCode,
+    );
+  }
+
+  Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
+    final uri = _buildUri(path);
+    final headers = await _headers();
+    final resp = await http
+        .patch(uri, headers: headers, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (resp.body.isEmpty) return null;
+      return _tryExtractJson(resp.body);
+    }
+    throw HttpException(
+      'PATCH ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+      statusCode: resp.statusCode,
+    );
+  }
+
+  Future<dynamic> delete(String path) async {
+    final uri = _buildUri(path);
+    final headers = await _headers();
+    final resp = await http
+        .delete(uri, headers: headers)
+        .timeout(const Duration(seconds: 15));
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      if (resp.body.isEmpty) return null;
+      return _tryExtractJson(resp.body);
+    }
+    throw HttpException(
+      'DELETE ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+      statusCode: resp.statusCode,
+    );
+  }
+
+  // Simpan token
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: 'auth_token', value: token);
+  }
+
+  // Hapus token (untuk logout)
+  Future<void> clearToken() async {
+    await _storage.delete(key: 'auth_token');
+  }
+
+  // Check apakah token ada
+  Future<bool> hasToken() async {
+    final token = await _storage.read(key: 'auth_token');
+    return token != null && token.isNotEmpty;
+  }
+
+  // Mendapatkan token
+  Future<String?> getToken() async {
+    return await _storage.read(key: 'auth_token');
+  }
+}
+
+class HttpException implements Exception {
+  final String message;
+  final int? statusCode;
+  HttpException(this.message, {this.statusCode});
+  @override
+  String toString() => 'HttpException: $message (Status: $statusCode)';
+}

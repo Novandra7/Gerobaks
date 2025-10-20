@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
@@ -17,6 +19,9 @@ import 'package:bank_sha/ui/pages/end_user/schedule/weekly_schedule_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
+import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/ui/pages/user/schedule/create_schedule_page.dart';
@@ -52,6 +57,29 @@ import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
+import 'package:bank_sha/utils/app_config.dart';
+
+// Fungsi untuk memeriksa dan membuat file .env jika tidak ada
+Future<void> ensureEnvFileExists() async {
+  // Menggunakan AppConfig sebagai gantinya
+  await AppConfig.init();
+
+  // Load stored API URL from SharedPreferences if available
+  await AppConfig.loadStoredApiUrl();
+
+  print('✓ Konfigurasi aplikasi berhasil diinisialisasi');
+  print('✓ API Base URL: ${AppConfig.apiBaseUrl}');
+
+  // Verifikasi konfigurasi
+  final apiBaseUrl = dotenv.env['API_BASE_URL'];
+  print('Konfigurasi API_BASE_URL dari .env: $apiBaseUrl');
+
+  // Show if using custom URL
+  if (AppConfig.isUsingCustomApiUrl) {
+    print('✓ Menggunakan custom API URL yang tersimpan');
+  }
+}
 
 Future<void> main() async {
   try {
@@ -73,10 +101,35 @@ Future<void> main() async {
       print('Stack trace: ${details.stack}');
     };
 
-    await dotenv.load();
+    // PENTING: Pastikan file .env ada dan load
+    print('Checking .env file...');
+    await ensureEnvFileExists();
+    print('API_BASE_URL: ${dotenv.env['API_BASE_URL'] ?? "not found"}');
+
     await initializeDateFormatting('id_ID', null);
 
-    // Inisialisasi LocalStorage Service
+    // Inisialisasi Auth API Service terlebih dahulu (prioritas)
+    try {
+      // AuthApiService sudah singleton, tidak perlu await getInstance
+      final authService = AuthApiService();
+      final token = await authService.getToken();
+      print(
+        "AuthApiService berhasil diinisialisasi, token exists: ${token != null}",
+      );
+
+      if (token != null) {
+        try {
+          final userData = await authService.me();
+          print("API user data: ${userData['name']} (${userData['email']})");
+        } catch (e) {
+          print("Error saat mengambil user data dari API: $e");
+        }
+      }
+    } catch (e) {
+      print("Error saat inisialisasi AuthApiService: $e");
+    }
+
+    // Inisialisasi LocalStorage Service (masih diperlukan untuk kompatibilitas)
     try {
       await LocalStorageService.getInstance();
       print("LocalStorage berhasil diinisialisasi");
@@ -142,6 +195,13 @@ Future<void> main() async {
   } catch (e) {
     print("Error fatal saat inisialisasi aplikasi: $e");
   }
+
+  // Pastikan logging Flutter bekerja dengan benar
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    print('Flutter error: ${details.exception}');
+    print('Flutter stack trace: ${details.stack}');
+  };
 
   runApp(const MyApp());
 }
@@ -250,6 +310,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/payment-timeout': (context) => const PaymentTimeoutPage(),
           '/checkout': (context) => const CheckoutPage(),
           '/payment-methods': (context) => const PaymentMethodsPage(),
+          '/navigation-improved': (context) => InAppNavigationPage(
+            scheduleData: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                      as Map<String, dynamic>)
+                : {},
+          ),
+          '/navigation-redesigned': (context) => NavigationPageRedesigned(
+            scheduleData: ModalRoute.of(context)?.settings.arguments != null
+                ? (ModalRoute.of(context)?.settings.arguments
+                      as Map<String, dynamic>)
+                : {},
+          ),
+          '/navigation-demo': (context) => const NavigationDemoPage(),
         },
       ),
     );

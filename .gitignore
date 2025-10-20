@@ -34,6 +34,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Backend API repository (standalone)
+backend/
+
 # Symbolication related
 app.*.symbols
 

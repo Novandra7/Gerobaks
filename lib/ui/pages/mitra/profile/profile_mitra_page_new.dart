@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
@@ -288,6 +289,11 @@ class _ProfileMitraPageImprovedState extends State<ProfileMitraPageImproved> {
                 ),
                 child: ElevatedButton.icon(
                   onPressed: () async {
+                    // Logout from API (primary method)
+                    final authService = AuthApiService();
+                    await authService.logout();
+                    
+                    // For backward compatibility
                     await _localStorageService.fullLogout();
                     if (!mounted) return;
                     

@@ -13,7 +13,7 @@ class SignUpBatch5Page extends StatefulWidget {
 
 class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
   String _selectedPlan = 'monthly';
-  
+
   final List<Map<String, dynamic>> _subscriptionPlans = [
     {
       'id': 'monthly',
@@ -51,8 +51,6 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
 
   @override
   Widget build(BuildContext context) {
-    final arguments = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
     return Scaffold(
       backgroundColor: whiteColor,
       body: SafeArea(
@@ -78,10 +76,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        icon: Icon(
-                          Icons.arrow_back_ios,
-                          color: blackColor,
-                        ),
+                        icon: Icon(Icons.arrow_back_ios, color: blackColor),
                       ),
                       const Spacer(),
                     ],
@@ -108,7 +103,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                             const SizedBox(width: 8),
                             Text(
                               'GEROBAKS',
-                               style: greenTextStyle.copyWith(
+                              style: greenTextStyle.copyWith(
                                 fontSize: 28,
                                 fontWeight: bold,
                                 letterSpacing: 1.2,
@@ -135,9 +130,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
 
                   Text(
                     'Langkah 5 dari 5 - Selesaikan Pendaftaran',
-                    style: greyTextStyle.copyWith(
-                      fontSize: 14,
-                    ),
+                    style: greyTextStyle.copyWith(fontSize: 14),
                   ),
 
                   const SizedBox(height: 16),
@@ -145,9 +138,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                   Text(
                     'Dapatkan keuntungan maksimal dengan berlangganan GEROBAKS Premium',
                     textAlign: TextAlign.center,
-                    style: greyTextStyle.copyWith(
-                      fontSize: 14,
-                    ),
+                    style: greyTextStyle.copyWith(fontSize: 14),
                   ),
 
                   const SizedBox(height: 30),
@@ -176,7 +167,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                   ...List.generate(_subscriptionPlans.length, (index) {
                     final plan = _subscriptionPlans[index];
                     final isSelected = _selectedPlan == plan['id'];
-                    
+
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       child: InkWell(
@@ -191,10 +182,14 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? greenColor : greyColor.withOpacity(0.3),
+                              color: isSelected
+                                  ? greenColor
+                                  : greyColor.withValues(alpha: 0.3),
                               width: isSelected ? 2 : 1,
                             ),
-                            color: isSelected ? greenColor.withOpacity(0.05) : whiteColor,
+                            color: isSelected
+                                ? greenColor.withValues(alpha: 0.05)
+                                : whiteColor,
                           ),
                           child: Stack(
                             children: [
@@ -208,7 +203,8 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                                       children: [
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 plan['title'],
@@ -222,16 +218,16 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                                                 children: [
                                                   Text(
                                                     plan['price'],
-                                                    style: greenTextStyle.copyWith(
-                                                      fontSize: 24,
-                                                      fontWeight: bold,
-                                                    ),
+                                                    style: greenTextStyle
+                                                        .copyWith(
+                                                          fontSize: 24,
+                                                          fontWeight: bold,
+                                                        ),
                                                   ),
                                                   Text(
                                                     plan['period'],
-                                                    style: greyTextStyle.copyWith(
-                                                      fontSize: 14,
-                                                    ),
+                                                    style: greyTextStyle
+                                                        .copyWith(fontSize: 14),
                                                   ),
                                                 ],
                                               ),
@@ -240,27 +236,35 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                                                 children: [
                                                   Text(
                                                     plan['originalPrice'],
-                                                    style: greyTextStyle.copyWith(
-                                                      fontSize: 12,
-                                                      decoration: TextDecoration.lineThrough,
-                                                    ),
+                                                    style: greyTextStyle
+                                                        .copyWith(
+                                                          fontSize: 12,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .lineThrough,
+                                                        ),
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 2,
-                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 2,
+                                                        ),
                                                     decoration: BoxDecoration(
                                                       color: redcolor,
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            4,
+                                                          ),
                                                     ),
                                                     child: Text(
                                                       plan['discount'],
-                                                      style: whiteTextStyle.copyWith(
-                                                        fontSize: 10,
-                                                        fontWeight: bold,
-                                                      ),
+                                                      style: whiteTextStyle
+                                                          .copyWith(
+                                                            fontSize: 10,
+                                                            fontWeight: bold,
+                                                          ),
                                                     ),
                                                   ),
                                                 ],
@@ -284,9 +288,13 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                                     const SizedBox(height: 16),
 
                                     // Features
-                                    ...List.generate(plan['features'].length, (featureIndex) {
+                                    ...List.generate(plan['features'].length, (
+                                      featureIndex,
+                                    ) {
                                       return Padding(
-                                        padding: const EdgeInsets.only(bottom: 8),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
                                         child: Row(
                                           children: [
                                             Icon(
@@ -353,22 +361,20 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          greenColor.withOpacity(0.1),
-                          greenColor.withOpacity(0.05),
+                          greenColor.withValues(alpha: 0.1),
+                          greenColor.withValues(alpha: 0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: greenColor.withOpacity(0.3)),
+                      border: Border.all(
+                        color: greenColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.celebration,
-                          color: greenColor,
-                          size: 32,
-                        ),
+                        Icon(Icons.celebration, color: greenColor, size: 32),
                         const SizedBox(height: 8),
                         Text(
                           'Penawaran Terbatas!',
@@ -381,9 +387,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         Text(
                           'Dapatkan diskon hingga 44% untuk pengguna baru!\nBerlaku hingga akhir bulan ini.',
                           textAlign: TextAlign.center,
-                          style: greyTextStyle.copyWith(
-                            fontSize: 12,
-                          ),
+                          style: greyTextStyle.copyWith(fontSize: 12),
                         ),
                       ],
                     ),
@@ -400,16 +404,18 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                       // Show alpha version message
                       ToastHelper.showToast(
                         context: context,
-                        message: 'Fitur langganan sedang dalam versi alpha dan belum tersedia.',
+                        message:
+                            'Fitur langganan sedang dalam versi alpha dan belum tersedia.',
                         isSuccess: false,
                         duration: const Duration(seconds: 3),
                       );
-                      
+
                       // Show dialog explaining alpha version using custom dialog
                       DialogHelper.showInfoDialog(
                         context: context,
                         title: 'Versi Alpha',
-                        message: 'Fitur langganan masih dalam tahap pengembangan (versi alpha) dan belum tersedia saat ini. Anda dapat melanjutkan pendaftaran tanpa berlangganan.',
+                        message:
+                            'Fitur langganan masih dalam tahap pengembangan (versi alpha) dan belum tersedia saat ini. Anda dapat melanjutkan pendaftaran tanpa berlangganan.',
                         buttonText: 'Daftar Tanpa Langganan',
                         icon: Icons.info_outline,
                         onPressed: () {
@@ -432,7 +438,8 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         DialogHelper.showConfirmDialog(
                           context: context,
                           title: 'Yakin ingin melewati?',
-                          message: 'Anda akan kehilangan kesempatan mendapatkan diskon spesial ini. Anda bisa berlangganan kapan saja di halaman profil.',
+                          message:
+                              'Anda akan kehilangan kesempatan mendapatkan diskon spesial ini. Anda bisa berlangganan kapan saja di halaman profil.',
                           confirmText: 'Ya, Lewati',
                           cancelText: 'Batal',
                           icon: Icons.help_outline,
@@ -446,7 +453,9 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                       style: OutlinedButton.styleFrom(
                         backgroundColor: whiteColor,
                         foregroundColor: greyColor,
-                        side: BorderSide(color: greyColor.withOpacity(0.5)),
+                        side: BorderSide(
+                          color: greyColor.withValues(alpha: 0.5),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -475,8 +484,11 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
   void _completeRegistration() async {
     try {
       // Get user data from arguments
-      final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-      if (args == null || !args.containsKey('email') || !args.containsKey('password')) {
+      final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+      if (args == null ||
+          !args.containsKey('email') ||
+          !args.containsKey('password')) {
         throw Exception('Data registrasi tidak lengkap');
       }
 
@@ -496,7 +508,8 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
       DialogHelper.showErrorDialog(
         context: context,
         title: 'Error',
-        message: 'Terjadi kesalahan saat melanjutkan registrasi: ${e.toString()}',
+        message:
+            'Terjadi kesalahan saat melanjutkan registrasi: ${e.toString()}',
       );
     }
   }

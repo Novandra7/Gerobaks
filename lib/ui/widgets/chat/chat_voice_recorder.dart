@@ -34,7 +34,6 @@ class _ChatVoiceRecorderState extends State<ChatVoiceRecorder>
   int _recordDuration = 0;
   late AnimationController _animationController;
   bool _isLocked = false;
-  bool _isDragging = false;
   bool _showLockUI = false;
   double _dragOffset = 0;
   StreamSubscription<int>? _durationSubscription;
@@ -247,7 +246,6 @@ class _ChatVoiceRecorderState extends State<ChatVoiceRecorder>
 
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
-      _isDragging = true;
       _dragOffset += details.delta.dy;
       _dragOffset = _dragOffset.clamp(-100.0, 0.0);
     });
@@ -258,13 +256,11 @@ class _ChatVoiceRecorderState extends State<ChatVoiceRecorder>
       // Lock the recording
       setState(() {
         _isLocked = true;
-        _isDragging = false;
         _dragOffset = 0;
       });
     } else {
       // Reset position
       setState(() {
-        _isDragging = false;
         _dragOffset = 0;
       });
     }

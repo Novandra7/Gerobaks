@@ -15,6 +15,7 @@ Color greentext = const Color(0xff0D9A0B);
 Color uicolor = const Color(0xffF6FBF7);
 Color redcolor = const Color(0xffF30303);
 Color orangeColor = const Color(0xffFF8C00);
+Color yellowColor = const Color(0xffFFC700);
 
 TextStyle blackTextStyle = GoogleFonts.poppins(color: blackColor);
 

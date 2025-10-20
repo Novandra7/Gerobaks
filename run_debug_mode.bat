@@ -1,0 +1,3 @@
+@echo off
+echo Menjalankan Flutter dengan opsi debug yang diperlukan...
+flutter run --debug --no-enable-impeller

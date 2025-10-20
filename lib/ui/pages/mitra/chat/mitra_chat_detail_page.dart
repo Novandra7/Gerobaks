@@ -85,6 +85,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+    _chatService.markAsRead(widget.conversationId);
   }
 
   void _markAsRead() {
@@ -192,6 +193,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     }
   }
 
+  // ignore: unused_element
   void _handleVoiceRecordingComplete(String path, int durationInSeconds) {
     _sendVoiceMessage(path, durationInSeconds);
   }
@@ -218,6 +220,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     }
   }
 
+  // ignore: unused_element
   void _showAttachmentOptions() {
     showModalBottomSheet(
       context: context,

@@ -1,0 +1,3 @@
+@echo off
+echo Menjalankan Flutter dengan debug console...
+flutter run -d emulator-5554 --verbose --no-enable-impeller

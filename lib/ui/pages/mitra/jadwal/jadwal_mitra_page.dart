@@ -1,10 +1,13 @@
-﻿import 'package:bank_sha/services/local_storage_service.dart';
+﻿import 'package:bank_sha/models/schedule_api_model.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
+import 'package:bank_sha/ui/widgets/mitra/jadwal_mitra_header.dart';
+import 'package:bank_sha/ui/widgets/shared/filter_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 
 class JadwalMitraPage extends StatefulWidget {
   const JadwalMitraPage({super.key});
@@ -20,11 +23,14 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   bool _isLoading = false;
   String _selectedFilter = "semua";
   late TabController _tabController;
+  final ScheduleApiService _scheduleApiService = ScheduleApiService();
+  List<ScheduleApiModel> _schedules = [];
+  String? _errorMessage;
 
   // Stats data
-  int _locationCount = 7;
-  int _pendingCount = 5;
-  int _completedCount = 2;
+  int _locationCount = 0;
+  int _pendingCount = 0;
+  int _completedCount = 0;
 
   @override
   void initState() {
@@ -75,7 +81,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
       final userData = await localStorageService.getUserData();
 
       if (userData != null && userData["id"] != null) {
-        _driverId = userData["id"] as String;
+        _driverId = userData["id"].toString();
       } else {
         throw Exception("ID driver tidak ditemukan");
       }
@@ -104,25 +110,44 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   }
 
   Future<void> _loadSchedules() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
-      if (_driverId != null) {
-        // Simulate loading
-        await Future.delayed(const Duration(seconds: 1));
+      final driverId = int.tryParse(_driverId ?? '');
+      final result = await _scheduleApiService.listSchedules(
+        assignedTo: driverId,
+        perPage: 100,
+      );
 
-        // Update stats
-        setState(() {
-          _locationCount = 7;
-          _pendingCount = 5;
-          _completedCount = 2;
+      final schedules = List<ScheduleApiModel>.from(result.items)
+        ..sort((a, b) {
+          final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return aDate.compareTo(bDate);
         });
-      } else {
-        throw Exception("ID driver tidak ditemukan");
+
+      final pending = schedules
+          .where((s) => _normalizeStatus(s.status) == 'pending')
+          .length;
+      final completed = schedules
+          .where((s) => _normalizeStatus(s.status) == 'completed')
+          .length;
+
+      if (mounted) {
+        setState(() {
+          _schedules = schedules;
+          _locationCount = schedules.length;
+          _pendingCount = pending;
+          _completedCount = completed;
+        });
       }
     } catch (e) {
+      _errorMessage = e.toString();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -146,7 +171,6 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   Widget build(BuildContext context) {
     // Menghitung ukuran berdasarkan golden ratio
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
 
     return Scaffold(
@@ -171,333 +195,16 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
   }
 
   Widget _buildHeader(BuildContext context, bool isSmallScreen) {
-    // Menghitung ukuran berdasarkan golden ratio
-    final screenWidth = MediaQuery.of(context).size.width;
-    final basePadding =
-        screenWidth / 25; // Base padding yang proporsional dengan layar
-    final spacingSmall =
-        basePadding / 1.618; // Spacing kecil berdasarkan golden ratio
-    final spacingMedium = basePadding; // Spacing sedang
-    final spacingLarge =
-        basePadding * 1.618; // Spacing besar berdasarkan golden ratio
-    final iconSize = basePadding * 1.1; // Ukuran icon proporsional
-    final borderRadius = basePadding * 1.2; // Border radius proporsional
-
-    // Font sizes berdasarkan golden ratio
-    final titleFontSize = basePadding * 1.1;
-    final headerTitleFontSize = basePadding * 1.618;
-    final statCountFontSize = basePadding * 1.1;
-    final statLabelFontSize = basePadding * 0.65;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF37DE7A), Color(0xFF00A643)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: [0.0, 1.0],
-          transform: GradientRotation(0.2),
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(borderRadius),
-          bottomRight: Radius.circular(borderRadius),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00A643).withOpacity(0.25),
-            blurRadius: spacingLarge,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + spacingMedium * 1.2,
-        bottom: spacingMedium * 1.5,
-        left: spacingMedium,
-        right: spacingMedium,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Top bar with logo and notifications
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Logo
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(iconSize * 0.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.all(spacingSmall * 0.5),
-                    child: Image.asset(
-                      'assets/img_logo.png',
-                      width: iconSize * 1.8,
-                      height: iconSize * 1.8,
-                    ),
-                  ),
-                  SizedBox(width: spacingSmall),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'GEROBAKS',
-                        style: whiteTextStyle.copyWith(
-                          fontSize: titleFontSize,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      Text(
-                        'Waste Management',
-                        style: whiteTextStyle.copyWith(
-                          fontSize: statLabelFontSize,
-                          fontWeight: medium,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              // Notification and chat icons
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to chat
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(spacingSmall),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(
-                          spacingMedium * 0.75,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.chat_bubble_outline,
-                        color: Colors.white,
-                        size: iconSize,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: spacingSmall),
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to notifications
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(spacingSmall),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(
-                          spacingMedium * 0.75,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          Icon(
-                            Icons.notifications_none,
-                            color: Colors.white,
-                            size: iconSize,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: iconSize * 0.5,
-                              height: iconSize * 0.5,
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1.5,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          SizedBox(height: spacingMedium * 1.2),
-
-          // Jadwal Pengambilan Text with enhanced styling
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: spacingMedium,
-              vertical: spacingSmall,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(borderRadius * 0.8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  color: Colors.white,
-                  size: iconSize * 0.9,
-                ),
-                SizedBox(width: spacingSmall),
-                Text(
-                  'Jadwal Pengambilan',
-                  style: whiteTextStyle.copyWith(
-                    fontSize: headerTitleFontSize,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: spacingMedium * 1.3),
-
-          // Stats cards - responsive layout for different screen sizes
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStatCard(
-                  icon: Icons.location_on_outlined,
-                  label: 'Lokasi',
-                  count: _locationCount,
-                  isSmallScreen: isSmallScreen,
-                  basePadding: basePadding,
-                  iconSize: iconSize,
-                  countFontSize: statCountFontSize,
-                  labelFontSize: statLabelFontSize,
-                  borderRadius: borderRadius * 0.8,
-                ),
-                SizedBox(width: spacingSmall),
-                _buildStatCard(
-                  icon: Icons.people_outline,
-                  label: 'Menunggu',
-                  count: _pendingCount,
-                  isSmallScreen: isSmallScreen,
-                  basePadding: basePadding,
-                  iconSize: iconSize,
-                  countFontSize: statCountFontSize,
-                  labelFontSize: statLabelFontSize,
-                  borderRadius: borderRadius * 0.8,
-                ),
-                SizedBox(width: spacingSmall),
-                _buildStatCard(
-                  icon: Icons.check_circle_outline,
-                  label: 'Selesai',
-                  count: _completedCount,
-                  isSmallScreen: isSmallScreen,
-                  basePadding: basePadding,
-                  iconSize: iconSize,
-                  countFontSize: statCountFontSize,
-                  labelFontSize: statLabelFontSize,
-                  borderRadius: borderRadius * 0.8,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required IconData icon,
-    required String label,
-    required int count,
-    required bool isSmallScreen,
-    double? basePadding,
-    double? iconSize,
-    double? countFontSize,
-    double? labelFontSize,
-    double? borderRadius,
-  }) {
-    // Nilai default jika parameter tidak diberikan
-    final defaultBasePadding = isSmallScreen ? 20.0 : 25.0;
-    final bp = basePadding ?? defaultBasePadding;
-    final is1 = iconSize ?? (isSmallScreen ? 20.0 : 24.0);
-    final cf = countFontSize ?? (isSmallScreen ? 18.0 : 20.0);
-    final lf = labelFontSize ?? (isSmallScreen ? 10.0 : 12.0);
-    final br = borderRadius ?? 16.0;
-
-    // Ukuran kartu berdasarkan golden ratio
-    final cardWidth = bp * 3.2;
-    final cardHeight = cardWidth * 1.1;
-    final padding = bp * 0.4;
-    final spacingVertical = bp * 0.25;
-
-    return Container(
-      width: cardWidth,
-      height: cardHeight,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(br),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: padding,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.all(padding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white, size: is1),
-          SizedBox(height: spacingVertical),
-          Text(
-            count.toString(),
-            style: whiteTextStyle.copyWith(
-              fontSize: cf,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: spacingVertical * 0.5),
-          Text(label, style: whiteTextStyle.copyWith(fontSize: lf)),
-        ],
-      ),
+    return JadwalMitraHeader(
+      locationCount: _locationCount,
+      pendingCount: _pendingCount,
+      completedCount: _completedCount,
+      onChatPressed: () {
+        // Navigate to chat
+      },
+      onNotificationPressed: () {
+        // Navigate to notifications
+      },
     );
   }
 
@@ -509,9 +216,6 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     final spacingSmall =
         basePadding / 1.618; // Spacing kecil berdasarkan golden ratio
     final spacingMedium = basePadding; // Spacing sedang
-    final spacingLarge =
-        basePadding * 1.618; // Spacing besar berdasarkan golden ratio
-    final borderRadius = basePadding * 0.8; // Border radius proporsional
     final chipRadius = basePadding * 0.6; // Chip radius proporsional
 
     // Font sizes berdasarkan golden ratio
@@ -655,18 +359,62 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
 
         // Schedule list
         Expanded(
-          child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: spacingMedium),
-            itemCount: _getFilteredSchedules().length,
-            itemBuilder: (context, index) {
-              final schedule = _getFilteredSchedules()[index];
-              return _buildScheduleCard(
-                schedule,
-                index,
-                isSmallScreen,
-                basePadding,
-              );
-            },
+          child: RefreshIndicator(
+            color: greenColor,
+            onRefresh: _loadSchedules,
+            child: Builder(
+              builder: (context) {
+                final filteredSchedules = _getFilteredSchedules();
+                if (filteredSchedules.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacingMedium,
+                      vertical: spacingMedium * 2,
+                    ),
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.format_list_bulleted,
+                              size: basePadding * 2,
+                              color: greenColor.withOpacity(0.3),
+                            ),
+                            SizedBox(height: spacingMedium),
+                            Text(
+                              _errorMessage != null
+                                  ? 'Gagal memuat jadwal. Tarik untuk mencoba lagi.'
+                                  : 'Belum ada jadwal untuk ditampilkan.',
+                              style: blackTextStyle.copyWith(
+                                fontSize: basePadding * 0.6,
+                                fontWeight: medium,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: spacingMedium),
+                  itemCount: filteredSchedules.length,
+                  itemBuilder: (context, index) {
+                    final schedule = filteredSchedules[index];
+                    return _buildScheduleCard(
+                      schedule,
+                      index,
+                      isSmallScreen,
+                      basePadding,
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -680,43 +428,19 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     bool isSmallScreen, [
     double? basePadding,
   ]) {
-    final bp = basePadding ?? (isSmallScreen ? 15.0 : 20.0);
-    final tabHeight = bp * 1.618;
-    final fontSize = bp * 0.6;
-    final cornerRadius = bp * 0.5;
-    final paddingV = bp * 0.25;
-
-    return GestureDetector(
+    return FilterTab(
+      label: label,
+      isSelected: isSelected,
       onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: paddingV),
-        decoration: BoxDecoration(
-          color: isSelected ? greenColor : Color(0xFFEAFBEF),
-          borderRadius: BorderRadius.circular(cornerRadius),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: greenColor.withOpacity(0.3),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: (isSelected ? whiteTextStyle : greenTextStyle).copyWith(
-            fontSize: fontSize,
-            fontWeight: isSelected ? semiBold : medium,
-          ),
-        ),
-      ),
+      selectedColor: greenColor,
+      unselectedColor: Color(0xFFEAFBEF),
+      selectedTextColor: Colors.white,
+      unselectedTextColor: greenColor,
     );
   }
 
   Widget _buildScheduleCard(
-    Map<String, dynamic> schedule,
+    ScheduleApiModel schedule,
     int index,
     bool isSmallScreen, [
     double? basePadding,
@@ -742,7 +466,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailPickupPage(scheduleId: schedule["id"]),
+            builder: (context) =>
+                DetailPickupPage(scheduleId: schedule.id.toString()),
           ),
         );
       },
@@ -785,7 +510,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       ),
                       SizedBox(width: spacingSmall * 0.5),
                       Text(
-                        schedule["time"],
+                        schedule.formattedTime,
                         style: blackTextStyle.copyWith(
                           fontWeight: FontWeight.bold,
                           fontSize: subtitleFontSize,
@@ -799,15 +524,13 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       vertical: spacingSmall * 0.4,
                     ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(
-                        schedule["status"],
-                      ).withOpacity(0.2),
+                      color: _getStatusColor(schedule.status).withOpacity(0.2),
                       borderRadius: BorderRadius.circular(bp * 0.6),
                     ),
                     child: Text(
-                      _getStatusText(schedule["status"]),
+                      _getStatusText(schedule.status),
                       style: TextStyle(
-                        color: _getStatusColor(schedule["status"]),
+                        color: _getStatusColor(schedule.status),
                         fontWeight: FontWeight.bold,
                         fontSize: statusFontSize,
                       ),
@@ -848,7 +571,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                   Row(
                     children: [
                       Text(
-                        schedule["customer_name"],
+                        schedule.title,
                         style: whiteTextStyle.copyWith(
                           fontSize: titleFontSize,
                           fontWeight: FontWeight.bold,
@@ -857,7 +580,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       Spacer(),
                       // Add distance indicator
                       Text(
-                        schedule["estimatedDistance"],
+                        schedule.formattedDate,
                         style: whiteTextStyle.copyWith(
                           fontSize: chipFontSize,
                           fontWeight: medium,
@@ -876,7 +599,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                       SizedBox(width: spacingSmall * 0.5),
                       Expanded(
                         child: Text(
-                          schedule["address"],
+                          schedule.description ?? 'Alamat belum tersedia',
                           style: whiteTextStyle.copyWith(
                             fontSize: subtitleFontSize,
                           ),
@@ -890,13 +613,15 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
                   Row(
                     children: [
                       _buildWasteTypeChip(
-                        schedule["waste_type"],
+                        schedule.assignedUser?.name == null
+                            ? 'Petugas belum ditetapkan'
+                            : 'Petugas: ${schedule.assignedUser!.name}',
                         isSmallScreen,
                         bp,
                       ),
                       SizedBox(width: spacingSmall),
                       _buildWasteWeightChip(
-                        schedule["waste_weight"],
+                        'Tracking: ${schedule.trackingsCount ?? 0}',
                         isSmallScreen,
                         bp,
                       ),
@@ -965,8 +690,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
+  Color _getStatusColor(String? status) {
+    switch (_normalizeStatus(status)) {
       case 'pending':
         return Colors.orange;
       case 'in_progress':
@@ -978,8 +703,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
     }
   }
 
-  String _getStatusText(String status) {
-    switch (status) {
+  String _getStatusText(String? status) {
+    switch (_normalizeStatus(status)) {
       case 'pending':
         return 'Menunggu';
       case 'in_progress':
@@ -987,74 +712,29 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPage>
       case 'completed':
         return 'Selesai';
       default:
-        return 'Unknown';
+        return 'Tidak diketahui';
     }
   }
 
-  List<Map<String, dynamic>> _getFilteredSchedules() {
-    // Data dummy untuk pengujian
-    final List<Map<String, dynamic>> schedules = [
-      {
-        "id": "001",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim B, Kota Samarinda, Kalimantan Timur",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "pending",
-        "estimatedDistance": "500m • 10 menit",
-        "priority": 1,
-      },
-      {
-        "id": "002",
-        "customer_name": "Siti Rahayu",
-        "address": "Perumahan Indah Blok B, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Anorganik",
-        "waste_weight": "1.5 kg",
-        "status": "completed",
-        "estimatedDistance": "800m • 15 menit",
-        "priority": 3,
-      },
-      {
-        "id": "003",
-        "customer_name": "Ahmad Rizal",
-        "address": "Jl. Juanda No. 45, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "3 kg",
-        "status": "in_progress",
-        "estimatedDistance": "1.2km • 20 menit",
-        "priority": 2,
-      },
-      {
-        "id": "004",
-        "customer_name": "Wahyu Indra",
-        "address": "Jl. Muso Salim B, Kota Samarinda",
-        "time": "09:00 - 11:00",
-        "waste_type": "Organik",
-        "waste_weight": "2 kg",
-        "status": "pending",
-        "estimatedDistance": "1.5km • 25 menit",
-        "priority": 4,
-      },
-    ];
-
-    // Filter jadwal sesuai dengan tab yang dipilih
-    List<Map<String, dynamic>> filtered;
+  List<ScheduleApiModel> _getFilteredSchedules() {
     if (_selectedFilter == "semua") {
-      filtered = schedules;
-    } else {
-      filtered = schedules
-          .where((s) => s["status"] == _selectedFilter)
-          .toList();
+      return List<ScheduleApiModel>.from(_schedules);
     }
 
-    // Sort by priority (in a real app, this would be based on time or distance)
-    filtered.sort((a, b) => a["priority"].compareTo(b["priority"]));
-
+    final filtered = _schedules
+        .where(
+          (schedule) => _normalizeStatus(schedule.status) == _selectedFilter,
+        )
+        .toList();
+    filtered.sort((a, b) {
+      final aDate = a.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.scheduledAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return aDate.compareTo(bDate);
+    });
     return filtered;
   }
+
+  String _normalizeStatus(String? status) => status?.toLowerCase() ?? 'unknown';
 
   // Method to open the map view
   void _openMapView() {

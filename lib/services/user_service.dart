@@ -1,5 +1,6 @@
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -172,7 +173,8 @@ class UserService {
 
       // Step 2: Check mock data
       // print("🔐 Step 2: Checking mock data...");
-      final mockUserData = UserDataMock.getUserByEmail(email);
+      final mockUserDataFuture = UserDataMock.getUserByEmail(email);
+      final mockUserData = await mockUserDataFuture;
       // print("🔐 Mock user found: ${mockUserData != null}");
 
       if (mockUserData != null && mockUserData['password'] == password) {
@@ -197,13 +199,15 @@ class UserService {
 
         // Save mock user data for future sessions
         final userData = user.toJson();
-        
+
         // Tambahkan data penting yang tidak ada di model
         userData['password'] = password;
         userData['role'] = mockUserData['role'] ?? 'end_user';
-        
-        print("� [USER] Login success for ${user.name} with role: ${userData['role']}");
-        
+
+        print(
+          "� [USER] Login success for ${user.name} with role: ${userData['role']}",
+        );
+
         // Simpan data lengkap dan pastikan set flag login
         await _localStorage.saveUserData(userData);
         await _localStorage.saveUser(user);
@@ -298,49 +302,47 @@ class UserService {
     await _localStorage.updateUserPoints(currentPoints - amount);
     return await _localStorage.getUserPoints();
   }
-  
+
   // Update user data directly
   Future<UserModel> updateUserData(UserModel user) async {
     await _localStorage.saveUser(user);
     _notifyUserChange(user);
     return user;
   }
-  
+
   // Request OTP for phone verification
   Future<String> requestPhoneVerification(String phoneNumber) async {
     // In a real app, this would call an API to send SMS
     // For demo purposes, we'll generate a simple OTP
-    final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
-    
+    final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000))
+        .toString();
+
     // In a real app, store this OTP with the phone number in a temporary storage
     // For demo, we'll store it in localStorage with a key based on the phone number
     await _localStorage.saveValue('otp_for_$phoneNumber', otp);
-    
+
     print('Generated OTP for $phoneNumber: $otp');
     return otp; // Return OTP for demo purposes, in production just return success status
   }
-  
+
   // Verify phone with OTP
   Future<bool> verifyPhoneWithOTP(String phoneNumber, String otp) async {
     // In a real app, validate against stored OTP or call API
     // For demo, we'll check against our localStorage
     final storedOTP = await _localStorage.getValue('otp_for_$phoneNumber');
-    
+
     if (storedOTP == otp) {
       // Update user with verified phone
       final user = await getCurrentUser();
       if (user != null) {
-        await updateUserProfile(
-          phone: phoneNumber,
-          isPhoneVerified: true,
-        );
+        await updateUserProfile(phone: phoneNumber, isPhoneVerified: true);
       }
-      
+
       // Clear OTP after successful verification
       await _localStorage.removeValue('otp_for_$phoneNumber');
       return true;
     }
-    
+
     return false;
   }
 
@@ -355,9 +357,19 @@ class UserService {
     return await _localStorage.getSavedAddresses();
   }
 
-  // Log out - modified to preserve user data
+  // Log out - now uses AuthApiService as primary method
   Future<void> logout() async {
-    // Log out the user (changing login status) without deleting data
+    try {
+      // Log out from API first (primary method)
+      final authService = AuthApiService();
+      await authService.logout();
+      print("User logged out via API");
+    } catch (e) {
+      print("Error logging out via API: $e");
+      // Continue with local logout even if API fails
+    }
+
+    // Also log out locally for backward compatibility
     await _localStorage.logout();
 
     // Notify listeners that the user has logged out

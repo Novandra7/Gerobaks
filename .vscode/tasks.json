@@ -68,10 +68,63 @@
 				"--no-dds"
 			],
 			"isBackground": true,
-			"problemMatcher": [
-				"$flutter-verbose"
-			],
+			"problemMatcher": [],
 			"group": "build"
+		},
+		{
+			"label": "Flutter: Pub Get",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"get"
+			]
+		},
+		{
+			"label": "Backend: Serve",
+			"type": "shell",
+			"command": "php",
+			"args": [
+				"artisan",
+				"serve"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			}
+		},
+		{
+			"label": "Backend: Migrate",
+			"type": "shell",
+			"command": "php",
+			"args": [
+				"artisan",
+				"migrate"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {"reveal": "always"}
+		},
+		{
+			"label": "Backend: Fresh Seed",
+			"type": "shell",
+			"command": "php",
+			"args": [
+				"artisan",
+				"migrate:fresh",
+				"--seed"
+			],
+			"options": {"cwd": "${workspaceFolder}/backend"},
+			"presentation": {"reveal": "always"}
 		}
 	]
 }

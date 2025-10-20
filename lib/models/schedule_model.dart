@@ -1,3 +1,4 @@
+import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -125,6 +126,36 @@ class ScheduleModel {
       contactPhone: json['contactPhone'] as String?,
     );
   }
+
+  factory ScheduleModel.fromApi(ScheduleApiModel api) {
+    final scheduled = api.scheduledAt ?? DateTime.now();
+    final time = TimeOfDay(hour: scheduled.hour, minute: scheduled.minute);
+    final statusString = api.status ?? 'pending';
+
+    return ScheduleModel(
+      id: api.id.toString(),
+      userId: api.assignedTo?.toString() ?? 'unknown',
+      scheduledDate: scheduled,
+      timeSlot: time,
+      location: LatLng(
+        api.latitude ?? 0,
+        api.longitude ?? 0,
+      ),
+      address: api.description ?? 'Lokasi tidak tersedia',
+      notes: api.description,
+      status: _parseStatus(statusString),
+      frequency: ScheduleFrequency.once,
+      driverId: api.assignedTo?.toString(),
+      createdAt: api.createdAt ?? DateTime.now(),
+      completedAt: statusString == 'completed' ? api.updatedAt : null,
+      wasteType: 'Campuran',
+      estimatedWeight: null,
+      isPaid: false,
+      amount: null,
+      contactName: api.assignedUser?.name,
+      contactPhone: api.assignedUser?.phone,
+    );
+  }
   
   // Create a copy with some fields updated
   ScheduleModel copyWith({
@@ -171,8 +202,14 @@ class ScheduleModel {
   
   // Helper for parsing status from string
   static ScheduleStatus _parseStatus(String status) {
+    final normalized = status.replaceAll(RegExp(r'[\s_-]+'), '').toLowerCase();
     return ScheduleStatus.values.firstWhere(
-      (element) => element.toString().split('.').last == status,
+      (element) {
+        final value = element.toString().split('.').last;
+        final normalizedValue =
+            value.replaceAll(RegExp(r'[\s_-]+'), '').toLowerCase();
+        return normalizedValue == normalized;
+      },
       orElse: () => ScheduleStatus.pending,
     );
   }

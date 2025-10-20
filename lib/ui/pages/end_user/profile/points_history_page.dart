@@ -1,6 +1,7 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/end_user_api_service.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:flutter/material.dart';
@@ -16,12 +17,20 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   bool _isLoading = true;
   UserModel? _user;
   List<Map<String, dynamic>> _pointsHistory = [];
+  Map<String, dynamic>? _balanceSummary;
   late UserService _userService;
+  late EndUserApiService _apiService;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    _apiService = EndUserApiService();
+    await _apiService.initialize();
+    await _loadData();
   }
 
   Future<void> _loadData() async {
@@ -31,46 +40,15 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
 
       final user = await _userService.getCurrentUser();
 
-      // Simulate loading point history
-      await Future.delayed(const Duration(milliseconds: 800));
-
-      // Mock points history data
-      // In a real app, this would come from an API or local database
-      final List<Map<String, dynamic>> mockHistory = [
-        {
-          'id': '1',
-          'type': 'earned',
-          'amount': 15,
-          'description': 'Pendaftaran akun baru',
-          'date': DateTime.now().subtract(const Duration(days: 7)),
-        },
-        {
-          'id': '2',
-          'type': 'earned',
-          'amount': 10,
-          'description': 'Pengambilan sampah plastik',
-          'date': DateTime.now().subtract(const Duration(days: 5)),
-        },
-        {
-          'id': '3',
-          'type': 'spent',
-          'amount': 5,
-          'description': 'Penukaran voucher diskon',
-          'date': DateTime.now().subtract(const Duration(days: 2)),
-        },
-        {
-          'id': '4',
-          'type': 'earned',
-          'amount': 8,
-          'description': 'Pengambilan sampah kertas',
-          'date': DateTime.now().subtract(const Duration(days: 1)),
-        },
-      ];
+      // Load data from API instead of mock data
+      final balanceSummary = await _apiService.getBalanceSummary();
+      final pointsHistory = await _apiService.getBalanceLedger();
 
       if (mounted) {
         setState(() {
           _user = user;
-          _pointsHistory = mockHistory;
+          _balanceSummary = balanceSummary;
+          _pointsHistory = pointsHistory;
           _isLoading = false;
         });
       }
@@ -110,7 +88,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: uicolor,
-      appBar: const CustomAppBar(title: 'Riwayat Poin', showBackButton: true),
+      appBar: const CustomAppHeader(title: 'Riwayat Poin'),
       body: _isLoading
           ? _buildSkeletonLoading()
           : RefreshIndicator(

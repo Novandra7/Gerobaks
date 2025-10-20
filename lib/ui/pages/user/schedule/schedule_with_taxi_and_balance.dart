@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'dart:async';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class ScheduleWithTaxiAndBalance extends StatefulWidget {
-  const ScheduleWithTaxiAndBalance({Key? key}) : super(key: key);
+  const ScheduleWithTaxiAndBalance({super.key});
 
   @override
-  State<ScheduleWithTaxiAndBalance> createState() => _ScheduleWithTaxiAndBalanceState();
+  State<ScheduleWithTaxiAndBalance> createState() =>
+      _ScheduleWithTaxiAndBalanceState();
 }
 
-class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance> {
+class _ScheduleWithTaxiAndBalanceState
+    extends State<ScheduleWithTaxiAndBalance> {
   bool _isLoading = false;
   bool _showEmptyState = false;
   List<Map<String, dynamic>> _schedules = [];
@@ -66,13 +66,13 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
     try {
       // Dalam implementasi nyata, ini adalah panggilan API sebenarnya
       // final response = await http.get(Uri.parse('https://example.com/saldo/user/123'));
-      
+
       // Simulasi respons
       // if (response.statusCode == 200) {
       //   final data = json.decode(response.body);
       //   _balance = data['balance'];
       // }
-      
+
       // Untuk demo, gunakan nilai tetap
       _balance = 250000;
       _balanceError = null;
@@ -102,18 +102,13 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
         return AlertDialog(
           title: Text(
             'Panggil Taksi',
-            style: blackTextStyle.copyWith(
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontWeight: semiBold),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Anda akan menghubungi:',
-                style: blackTextStyle,
-              ),
+              Text('Anda akan menghubungi:', style: blackTextStyle),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -123,10 +118,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.local_taxi,
-                      color: greenColor,
-                    ),
+                    Icon(Icons.local_taxi, color: greenColor),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -140,9 +132,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                           ),
                           Text(
                             _taxiPhoneNumber,
-                            style: greyTextStyle.copyWith(
-                              fontSize: 14,
-                            ),
+                            style: greyTextStyle.copyWith(fontSize: 14),
                           ),
                         ],
                       ),
@@ -160,10 +150,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                   _isCalling = false;
                 });
               },
-              child: Text(
-                'Batal',
-                style: greyTextStyle,
-              ),
+              child: Text('Batal', style: greyTextStyle),
             ),
             ElevatedButton(
               onPressed: () {
@@ -173,11 +160,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(
-                          Icons.call,
-                          color: Colors.white,
-                          size: 18,
-                        ),
+                        Icon(Icons.call, color: Colors.white, size: 18),
                         const SizedBox(width: 8),
                         Text('Menghubungi $_taxiPhoneNumber...'),
                       ],
@@ -186,7 +169,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                     backgroundColor: greenColor,
                   ),
                 );
-                
+
                 // Reset status panggilan setelah beberapa saat
                 Future.delayed(const Duration(seconds: 2), () {
                   if (mounted) {
@@ -204,9 +187,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
               ),
               child: Text(
                 'Hubungi',
-                style: whiteTextStyle.copyWith(
-                  fontWeight: semiBold,
-                ),
+                style: whiteTextStyle.copyWith(fontWeight: semiBold),
               ),
             ),
           ],
@@ -222,31 +203,23 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
       appBar: AppBar(
         title: Text(
           'Jadwal Pengambilan',
-          style: blackTextStyle.copyWith(
-            fontSize: 20,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 20, fontWeight: semiBold),
         ),
         centerTitle: true,
         backgroundColor: whiteColor,
         elevation: 0,
-        iconTheme: IconThemeData(
-          color: blackColor,
-        ),
+        iconTheme: IconThemeData(color: blackColor),
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           children: [
             // Balance Card
             _buildBalanceCard(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Schedules
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -264,26 +237,24 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        greenColor,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(greenColor),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Schedules List or Empty State
-            _isLoading 
-                ? _buildLoadingSkeleton() 
-                : _showEmptyState 
-                    ? _buildEmptyState() 
-                    : _buildSchedulesList(),
-            
+            _isLoading
+                ? _buildLoadingSkeleton()
+                : _showEmptyState
+                ? _buildEmptyState()
+                : _buildSchedulesList(),
+
             // Taxi Call Section
             const SizedBox(height: 32),
             _buildTaxiCallCard(),
-            
+
             const SizedBox(height: 80), // Bottom padding for FAB
           ],
         ),
@@ -302,9 +273,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
         icon: const Icon(Icons.add),
         label: Text(
           'Jadwal Baru',
-          style: whiteTextStyle.copyWith(
-            fontWeight: semiBold,
-          ),
+          style: whiteTextStyle.copyWith(fontWeight: semiBold),
         ),
       ),
     );
@@ -333,10 +302,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            greenColor.withOpacity(0.9),
-            greenColor,
-          ],
+          colors: [greenColor.withOpacity(0.9), greenColor],
         ),
       ),
       child: Column(
@@ -362,9 +328,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                   const SizedBox(width: 4),
                   Text(
                     'e-Wallet',
-                    style: whiteTextStyle.copyWith(
-                      fontSize: 12,
-                    ),
+                    style: whiteTextStyle.copyWith(fontSize: 12),
                   ),
                 ],
               ),
@@ -381,43 +345,37 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                   ),
                 )
               : _balanceError != null
-                  ? Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Colors.orange,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _balanceError!,
-                          style: whiteTextStyle.copyWith(
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          formatCurrency.format(_balance),
-                          style: whiteTextStyle.copyWith(
-                            fontSize: 24,
-                            fontWeight: bold,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Icon(
-                            Icons.visibility,
-                            color: whiteColor.withOpacity(0.7),
-                            size: 16,
-                          ),
-                        ),
-                      ],
+              ? Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.orange, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      _balanceError!,
+                      style: whiteTextStyle.copyWith(fontSize: 14),
                     ),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      formatCurrency.format(_balance),
+                      style: whiteTextStyle.copyWith(
+                        fontSize: 24,
+                        fontWeight: bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Icon(
+                        Icons.visibility,
+                        color: whiteColor.withOpacity(0.7),
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -482,11 +440,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: whiteColor,
-                size: 18,
-              ),
+              Icon(icon, color: whiteColor, size: 18),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -526,7 +480,9 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                 height: 6,
                 decoration: BoxDecoration(
                   color: Colors.grey[300],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
                 ),
               ),
               Padding(
@@ -595,10 +551,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        vertical: 60,
-        horizontal: 24,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(20),
@@ -613,25 +566,16 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 70,
-            color: greyColor,
-          ),
+          Icon(Icons.calendar_today_outlined, size: 70, color: greyColor),
           const SizedBox(height: 20),
           Text(
             'Belum Ada Jadwal',
-            style: blackTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 20, fontWeight: semiBold),
           ),
           const SizedBox(height: 10),
           Text(
             'Buat jadwal pengambilan sampah\npertama Anda sekarang!',
-            style: greyTextStyle.copyWith(
-              fontSize: 16,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -646,10 +590,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: greenColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 14,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(56),
               ),
@@ -671,7 +612,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
     return Column(
       children: _schedules.map((schedule) {
         final statusInfo = _getStatusInfo(schedule['status']);
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
@@ -693,7 +634,9 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                 height: 6,
                 decoration: BoxDecoration(
                   color: statusInfo['color'],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
                 ),
               ),
               Padding(
@@ -725,7 +668,10 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                         ),
                         // Status badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusInfo['color'].withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
@@ -752,9 +698,9 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Title
                     Text(
                       schedule['title'],
@@ -765,9 +711,9 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Address
                     Row(
                       children: [
@@ -780,18 +726,16 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                         Expanded(
                           child: Text(
                             schedule['address'],
-                            style: greyTextStyle.copyWith(
-                              fontSize: 13,
-                            ),
+                            style: greyTextStyle.copyWith(fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Date
                     Row(
                       children: [
@@ -803,48 +747,34 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                         const SizedBox(width: 6),
                         Text(
                           DateFormat('dd MMMM yyyy').format(schedule['date']),
-                          style: greyTextStyle.copyWith(
-                            fontSize: 13,
-                          ),
+                          style: greyTextStyle.copyWith(fontSize: 13),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     // Waste type and weight
                     Row(
                       children: [
-                        Icon(
-                          Icons.delete_outline,
-                          color: greyColor,
-                          size: 16,
-                        ),
+                        Icon(Icons.delete_outline, color: greyColor, size: 16),
                         const SizedBox(width: 6),
                         Text(
                           schedule['wasteType'],
-                          style: greyTextStyle.copyWith(
-                            fontSize: 13,
-                          ),
+                          style: greyTextStyle.copyWith(fontSize: 13),
                         ),
                         const SizedBox(width: 16),
-                        Icon(
-                          Icons.scale,
-                          color: greyColor,
-                          size: 16,
-                        ),
+                        Icon(Icons.scale, color: greyColor, size: 16),
                         const SizedBox(width: 6),
                         Text(
                           '${schedule['weight']} kg',
-                          style: greyTextStyle.copyWith(
-                            fontSize: 13,
-                          ),
+                          style: greyTextStyle.copyWith(fontSize: 13),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action buttons
                     Row(
                       children: [
@@ -932,10 +862,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFD700).withOpacity(0.9),
-            Color(0xFFFFD700),
-          ],
+          colors: [Color(0xFFFFD700).withOpacity(0.9), Color(0xFFFFD700)],
         ),
       ),
       child: Column(
@@ -943,11 +870,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.local_taxi,
-                color: Colors.black87,
-                size: 24,
-              ),
+              Icon(Icons.local_taxi, color: Colors.black87, size: 24),
               const SizedBox(width: 8),
               Text(
                 'Butuh Transportasi?',
@@ -961,9 +884,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
           const SizedBox(height: 16),
           Text(
             'Anda dapat menghubungi taksi untuk transportasi menuju lokasi pengambilan sampah atau untuk keperluan lainnya.',
-            style: blackTextStyle.copyWith(
-              fontSize: 14,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 14),
           ),
           const SizedBox(height: 16),
           Center(
@@ -992,10 +913,7 @@ class _ScheduleWithTaxiAndBalanceState extends State<ScheduleWithTaxiAndBalance>
                   : Icon(Icons.call),
               label: Text(
                 _isCalling ? 'Menghubungi...' : 'Panggil Taksi',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -45,7 +45,9 @@ dependencies:
   geolocator: ^11.0.0
   flutter_bloc: ^9.1.1
   geocoding: ^2.2.0
-
+  google_maps_flutter: ^2.9.0
+  # flutter_secure_storage: ^8.0.0  # Menghapus karena masalah kompatibilitas
+  
   # Audio recording and playback
   audioplayers: ^6.0.0
   record: ^4.4.4
@@ -61,6 +63,9 @@ dependencies:
   flutter_svg: ^2.0.10+1
   uuid: ^4.3.5
   logger: ^2.0.2+1
+  
+  # Chart library for statistics
+  fl_chart: ^0.69.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

@@ -29,7 +29,7 @@ class UserModel {
     this.isVerified = false,
     this.isPhoneVerified = false,
     this.isSubscribed = false, // Default tidak berlangganan
-    this.subscriptionType, 
+    this.subscriptionType,
     this.savedAddresses,
     required this.createdAt,
     this.lastLogin,
@@ -37,8 +37,12 @@ class UserModel {
 
   // Create from JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    // Ensure id is a string (convert from int if needed)
+    final dynamic rawId = json['id'];
+    final String id = rawId != null ? rawId.toString() : '';
+
     return UserModel(
-      id: json['id'] ?? '',
+      id: id,
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'],
@@ -47,20 +51,29 @@ class UserModel {
       longitude: json['longitude']?.toDouble(),
       // Handle both profilePicUrl and profile_picture formats
       profilePicUrl: json['profilePicUrl'] ?? json['profile_picture'],
-      points: json['points'] ?? 15,
+      points: json['points'] is int
+          ? json['points']
+          : (json['points'] is String
+                ? int.tryParse(json['points']) ?? 15
+                : 15),
       isVerified: json['isVerified'] ?? false,
       isPhoneVerified: json['isPhoneVerified'] ?? false,
-      isSubscribed: json['isSubscribed'] ?? false,
-      subscriptionType: json['subscriptionType'],
-      savedAddresses: json['savedAddresses'] != null 
-          ? List<String>.from(json['savedAddresses']) 
+      isSubscribed:
+          json['isSubscribed'] ?? json['subscription_status'] == 'active',
+      subscriptionType: json['subscriptionType'] ?? json['subscription_status'],
+      savedAddresses: json['savedAddresses'] != null
+          ? List<String>.from(json['savedAddresses'])
           : null,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
-          : DateTime.now(),
-      lastLogin: json['lastLogin'] != null 
-          ? DateTime.parse(json['lastLogin']) 
-          : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : (json['created_at'] != null
+                ? DateTime.parse(json['created_at'])
+                : DateTime.now()),
+      lastLogin: json['lastLogin'] != null
+          ? DateTime.parse(json['lastLogin'])
+          : (json['updated_at'] != null
+                ? DateTime.parse(json['updated_at'])
+                : null),
     );
   }
 

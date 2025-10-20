@@ -5,10 +5,7 @@ import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 class TanggapanKeluhanPage extends StatefulWidget {
   final Map<String, dynamic> keluhanData;
 
-  const TanggapanKeluhanPage({
-    super.key,
-    required this.keluhanData,
-  });
+  const TanggapanKeluhanPage({super.key, required this.keluhanData});
 
   @override
   State<TanggapanKeluhanPage> createState() => _TanggapanKeluhanPageState();
@@ -17,7 +14,7 @@ class TanggapanKeluhanPage extends StatefulWidget {
 class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
   final TextEditingController _tanggapanController = TextEditingController();
   bool _isSubmitting = false;
-  
+
   // Status options
   final List<String> _statusOptions = [
     'Menunggu',
@@ -25,14 +22,14 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
     'Selesai',
   ];
   late String _selectedStatus;
-  
+
   @override
   void initState() {
     super.initState();
     _selectedStatus = widget.keluhanData['status'];
-    
+
     // If there's an existing response, populate the field
-    if (widget.keluhanData.containsKey('balasan') && 
+    if (widget.keluhanData.containsKey('balasan') &&
         widget.keluhanData['balasan'] != null) {
       _tanggapanController.text = widget.keluhanData['balasan'];
     }
@@ -50,28 +47,31 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       _showEmptyResponseAlert();
       return;
     }
-    
+
     setState(() {
       _isSubmitting = true;
     });
-    
+
     // Simulate API request
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
-      
+
       // Update the keluhan data
       final updatedKeluhan = Map<String, dynamic>.from(widget.keluhanData);
       updatedKeluhan['status'] = _selectedStatus;
-      updatedKeluhan['tanggalBalasan'] = DateTime.now().toString().substring(0, 10);
-      
+      updatedKeluhan['tanggalBalasan'] = DateTime.now().toString().substring(
+        0,
+        10,
+      );
+
       // Only add a response if one was provided
       if (_tanggapanController.text.isNotEmpty) {
         updatedKeluhan['balasan'] = _tanggapanController.text;
       }
-      
+
       // Return to previous screen with the updated keluhan data
       Navigator.pop(context, updatedKeluhan);
-      
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -89,9 +89,7 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       builder: (context) => AlertDialog(
         title: Text(
           'Tanggapan Diperlukan',
-          style: blackTextStyle.copyWith(
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontWeight: semiBold),
         ),
         content: Text(
           'Anda harus memberikan tanggapan sebelum mengubah status menjadi Selesai.',
@@ -100,15 +98,10 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Mengerti',
-              style: TextStyle(color: greenColor),
-            ),
+            child: Text('Mengerti', style: TextStyle(color: greenColor)),
           ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -119,14 +112,14 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
     final screenWidth = MediaQuery.of(context).size.width;
     final horizontalPadding = 24.0;
     final contentWidth = screenWidth - (horizontalPadding * 2);
-    
+
     // Golden ratio for vertical spacing
     final phi = 1.618;
     final baseSpacing = 16.0;
     final smallSpacing = baseSpacing / phi; // ~9.9
     final mediumSpacing = baseSpacing; // 16
     final largeSpacing = baseSpacing * phi; // ~25.9
-    
+
     return Scaffold(
       backgroundColor: uicolor,
       appBar: const CustomAppBar(
@@ -174,16 +167,22 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(widget.keluhanData['status']).withOpacity(0.1),
+                            color: _getStatusColor(
+                              widget.keluhanData['status'],
+                            ).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _getStatusColor(widget.keluhanData['status']).withOpacity(0.3),
+                              color: _getStatusColor(
+                                widget.keluhanData['status'],
+                              ).withOpacity(0.3),
                             ),
                           ),
                           child: Text(
                             widget.keluhanData['status'],
                             style: TextStyle(
-                              color: _getStatusColor(widget.keluhanData['status']),
+                              color: _getStatusColor(
+                                widget.keluhanData['status'],
+                              ),
                               fontSize: 12,
                               fontWeight: semiBold,
                             ),
@@ -191,9 +190,9 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                         ),
                       ],
                     ),
-                    
+
                     SizedBox(height: smallSpacing),
-                    
+
                     // Judul (title)
                     Text(
                       widget.keluhanData['judul'],
@@ -202,9 +201,9 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                         fontWeight: semiBold,
                       ),
                     ),
-                    
+
                     SizedBox(height: smallSpacing),
-                    
+
                     // Kategori and prioritas chips in a golden ratio row
                     Row(
                       children: [
@@ -229,15 +228,13 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                         ),
                       ],
                     ),
-                    
+
                     SizedBox(height: mediumSpacing),
-                    
+
                     // Deskripsi (description)
                     Text(
                       'Deskripsi:',
-                      style: blackTextStyle.copyWith(
-                        fontWeight: semiBold,
-                      ),
+                      style: blackTextStyle.copyWith(fontWeight: semiBold),
                     ),
                     SizedBox(height: smallSpacing / 2),
                     Text(
@@ -250,9 +247,9 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                   ],
                 ),
               ),
-              
+
               SizedBox(height: largeSpacing),
-              
+
               // Update status section
               Text(
                 'Perbarui Status',
@@ -263,9 +260,9 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
               ),
               SizedBox(height: smallSpacing),
               _buildStatusSelector(),
-              
+
               SizedBox(height: largeSpacing),
-              
+
               // Tanggapan field
               Text(
                 'Tanggapan Admin',
@@ -276,12 +273,12 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
               ),
               SizedBox(height: smallSpacing),
               _buildResponseField(),
-              
+
               // Add extra space at bottom for the fixed button
               SizedBox(height: largeSpacing * 3),
             ],
           ),
-          
+
           // Fixed submit button at bottom
           Positioned(
             bottom: 0,
@@ -339,7 +336,7 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       ),
     );
   }
-  
+
   Widget _buildInfoChip(String text, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -368,7 +365,7 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       ),
     );
   }
-  
+
   Widget _buildStatusSelector() {
     return Container(
       decoration: BoxDecoration(
@@ -387,17 +384,17 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
             ),
           ),
           const Divider(height: 1),
-          
+
           // Status options using golden ratio segmentation
           Row(
             children: _statusOptions.map((status) {
               final isSelected = _selectedStatus == status;
               final color = _getStatusColor(status);
-              
+
               // Golden ratio for equal division
               final width = MediaQuery.of(context).size.width;
               final buttonWidth = (width - 48) / 3; // Equal division
-              
+
               return SizedBox(
                 width: buttonWidth,
                 child: GestureDetector(
@@ -409,7 +406,9 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+                      color: isSelected
+                          ? color.withOpacity(0.1)
+                          : Colors.transparent,
                       border: Border(
                         top: BorderSide(
                           color: isSelected ? color : Colors.transparent,
@@ -445,7 +444,7 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       ),
     );
   }
-  
+
   Widget _buildResponseField() {
     return Container(
       decoration: BoxDecoration(
@@ -479,7 +478,7 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
         return greyColor;
     }
   }
-  
+
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'selesai':
@@ -506,28 +505,5 @@ class _TanggapanKeluhanPageState extends State<TanggapanKeluhanPage> {
       default:
         return greyColor;
     }
-  }
-  
-  Widget _buildInfoItem(String label, String value) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: greyTextStyle.copyWith(
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: blackTextStyle.copyWith(
-              fontWeight: medium,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

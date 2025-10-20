@@ -13,7 +13,8 @@ class SignUpSubscriptionPage extends StatefulWidget {
   State<SignUpSubscriptionPage> createState() => _SignUpSubscriptionPageState();
 }
 
-class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with AppDialogMixin {
+class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
+    with AppDialogMixin {
   final SubscriptionService _subscriptionService = SubscriptionService();
   List<SubscriptionPlan> _plans = [];
 
@@ -54,7 +55,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
         color: whiteColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -68,41 +69,29 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
             width: 120,
             height: 40,
             margin: const EdgeInsets.only(bottom: 20),
-            child: Image.asset(
-              'assets/img_gerobakss.png',
-              fit: BoxFit.contain,
-            ),
+            child: Image.asset('assets/img_gerobakss.png', fit: BoxFit.contain),
           ),
           Text(
             'Selamat Datang! 🎉',
-            style: blackTextStyle.copyWith(
-              fontSize: 24,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 24, fontWeight: semiBold),
           ),
           const SizedBox(height: 8),
           Text(
             'Pilih paket langganan untuk mendapatkan pengalaman terbaik dengan Gerobaks',
-            style: greyTextStyle.copyWith(
-              fontSize: 14,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: greenColor.withOpacity(0.1),
+              color: greenColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: greenColor.withOpacity(0.3)),
+              border: Border.all(color: greenColor.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: greenColor,
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: greenColor, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -129,12 +118,14 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
         color: whiteColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: plan.isPopular ? greenColor : Colors.grey.withOpacity(0.3),
+          color: plan.isPopular
+              ? greenColor
+              : Colors.grey.withValues(alpha: 0.3),
           width: plan.isPopular ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -149,7 +140,10 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
               top: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: greenColor,
                   borderRadius: const BorderRadius.only(
@@ -166,7 +160,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
                 ),
               ),
             ),
-          
+
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -178,7 +172,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getPlanColor(plan.type).withOpacity(0.1),
+                        color: _getPlanColor(plan.type).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -200,18 +194,16 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
                           ),
                           Text(
                             plan.description,
-                            style: greyTextStyle.copyWith(
-                              fontSize: 12,
-                            ),
+                            style: greyTextStyle.copyWith(fontSize: 12),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Price
                 Row(
                   children: [
@@ -225,40 +217,34 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
                     ),
                     Text(
                       '/${plan.durationText}',
-                      style: greyTextStyle.copyWith(
-                        fontSize: 14,
-                      ),
+                      style: greyTextStyle.copyWith(fontSize: 14),
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Features
-                ...plan.features.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: greenColor,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: blackTextStyle.copyWith(
-                            fontSize: 13,
+                ...plan.features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: greenColor, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: blackTextStyle.copyWith(fontSize: 13),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
-                
+                ),
+
                 const SizedBox(height: 20),
-                
+
                 // Subscribe button
                 SizedBox(
                   width: double.infinity,
@@ -297,7 +283,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
         color: whiteColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -2),
@@ -313,7 +299,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
               onPressed: _skipSubscription,
               style: OutlinedButton.styleFrom(
                 foregroundColor: greyColor,
-                side: BorderSide(color: greyColor.withOpacity(0.3)),
+                side: BorderSide(color: greyColor.withValues(alpha: 0.3)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -321,19 +307,14 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
               ),
               child: Text(
                 'Nanti Saja',
-                style: greyTextStyle.copyWith(
-                  fontSize: 16,
-                  fontWeight: medium,
-                ),
+                style: greyTextStyle.copyWith(fontSize: 16, fontWeight: medium),
               ),
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'Anda bisa berlangganan kapan saja melalui menu Profile',
-            style: greyTextStyle.copyWith(
-              fontSize: 12,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],
@@ -367,10 +348,8 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PaymentGatewayPage(
-          plan: plan,
-          isFromSignup: true,
-        ),
+        builder: (context) =>
+            PaymentGatewayPage(plan: plan, isFromSignup: true),
       ),
     ).then((result) {
       if (result == true) {
@@ -386,21 +365,27 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
 
   Future<void> _completeSignup({required bool hasSubscription}) async {
     // Get all user data passed from previous pages
-    final Map<String, dynamic> userData = 
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
-    
+    final Map<String, dynamic> userData =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+        {};
+
     try {
       // Get user service and current user
       final userService = await UserService.getInstance();
       await userService.init();
-      
+      if (!mounted) return;
+
       // The user should already be registered from batch 4
       final user = await userService.getCurrentUser();
-      
+      if (!mounted) return;
+
       if (user == null) {
-        print("WARNING: User not found in _completeSignup, cannot update subscription status");
-        
+        debugPrint(
+          'WARNING: User not found in _completeSignup, cannot update subscription status',
+        );
+
         // Navigate directly to sign-in with the credentials
+        if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/sign-in',
@@ -412,14 +397,17 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
         );
         return;
       }
-      
+
       // User exists, update subscription status (in a real app)
-      print("User found: ${user.name}, setting subscription status: $hasSubscription");
-      
+      debugPrint(
+        'User found: ${user.name}, setting subscription status: $hasSubscription',
+      );
+
       // In a real app, you would store this status to the user's account
       // For now we'll just navigate to the success page
-      
+
       // Navigate to sign-up-success page to show success message
+      if (!mounted) return;
       Navigator.pushNamed(
         context,
         '/sign-up-success',
@@ -430,12 +418,13 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage> with Ap
         },
       );
     } catch (e) {
-      print("Error in _completeSignup: $e");
-      
+      debugPrint('Error in _completeSignup: $e');
+
       // Show error dialog
       showAppErrorDialog(
         title: 'Gagal Melanjutkan',
-        message: 'Terjadi kesalahan saat memproses pendaftaran: ${e.toString()}',
+        message:
+            'Terjadi kesalahan saat memproses pendaftaran: ${e.toString()}',
         buttonText: 'Coba Lagi',
       );
     }

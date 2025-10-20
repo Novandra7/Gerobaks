@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -11,14 +13,14 @@ android {
     //  ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
         // Aktifkan desugaring untuk mendukung library flutter_local_notifications
         isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -30,6 +32,16 @@ android {
         targetSdkVersion(flutter.targetSdkVersion)
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Provide Google Maps API key to the manifest via placeholder.
+        // Reads from local.properties (MAPS_API_KEY=...), falls back to env var, then empty.
+    val props = Properties()
+        val lpFile = File(rootDir, "local.properties")
+        if (lpFile.exists()) {
+            lpFile.inputStream().use { props.load(it) }
+        }
+        val mapsApiKey = (props.getProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: "")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {

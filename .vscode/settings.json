@@ -16,6 +16,13 @@
     "debug.console.closeOnEnd": false,
     "debug.showBreakpointsInOverviewRuler": true,
     "debug.toolBarLocation": "docked",
+    "dart.flutterRunAdditionalArgs": [
+        "--no-enable-impeller",
+        "--verbose"
+    ],
+    "dart.vmAdditionalArgs": [
+        "--enable-service-port-fallback"
+    ],
     "[dart]": {
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
