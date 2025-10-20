@@ -10,6 +10,7 @@ class ChatAudioService {
   final Record _recorder = Record();
   bool _isRecording = false;
   String? _currentRecordingPath;
+  DateTime? _recordingStartTime;
 
   // Platform information for debugging
   final Map<String, String> _platformInfo = {
@@ -87,6 +88,7 @@ class ChatAudioService {
       final success = await _recorder.start();
       _isRecording = success;
 
+<<<<<<< HEAD
       if (success) {
         debugPrint('Recording started at: $_currentRecordingPath');
       } else {
@@ -94,6 +96,12 @@ class ChatAudioService {
       }
 
       return success;
+=======
+      _isRecording = true;
+      _recordingStartTime = DateTime.now();
+      debugPrint('Recording started at: $_currentRecordingPath');
+      return true;
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
     } catch (e) {
       debugPrint('Error starting recording: $e');
       _isRecording = false;
@@ -112,9 +120,14 @@ class ChatAudioService {
     try {
       final recordingPath = await _recorder.stop();
       _isRecording = false;
+<<<<<<< HEAD
 
       // Use the path from the recorder if available, otherwise use our stored path
       final finalPath = recordingPath ?? _currentRecordingPath;
+=======
+      _recordingStartTime = null;
+      final recordingPath = _currentRecordingPath;
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
       _currentRecordingPath = null;
 
       debugPrint('Recording stopped, saved at: $finalPath');
@@ -148,6 +161,7 @@ class ChatAudioService {
       debugPrint('Error canceling recording: $e');
     } finally {
       _isRecording = false;
+      _recordingStartTime = null;
       _currentRecordingPath = null;
     }
   }
@@ -157,6 +171,7 @@ class ChatAudioService {
 
   // Get current recording duration in seconds - always returns 0 with our simplified implementation
   Future<int> getRecordingDuration() async {
+<<<<<<< HEAD
     // With our simplified Record implementation, we can't get the amplitude
     // So we'll just return a default value
     return _isRecording ? 1 : 0;
@@ -166,6 +181,18 @@ class ChatAudioService {
   // Always returns a default value with our simplified implementation
   Future<RecordingAmplitude> getAmplitude() async {
     return RecordingAmplitude(current: 0.0, max: 0.0);
+=======
+    if (!_isRecording || _recordingStartTime == null) return 0;
+
+    try {
+      final now = DateTime.now();
+      final duration = now.difference(_recordingStartTime!);
+      return duration.inSeconds;
+    } catch (e) {
+      debugPrint('Error getting recording duration: $e');
+      return 0;
+    }
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
   }
 
   // Dispose resources
@@ -175,6 +202,7 @@ class ChatAudioService {
     }
     _recorder.dispose();
     _isRecording = false;
+    _recordingStartTime = null;
     _currentRecordingPath = null;
   }
 }

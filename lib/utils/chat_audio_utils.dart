@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart'
@@ -310,3 +311,6 @@ class VoiceMessageInfo {
     return 'VoiceMessageInfo(file: $fileName, size: $formattedFileSize, created: $createdAt)';
   }
 }
+=======
+
+>>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575

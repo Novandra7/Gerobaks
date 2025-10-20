@@ -112,7 +112,9 @@
 			"options": {
 				"cwd": "${workspaceFolder}/backend"
 			},
-			"presentation": {"reveal": "always"}
+			"presentation": {
+				"reveal": "always"
+			}
 		},
 		{
 			"label": "Backend: Fresh Seed",
@@ -123,8 +125,25 @@
 				"migrate:fresh",
 				"--seed"
 			],
-			"options": {"cwd": "${workspaceFolder}/backend"},
-			"presentation": {"reveal": "always"}
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"reveal": "always"
+			}
+		},
+		{
+			"label": "Laravel Server - SQLite",
+			"type": "shell",
+			"command": "php",
+			"args": [
+				"-S",
+				"localhost:8001",
+				"-t",
+				"backend/public"
+			],
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }
