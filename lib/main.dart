@@ -13,6 +13,7 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_success_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
+import 'package:bank_sha/ui/pages/end_user/schedule/weekly_schedule_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
@@ -209,6 +210,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/tambah-jadwal': (context) => const TambahJadwalPage(),
           '/user-add-schedule': (context) => const CreateSchedulePage(),
           '/add-schedule': (context) => const AddSchedulePage(),
+          '/weekly-schedule': (context) => const WeeklySchedulePage(),
           '/jadwal': (context) => const UserSchedulesPageNew(),
           '/tracking': (context) => const TrackingPage(),
           '/wilayah': (context) => const WilayahPage(),

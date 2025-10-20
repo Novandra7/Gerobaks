@@ -15,13 +15,26 @@ class UserDataMock {
       'created_at': '2024-01-15',
     },
     {
+      'id': 'user_003',
+      'email': 'ajiali@gmail.com',
+      'password': '12345678',
+      'name': 'Aji Ali',
+      'role': 'end_user',
+      'profile_picture': 'assets/img_friend1.png',
+      'phone': '081234567890',
+      'address': 'Jl. Sambutan No. 1, Jakarta',
+      'points': 50, // Starting points
+      'subscription_status': 'active',
+      'created_at': '2024-01-15',
+    },
+    {
       'id': 'user_002',
       'email': 'sansan@gmail.com',
       'password': 'password456',
       'name': 'Jane San',
       'role': 'end_user',
       'profile_picture': 'assets/img_friend2.png',
-      'phone': '087654321098',      
+      'phone': '087654321098',
       'address': 'Jl. Sudirman No. 2, Bandung',
       'points': 125, // Starting points
       'subscription_status': 'active',
@@ -30,7 +43,7 @@ class UserDataMock {
     {
       'id': 'user_003',
       'email': 'wahyuh@gmail.com',
-      'password': 'password789',
+      'password': '12345678',
       'name': 'Lionel Wahyu',
       'role': 'end_user',
       'profile_picture': 'assets/img_friend3.png',
@@ -46,8 +59,8 @@ class UserDataMock {
   static final List<Map<String, dynamic>> mitras = [
     {
       'id': 'mitra_001',
-      'email': 'driver.jakarta@gerobaks.com',
-      'password': 'mitra123',
+      'email': 'driver@gerobaks.com',
+      'password': '12345678',
       'name': 'Ahmad Kurniawan',
       'role': 'mitra',
       'profile_picture': 'assets/img_friend4.png',
@@ -141,14 +154,14 @@ class UserDataMock {
       if (getUserByEmail(userData['email']) != null) {
         return false; // Email already exists
       }
-      
+
       // Add role and ID
       userData['role'] = 'end_user';
       userData['id'] = 'user_${DateTime.now().millisecondsSinceEpoch}';
       userData['points'] = 0;
       userData['subscription_status'] = 'inactive';
       userData['created_at'] = DateTime.now().toString().split(' ')[0];
-      
+
       endUsers.add(userData);
       return true;
     } catch (e) {

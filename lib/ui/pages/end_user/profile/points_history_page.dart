@@ -28,12 +28,12 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
     try {
       _userService = await UserService.getInstance();
       await _userService.init();
-      
+
       final user = await _userService.getCurrentUser();
-      
+
       // Simulate loading point history
       await Future.delayed(const Duration(milliseconds: 800));
-      
+
       // Mock points history data
       // In a real app, this would come from an API or local database
       final List<Map<String, dynamic>> mockHistory = [
@@ -66,7 +66,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
           'date': DateTime.now().subtract(const Duration(days: 1)),
         },
       ];
-      
+
       if (mounted) {
         setState(() {
           _user = user;
@@ -83,7 +83,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
       }
     }
   }
-  
+
   // Skeleton loading for points history
   Widget _buildSkeletonLoading() {
     return ListView(
@@ -92,11 +92,11 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
         // Points summary skeleton
         SkeletonItems.card(height: 100, borderRadius: 16),
         const SizedBox(height: 32),
-        
+
         // History title skeleton
         SkeletonItems.text(width: 150, height: 24),
         const SizedBox(height: 16),
-        
+
         // History items skeleton
         for (int i = 0; i < 5; i++) ...[
           SkeletonItems.listItem(),
@@ -110,9 +110,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: uicolor,
-      appBar: const CustomAppHeader(
-        title: 'Riwayat Poin',
-      ),
+      appBar: const CustomAppBar(title: 'Riwayat Poin', showBackButton: true),
       body: _isLoading
           ? _buildSkeletonLoading()
           : RefreshIndicator(
@@ -138,9 +136,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                       children: [
                         Text(
                           'Total Poin Anda',
-                          style: blackTextStyle.copyWith(
-                            fontWeight: medium,
-                          ),
+                          style: blackTextStyle.copyWith(fontWeight: medium),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -164,9 +160,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // History title
                   Text(
                     'Riwayat Transaksi',
@@ -175,9 +171,9 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                       fontWeight: semiBold,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // History items
                   _pointsHistory.isEmpty
                       ? Center(
@@ -204,16 +200,14 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                       : Column(
                           children: _pointsHistory.map((item) {
                             final bool isEarned = item['type'] == 'earned';
-                            
+
                             return Container(
                               margin: const EdgeInsets.only(bottom: 16),
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: whiteColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                ),
+                                border: Border.all(color: Colors.grey.shade200),
                               ),
                               child: Row(
                                 children: [
@@ -228,17 +222,20 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                      isEarned ? Icons.add_circle : Icons.remove_circle,
+                                      isEarned
+                                          ? Icons.add_circle
+                                          : Icons.remove_circle,
                                       color: isEarned ? greenColor : Colors.red,
                                     ),
                                   ),
-                                  
+
                                   const SizedBox(width: 16),
-                                  
+
                                   // Transaction details
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item['description'],
@@ -256,7 +253,7 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
                                       ],
                                     ),
                                   ),
-                                  
+
                                   // Amount
                                   Text(
                                     '${isEarned ? '+' : '-'}${item['amount']}',
@@ -279,13 +276,23 @@ class _PointsHistoryPageState extends State<PointsHistoryPage> {
             ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
     final months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
-    
+
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }
