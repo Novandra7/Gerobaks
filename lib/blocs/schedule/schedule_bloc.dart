@@ -220,13 +220,12 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     try {
       emit(const ScheduleUpdating());
 
-      // Update schedule status to 'accepted'
-      final schedule = await _scheduleService.updateScheduleWithWasteItems(
-        scheduleId: event.scheduleId,
-        status: 'accepted',
-      );
+      // Call backend API to accept schedule
+      await _scheduleService.acceptSchedule(event.scheduleId);
 
-      emit(ScheduleUpdated(schedule));
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
     } catch (e) {
       emit(ScheduleUpdateFailed(e.toString()));
     }
@@ -240,13 +239,12 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     try {
       emit(const ScheduleUpdating());
 
-      // Update schedule status to 'in_progress'
-      final schedule = await _scheduleService.updateScheduleWithWasteItems(
-        scheduleId: event.scheduleId,
-        status: 'in_progress',
-      );
+      // Call backend API to start schedule
+      await _scheduleService.startSchedule(event.scheduleId);
 
-      emit(ScheduleUpdated(schedule));
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
     } catch (e) {
       emit(ScheduleUpdateFailed(e.toString()));
     }
@@ -260,16 +258,16 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     try {
       emit(const ScheduleUpdating());
 
-      // Update schedule status to 'completed'
-      // Optionally include actual weight and notes
-      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+      // Call backend API to complete schedule with actual weight and notes
+      await _scheduleService.completeSchedule(
         scheduleId: event.scheduleId,
-        status: 'completed',
+        actualWeight: event.actualWeight,
         notes: event.notes,
-        // If actualWeight is provided, you might want to add it to the model
       );
 
-      emit(ScheduleUpdated(schedule));
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
     } catch (e) {
       emit(ScheduleUpdateFailed(e.toString()));
     }
@@ -283,14 +281,15 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     try {
       emit(const ScheduleUpdating());
 
-      // Update schedule status to 'cancelled'
-      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+      // Call backend API to cancel schedule with reason
+      await _scheduleService.cancelScheduleWithReason(
         scheduleId: event.scheduleId,
-        status: 'cancelled',
-        notes: event.reason,
+        reason: event.reason ?? 'Cancelled by user',
       );
 
-      emit(ScheduleUpdated(schedule));
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
     } catch (e) {
       emit(ScheduleUpdateFailed(e.toString()));
     }
