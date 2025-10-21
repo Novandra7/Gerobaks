@@ -25,6 +25,13 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     on<ScheduleUpdateWasteItem>(_onUpdateWasteItem);
     on<ScheduleClearWasteItems>(_onClearWasteItems);
     on<ScheduleResetForm>(_onResetForm);
+    
+    // Mitra Operations
+    on<ScheduleFetchMitra>(_onScheduleFetchMitra);
+    on<ScheduleAccept>(_onScheduleAccept);
+    on<ScheduleStart>(_onScheduleStart);
+    on<ScheduleComplete>(_onScheduleComplete);
+    on<ScheduleCancel>(_onScheduleCancel);
   }
 
   // Fetch schedules
@@ -178,4 +185,114 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
 
   // Getter for current form state
   ScheduleFormState get currentFormState => _currentFormState;
+
+  // ============================================================================
+  // MITRA-SPECIFIC HANDLERS
+  // ============================================================================
+
+  // Fetch schedules for Mitra
+  Future<void> _onScheduleFetchMitra(
+    ScheduleFetchMitra event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleLoading());
+
+      // Fetch schedules assigned to this mitra
+      final schedules = await _scheduleService.refreshSchedules(
+        page: event.page,
+        perPage: event.perPage,
+        status: event.status,
+        // Additional filtering by date if provided
+      );
+
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleFailed(e.toString()));
+    }
+  }
+
+  // Mitra accepts a schedule
+  Future<void> _onScheduleAccept(
+    ScheduleAccept event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Update schedule status to 'accepted'
+      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+        scheduleId: event.scheduleId,
+        status: 'accepted',
+      );
+
+      emit(ScheduleUpdated(schedule));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra starts the pickup
+  Future<void> _onScheduleStart(
+    ScheduleStart event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Update schedule status to 'in_progress'
+      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+        scheduleId: event.scheduleId,
+        status: 'in_progress',
+      );
+
+      emit(ScheduleUpdated(schedule));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra completes the pickup
+  Future<void> _onScheduleComplete(
+    ScheduleComplete event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Update schedule status to 'completed'
+      // Optionally include actual weight and notes
+      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+        scheduleId: event.scheduleId,
+        status: 'completed',
+        notes: event.notes,
+        // If actualWeight is provided, you might want to add it to the model
+      );
+
+      emit(ScheduleUpdated(schedule));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra cancels/rejects a schedule
+  Future<void> _onScheduleCancel(
+    ScheduleCancel event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Update schedule status to 'cancelled'
+      final schedule = await _scheduleService.updateScheduleWithWasteItems(
+        scheduleId: event.scheduleId,
+        status: 'cancelled',
+        notes: event.reason,
+      );
+
+      emit(ScheduleUpdated(schedule));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
 }

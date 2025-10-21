@@ -161,3 +161,75 @@ class ScheduleClearWasteItems extends ScheduleEvent {
 class ScheduleResetForm extends ScheduleEvent {
   const ScheduleResetForm();
 }
+
+// ============================================================================
+// MITRA-SPECIFIC EVENTS
+// ============================================================================
+
+/// Fetch schedules for Mitra (assigned schedules)
+class ScheduleFetchMitra extends ScheduleEvent {
+  final String? status; // pending, accepted, in_progress, completed
+  final DateTime? date;
+  final int page;
+  final int perPage;
+
+  const ScheduleFetchMitra({
+    this.status,
+    this.date,
+    this.page = 1,
+    this.perPage = 50,
+  });
+
+  @override
+  List<Object?> get props => [status, date, page, perPage];
+}
+
+/// Mitra accepts a pending schedule
+class ScheduleAccept extends ScheduleEvent {
+  final String scheduleId;
+
+  const ScheduleAccept(this.scheduleId);
+
+  @override
+  List<Object?> get props => [scheduleId];
+}
+
+/// Mitra starts the pickup (changes status to in_progress)
+class ScheduleStart extends ScheduleEvent {
+  final String scheduleId;
+
+  const ScheduleStart(this.scheduleId);
+
+  @override
+  List<Object?> get props => [scheduleId];
+}
+
+/// Mitra completes the pickup
+class ScheduleComplete extends ScheduleEvent {
+  final String scheduleId;
+  final double? actualWeight; // Actual weight collected (optional)
+  final String? notes; // Completion notes (optional)
+
+  const ScheduleComplete({
+    required this.scheduleId,
+    this.actualWeight,
+    this.notes,
+  });
+
+  @override
+  List<Object?> get props => [scheduleId, actualWeight, notes];
+}
+
+/// Mitra cancels/rejects a schedule
+class ScheduleCancel extends ScheduleEvent {
+  final String scheduleId;
+  final String? reason;
+
+  const ScheduleCancel({
+    required this.scheduleId,
+    this.reason,
+  });
+
+  @override
+  List<Object?> get props => [scheduleId, reason];
+}
