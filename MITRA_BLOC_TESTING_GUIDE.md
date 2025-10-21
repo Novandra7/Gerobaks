@@ -3,18 +3,22 @@
 ## Quick Test Steps
 
 ### 1️⃣ Login as Mitra
+
 ```
 Email: mitra@gerobaks.com (atau email mitra lainnya)
 Password: (sesuai database)
 ```
 
 ### 2️⃣ Navigate to Jadwal Tab
+
 Bottom navigation → Tap "Jadwal" icon (calendar)
 
 ### 3️⃣ Test Each Tab
 
 #### Tab "Menunggu" (Pending)
+
 **Expected**:
+
 - ✅ See schedules with status: pending
 - ✅ Each card shows:
   - Date & time
@@ -25,7 +29,9 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
   - Buttons: [Terima Jadwal] [Detail]
 
 **Actions to Test**:
+
 1. Tap "Terima Jadwal"
+
    - ✅ Confirmation dialog appears
    - ✅ After confirm: Success snackbar
    - ✅ Schedule disappears from Menunggu
@@ -39,24 +45,30 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
    - ✅ Action buttons available
 
 #### Tab "Diterima" (Accepted)
+
 **Expected**:
+
 - ✅ See schedules with status: accepted
 - ✅ Status badge: "Diterima" (blue)
 - ✅ Button: [Mulai Pengambilan]
 
 **Actions to Test**:
+
 1. Tap "Mulai Pengambilan"
    - ✅ Confirmation dialog appears
    - ✅ After confirm: Success snackbar
    - ✅ Schedule moves to "Proses" tab
 
 #### Tab "Proses" (In Progress)
+
 **Expected**:
+
 - ✅ See schedules with status: in_progress
 - ✅ Status badge: "Sedang Diproses" (green)
 - ✅ Button: [Selesaikan]
 
 **Actions to Test**:
+
 1. Tap "Selesaikan"
    - ✅ Dialog with inputs appears:
      - Weight field
@@ -67,7 +79,9 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
    - ✅ Schedule moves to "Selesai" tab
 
 #### Tab "Selesai" (Completed)
+
 **Expected**:
+
 - ✅ See schedules with status: completed
 - ✅ Status badge: "Selesai" (green)
 - ✅ No action buttons (view only)
@@ -79,6 +93,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 **Navigate**: Tap any schedule card
 
 **Expected Display**:
+
 - ✅ Status card (colored by status)
 - ✅ Date & time
 - ✅ "Sampah yang Dijemput" section:
@@ -94,11 +109,14 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 - ✅ Action buttons (based on status)
 
 **Actions to Test**:
+
 1. Tap "Navigasi ke Lokasi"
+
    - ✅ Opens Google Maps
    - ✅ Shows directions to location
 
 2. Tap action button (varies by status)
+
    - Pending: [Terima Jadwal] [Tolak Jadwal]
    - Accepted: [Mulai Pengambilan]
    - In Progress: [Selesaikan]
@@ -112,6 +130,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ### 5️⃣ Test Pull-to-Refresh
 
 **On List Page**:
+
 1. Pull down on schedule list
    - ✅ Refresh indicator appears
    - ✅ List reloads
@@ -122,6 +141,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ### 6️⃣ Test Error Scenarios
 
 #### No Internet
+
 1. Turn off wifi/data
 2. Pull to refresh
    - ✅ Error message shows
@@ -129,6 +149,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
    - ✅ Retry works when back online
 
 #### Empty State
+
 1. Switch to tab with no schedules
    - ✅ Empty state icon shows
    - ✅ Message: "Tidak ada jadwal..."
@@ -139,12 +160,14 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ### 7️⃣ Test Multiple Waste Items
 
 **Verify on Card**:
+
 - ✅ All waste types visible
 - ✅ Each shows: emoji + name + weight
 - ✅ Total weight = sum of all items
 - ✅ Units displayed correctly (kg)
 
 **Verify on Detail**:
+
 - ✅ Detailed list view
 - ✅ Each item has icon + category
 - ✅ Total section prominent
@@ -155,14 +178,18 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ## 🐛 Known Issues to Watch
 
 ### If Schedules Not Loading
+
 **Check**:
+
 1. ✅ BLoC is provided in main.dart
 2. ✅ API endpoint accessible
 3. ✅ Token valid (not expired)
 4. ✅ User role = "mitra"
 
 ### If Action Buttons Not Working
+
 **Check**:
+
 1. ✅ Event dispatched (add breakpoint)
 2. ✅ BLoC handler executes
 3. ✅ API call succeeds
@@ -170,14 +197,18 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 5. ✅ BlocListener catching state
 
 ### If Waste Items Not Showing
+
 **Check**:
+
 1. ✅ Schedule has wasteItems array
 2. ✅ JSON parsing works
-3. ✅ _parseWasteItems() returns data
+3. ✅ \_parseWasteItems() returns data
 4. ✅ WasteItem model matches API
 
 ### If Navigation Broken
+
 **Check**:
+
 1. ✅ Route registered in MaterialApp
 2. ✅ scheduleId passed as argument
 3. ✅ BLoC accessible in detail page
@@ -187,6 +218,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ## ✅ Success Criteria
 
 ### All Tests Pass If:
+
 1. ✅ All 4 tabs display correctly
 2. ✅ Accept action works (pending → accepted)
 3. ✅ Start action works (accepted → in_progress)
@@ -208,17 +240,20 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ## 📊 Performance Checklist
 
 ### Load Times
+
 - ✅ List loads in < 2 seconds
 - ✅ Detail loads in < 1 second
 - ✅ Tab switch instant
 - ✅ No lag when scrolling
 
 ### Memory
+
 - ✅ No memory leaks
 - ✅ Images load efficiently
 - ✅ Controllers disposed properly
 
 ### Responsiveness
+
 - ✅ UI updates immediately
 - ✅ Loading indicators appear
 - ✅ Buttons respond on tap
@@ -229,6 +264,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ## 🎯 Test Coverage
 
 ### BLoC Layer
+
 - [x] ScheduleFetchMitra event
 - [x] ScheduleAccept event
 - [x] ScheduleStart event
@@ -239,6 +275,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 - [x] Error states handled
 
 ### UI Layer
+
 - [x] MitraScheduleCard renders
 - [x] WasteItemsSummary renders
 - [x] JadwalMitraPageBloc renders
@@ -248,6 +285,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 - [x] All dialogs work
 
 ### Integration
+
 - [x] BLoC ↔ UI connected
 - [x] BLoC ↔ Service connected
 - [x] Navigation works
@@ -258,6 +296,7 @@ Bottom navigation → Tap "Jadwal" icon (calendar)
 ## 🚀 Ready to Ship
 
 **If all tests pass**, the implementation is:
+
 - ✅ Production-ready
 - ✅ Fully functional
 - ✅ Error-handled

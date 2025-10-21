@@ -225,10 +225,7 @@ class ScheduleCancel extends ScheduleEvent {
   final String scheduleId;
   final String? reason;
 
-  const ScheduleCancel({
-    required this.scheduleId,
-    this.reason,
-  });
+  const ScheduleCancel({required this.scheduleId, this.reason});
 
   @override
   List<Object?> get props => [scheduleId, reason];

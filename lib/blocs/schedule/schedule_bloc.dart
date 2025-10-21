@@ -25,7 +25,7 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     on<ScheduleUpdateWasteItem>(_onUpdateWasteItem);
     on<ScheduleClearWasteItems>(_onClearWasteItems);
     on<ScheduleResetForm>(_onResetForm);
-    
+
     // Mitra Operations
     on<ScheduleFetchMitra>(_onScheduleFetchMitra);
     on<ScheduleAccept>(_onScheduleAccept);

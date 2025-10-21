@@ -9,6 +9,7 @@
 ## 📊 ANALYSIS - CURRENT MITRA PAGES
 
 ### Existing Mitra Schedule Pages
+
 ```
 lib/ui/pages/mitra/jadwal/
 ├── jadwal_mitra_page.dart              ← Main schedule list (StatefulWidget)
@@ -19,6 +20,7 @@ lib/ui/pages/mitra/jadwal/
 ```
 
 ### Current Architecture (Without BLoC)
+
 ```
 StatefulWidget
     ↓
@@ -30,6 +32,7 @@ Manual state handling
 ```
 
 **Problems**:
+
 - ❌ No centralized state management
 - ❌ setState() scattered everywhere
 - ❌ Difficult to test
@@ -41,16 +44,20 @@ Manual state handling
 ## 🎯 IMPLEMENTATION PLAN
 
 ### Phase 1: Update Existing BLoC (10 mins)
+
 **Goal**: Add Mitra-specific events to existing ScheduleBloc
 
 **Files to Update**:
+
 1. ✅ `lib/blocs/schedule/schedule_event.dart`
+
    - Add FetchMitraSchedules event
    - Add AcceptSchedule event (mitra accepts schedule)
    - Add StartSchedule event (mitra starts pickup)
    - Add CompleteSchedule event (mitra completes pickup)
 
 2. ✅ `lib/blocs/schedule/schedule_state.dart`
+
    - Add state for Mitra operations
    - Keep existing states (already compatible)
 
@@ -61,10 +68,13 @@ Manual state handling
 ---
 
 ### Phase 2: Create Mitra-Specific Widgets (15 mins)
+
 **Goal**: Reusable components for Mitra schedule views
 
 **New Widgets**:
+
 1. ✅ `lib/ui/widgets/mitra/mitra_schedule_card.dart`
+
    - Display schedule with waste items
    - Show multiple waste types with icons
    - Total weight display
@@ -79,11 +89,13 @@ Manual state handling
 ---
 
 ### Phase 3: Update Mitra Pages with BLoC (30 mins)
+
 **Goal**: Convert existing pages to use BLoC pattern
 
 **Pages to Update**:
 
 1. ✅ `lib/ui/pages/mitra/jadwal/jadwal_mitra_page_bloc.dart` (NEW)
+
    - Convert jadwal_mitra_page.dart to BLoC
    - Use ScheduleBloc for state management
    - Display schedules with waste items
@@ -101,9 +113,11 @@ Manual state handling
 ---
 
 ### Phase 4: Update Navigation (5 mins)
+
 **Goal**: Wire BLoC providers in mitra navigation
 
 **Files to Update**:
+
 1. ✅ `lib/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart`
    - Ensure ScheduleBloc is accessible
    - Update navigation to new BLoC pages
@@ -118,21 +132,21 @@ Manual state handling
 // New events for Mitra
 abstract class ScheduleEvent extends Equatable {
   // ... existing events ...
-  
+
   // Mitra-specific events
   const factory ScheduleEvent.fetchMitraSchedules({
     String? status,  // pending/in_progress/completed
     DateTime? date,
   }) = FetchMitraSchedules;
-  
+
   const factory ScheduleEvent.acceptSchedule({
     required String scheduleId,
   }) = AcceptSchedule;
-  
+
   const factory ScheduleEvent.startSchedule({
     required String scheduleId,
   }) = StartSchedule;
-  
+
   const factory ScheduleEvent.completeSchedule({
     required String scheduleId,
     required double actualWeight,  // Weight collected
@@ -149,7 +163,7 @@ class MitraScheduleCard extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onStart;
   final VoidCallback? onComplete;
-  
+
   // Display:
   - Schedule date/time
   - User name & address
@@ -166,10 +180,10 @@ class MitraScheduleCard extends StatelessWidget {
 class WasteItemsSummary extends StatelessWidget {
   final List<WasteItem> wasteItems;
   final bool showTotal;
-  
+
   // Compact horizontal display:
   - 🟢 Organik: 5kg
-  - 🔵 Plastik: 2kg  
+  - 🔵 Plastik: 2kg
   - 📄 Kertas: 1.5kg
   - Total: 8.5kg (prominent)
 }
@@ -216,32 +230,32 @@ class JadwalMitraPageBloc extends StatelessWidget {
 ```dart
 class JadwalDetailPageBloc extends StatelessWidget {
   final String scheduleId;
-  
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ScheduleBloc, ScheduleState>(
       builder: (context, state) {
         final schedule = _getScheduleById(state, scheduleId);
-        
+
         return Scaffold(
           body: Column(
             children: [
               // User info
               UserInfoCard(schedule.user),
-              
+
               // Location with map
               LocationCard(schedule.location),
-              
+
               // Waste items - SHOW ALL TYPES
               WasteItemsSection(
                 wasteItems: schedule.wasteItems,  // Multiple items!
               ),
-              
+
               // Total weight
               TotalWeightCard(
                 totalWeight: schedule.totalEstimatedWeight,
               ),
-              
+
               // Action buttons based on status
               ActionButtons(
                 status: schedule.status,
@@ -330,6 +344,7 @@ class JadwalDetailPageBloc extends StatelessWidget {
 ## ✅ SUCCESS CRITERIA
 
 ### Functional Requirements
+
 - ✅ Mitra can view all schedules with multiple waste items
 - ✅ Each waste item type visible with icon + weight
 - ✅ Total weight calculated and displayed
@@ -340,6 +355,7 @@ class JadwalDetailPageBloc extends StatelessWidget {
 - ✅ Error handling with proper feedback
 
 ### Technical Requirements
+
 - ✅ BLoC pattern implemented
 - ✅ No setState() in pages
 - ✅ Centralized state management
@@ -353,6 +369,7 @@ class JadwalDetailPageBloc extends StatelessWidget {
 ## 📦 FILES TO CREATE/UPDATE
 
 ### New Files (3)
+
 ```
 1. lib/ui/widgets/mitra/mitra_schedule_card.dart
 2. lib/ui/widgets/mitra/waste_items_summary.dart
@@ -360,6 +377,7 @@ class JadwalDetailPageBloc extends StatelessWidget {
 ```
 
 ### Update Files (4)
+
 ```
 1. lib/blocs/schedule/schedule_event.dart  (add mitra events)
 2. lib/blocs/schedule/schedule_state.dart  (if needed)
@@ -373,14 +391,14 @@ class JadwalDetailPageBloc extends StatelessWidget {
 
 ## ⏱️ TIME ESTIMATE
 
-| Phase | Task | Time |
-|-------|------|------|
-| 1 | Update BLoC (events/states/handlers) | 10 min |
-| 2 | Create mitra widgets | 15 min |
-| 3 | Create/update mitra pages | 30 min |
-| 4 | Update navigation | 5 min |
-| 5 | Testing & fixes | 10 min |
-| **TOTAL** | | **70 min (~1.2 hours)** |
+| Phase     | Task                                 | Time                    |
+| --------- | ------------------------------------ | ----------------------- |
+| 1         | Update BLoC (events/states/handlers) | 10 min                  |
+| 2         | Create mitra widgets                 | 15 min                  |
+| 3         | Create/update mitra pages            | 30 min                  |
+| 4         | Update navigation                    | 5 min                   |
+| 5         | Testing & fixes                      | 10 min                  |
+| **TOTAL** |                                      | **70 min (~1.2 hours)** |
 
 ---
 

@@ -3,7 +3,7 @@ import 'package:bank_sha/blocs/schedule/schedule_event.dart';
 import 'package:bank_sha/blocs/schedule/schedule_state.dart';
 import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/widgets/buttons.dart';
+import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/mitra/mitra_schedule_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -71,12 +71,8 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
 
   void _loadSchedules(String? status) {
     context.read<ScheduleBloc>().add(
-          ScheduleFetchMitra(
-            status: status,
-            page: 1,
-            perPage: 50,
-          ),
-        );
+      ScheduleFetchMitra(status: status, page: 1, perPage: 50),
+    );
   }
 
   void _refreshSchedules() {
@@ -99,9 +95,7 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              context.read<ScheduleBloc>().add(
-                    ScheduleAccept(scheduleId: schedule.id),
-                  );
+              context.read<ScheduleBloc>().add(ScheduleAccept(schedule.id!));
             },
             child: const Text('Terima'),
           ),
@@ -127,9 +121,7 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
           TextButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              context.read<ScheduleBloc>().add(
-                    ScheduleStart(scheduleId: schedule.id),
-                  );
+              context.read<ScheduleBloc>().add(ScheduleStart(schedule.id!));
             },
             child: const Text('Mulai'),
           ),
@@ -179,14 +171,14 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
               Navigator.pop(dialogContext);
               final actualWeight = double.tryParse(weightController.text);
               context.read<ScheduleBloc>().add(
-                    ScheduleComplete(
-                      scheduleId: schedule.id,
-                      actualWeight: actualWeight,
-                      notes: notesController.text.isEmpty
-                          ? null
-                          : notesController.text,
-                    ),
-                  );
+                ScheduleComplete(
+                  scheduleId: schedule.id!,
+                  actualWeight: actualWeight,
+                  notes: notesController.text.isEmpty
+                      ? null
+                      : notesController.text,
+                ),
+              );
             },
             child: const Text('Selesai'),
           ),
@@ -198,8 +190,8 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
   void _onViewDetail(ScheduleModel schedule) {
     Navigator.pushNamed(
       context,
-      '/jadwal-detail',
-      arguments: schedule,
+      '/jadwal-detail-bloc',
+      arguments: schedule.id,
     ).then((_) {
       // Refresh when coming back
       _refreshSchedules();
@@ -216,9 +208,9 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: primaryColor,
+          labelColor: purpleColor,
           unselectedLabelColor: greyColor,
-          indicatorColor: primaryColor,
+          indicatorColor: purpleColor,
           tabs: const [
             Tab(text: 'Menunggu'),
             Tab(text: 'Diterima'),
@@ -267,11 +259,11 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state is ScheduleLoadFailed) {
+    if (state is ScheduleFailed) {
       return _buildErrorView(state.error);
     }
 
-    if (state is ScheduleLoaded) {
+    if (state is ScheduleSuccess) {
       final schedules = state.schedules
           .where((s) => s.status.name == status)
           .toList();
@@ -357,10 +349,7 @@ class _JadwalMitraPageBlocState extends State<JadwalMitraPageBloc>
         children: [
           Icon(icon, size: 80, color: greyColor.withOpacity(0.5)),
           const SizedBox(height: 16),
-          Text(
-            message,
-            style: greyTextStyle.copyWith(fontSize: 14),
-          ),
+          Text(message, style: greyTextStyle.copyWith(fontSize: 14)),
           const SizedBox(height: 24),
           CustomFilledButton(
             title: 'Muat Ulang',

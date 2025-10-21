@@ -54,18 +54,13 @@ class WasteItemsSummary extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            item.getEmoji(),
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text(WasteType.getEmoji(item.wasteType), style: const TextStyle(fontSize: 12)),
           const SizedBox(width: 4),
           Text(
-            '${item.getDisplayName()}: ${_formatWeight(item)}',
-            style: textStyle ??
-                blackTextStyle.copyWith(
-                  fontSize: 11,
-                  fontWeight: medium,
-                ),
+            '${WasteType.getDisplayName(item.wasteType)}: ${_formatWeight(item)}',
+            style:
+                textStyle ??
+                blackTextStyle.copyWith(fontSize: 11, fontWeight: medium),
           ),
         ],
       ),
@@ -78,28 +73,23 @@ class WasteItemsSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.15),
+        color: purpleColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: primaryColor.withOpacity(0.4),
-          width: 1.5,
-        ),
+        border: Border.all(color: purpleColor.withOpacity(0.4), width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.scale, size: 12, color: primaryColor),
+          Icon(Icons.scale, size: 12, color: purpleColor),
           const SizedBox(width: 4),
           Text(
             'Total: ${totalKg.toStringAsFixed(1)} kg',
-            style: textStyle?.copyWith(
-                  fontWeight: bold,
-                  color: primaryColor,
-                ) ??
+            style:
+                textStyle?.copyWith(fontWeight: bold, color: purpleColor) ??
                 blackTextStyle.copyWith(
                   fontSize: 11,
                   fontWeight: bold,
-                  color: primaryColor,
+                  color: purpleColor,
                 ),
           ),
         ],
@@ -236,7 +226,7 @@ class WasteItemsListView extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                item.getEmoji(),
+                WasteType.getEmoji(item.wasteType),
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -247,7 +237,7 @@ class WasteItemsListView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.getDisplayName(),
+                  WasteType.getDisplayName(item.wasteType),
                   style: blackTextStyle.copyWith(
                     fontSize: 13,
                     fontWeight: semiBold,
@@ -262,10 +252,7 @@ class WasteItemsListView extends StatelessWidget {
           ),
           Text(
             _formatWeight(item),
-            style: blackTextStyle.copyWith(
-              fontSize: 13,
-              fontWeight: bold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 13, fontWeight: bold),
           ),
         ],
       ),
@@ -278,7 +265,7 @@ class WasteItemsListView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: primaryColor.withOpacity(0.1),
+        color: purpleColor.withOpacity(0.1),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(8),
           bottomRight: Radius.circular(8),
@@ -289,21 +276,18 @@ class WasteItemsListView extends StatelessWidget {
         children: [
           Text(
             'Total Estimasi',
-            style: blackTextStyle.copyWith(
-              fontSize: 13,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 13, fontWeight: semiBold),
           ),
           Row(
             children: [
-              Icon(Icons.scale, size: 16, color: primaryColor),
+              Icon(Icons.scale, size: 16, color: purpleColor),
               const SizedBox(width: 6),
               Text(
                 '${totalKg.toStringAsFixed(1)} kg',
                 style: blackTextStyle.copyWith(
                   fontSize: 15,
                   fontWeight: bold,
-                  color: primaryColor,
+                  color: purpleColor,
                 ),
               ),
             ],
@@ -364,3 +348,6 @@ class WasteItemsListView extends StatelessWidget {
     }
   }
 }
+
+
+

@@ -8,7 +8,6 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/mitra/waste_items_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -48,7 +47,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
 
       if (mounted) {
         setState(() {
-          _schedule = schedule;
+          _schedule = schedule as ScheduleModel?;
           _isLoadingDetail = false;
         });
       }
@@ -82,37 +81,10 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<ScheduleBloc>().add(
-                    ScheduleAccept(scheduleId: widget.scheduleId),
-                  );
+                ScheduleAccept(widget.scheduleId),
+              );
             },
             child: const Text('Terima'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onStartSchedule() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Mulai Pengambilan'),
-        content: const Text(
-          'Apakah Anda yakin ingin memulai pengambilan sampah?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<ScheduleBloc>().add(
-                    ScheduleStart(scheduleId: widget.scheduleId),
-                  );
-            },
-            child: const Text('Mulai'),
           ),
         ],
       ),
@@ -163,14 +135,14 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
               Navigator.pop(dialogContext);
               final actualWeight = double.tryParse(weightController.text);
               context.read<ScheduleBloc>().add(
-                    ScheduleComplete(
-                      scheduleId: widget.scheduleId,
-                      actualWeight: actualWeight,
-                      notes: notesController.text.isEmpty
-                          ? null
-                          : notesController.text,
-                    ),
-                  );
+                ScheduleComplete(
+                  scheduleId: widget.scheduleId,
+                  actualWeight: actualWeight,
+                  notes: notesController.text.isEmpty
+                      ? null
+                      : notesController.text,
+                ),
+              );
             },
             child: const Text('Selesai'),
           ),
@@ -203,13 +175,13 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<ScheduleBloc>().add(
-                    ScheduleCancel(
-                      scheduleId: widget.scheduleId,
-                      reason: reasonController.text.isEmpty
-                          ? null
-                          : reasonController.text,
-                    ),
-                  );
+                ScheduleCancel(
+                  scheduleId: widget.scheduleId,
+                  reason: reasonController.text.isEmpty
+                      ? null
+                      : reasonController.text,
+                ),
+              );
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Batalkan'),
@@ -245,18 +217,8 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
   List<WasteItem> _parseWasteItems() {
     if (_schedule == null || _schedule!.wasteItems.isEmpty) return [];
 
-    try {
-      return _schedule!.wasteItems
-          .map((item) {
-            if (item is WasteItem) return item;
-            if (item is Map<String, dynamic>) return WasteItem.fromJson(item);
-            return null;
-          })
-          .whereType<WasteItem>()
-          .toList();
-    } catch (e) {
-      return [];
-    }
+    // wasteItems are already WasteItem objects in ScheduleModel
+    return _schedule!.wasteItems;
   }
 
   @override
@@ -291,45 +253,45 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
         child: _isLoadingDetail
             ? const Center(child: CircularProgressIndicator())
             : _schedule == null
-                ? _buildErrorView()
-                : RefreshIndicator(
-                    onRefresh: _loadScheduleDetail,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Status card
-                          _buildStatusCard(),
-                          const SizedBox(height: 24),
+            ? _buildErrorView()
+            : RefreshIndicator(
+                onRefresh: _loadScheduleDetail,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Status card
+                      _buildStatusCard(),
+                      const SizedBox(height: 24),
 
-                          // Waste Items Section
-                          _buildWasteItemsSection(),
-                          const SizedBox(height: 24),
+                      // Waste Items Section
+                      _buildWasteItemsSection(),
+                      const SizedBox(height: 24),
 
-                          // Location section
-                          _buildLocationSection(),
-                          const SizedBox(height: 24),
+                      // Location section
+                      _buildLocationSection(),
+                      const SizedBox(height: 24),
 
-                          // Contact section
-                          if (_schedule!.contactName != null ||
-                              _schedule!.contactPhone != null)
-                            _buildContactSection(),
+                      // Contact section
+                      if (_schedule!.contactName != null ||
+                          _schedule!.contactPhone != null)
+                        _buildContactSection(),
 
-                          // Notes section
-                          if (_schedule!.notes != null &&
-                              _schedule!.notes!.isNotEmpty)
-                            _buildNotesSection(),
+                      // Notes section
+                      if (_schedule!.notes != null &&
+                          _schedule!.notes!.isNotEmpty)
+                        _buildNotesSection(),
 
-                          // Action buttons
-                          if (_schedule!.status != ScheduleStatus.completed &&
-                              _schedule!.status != ScheduleStatus.cancelled)
-                            _buildActionButtons(),
-                        ],
-                      ),
-                    ),
+                      // Action buttons
+                      if (_schedule!.status != ScheduleStatus.completed &&
+                          _schedule!.status != ScheduleStatus.cancelled)
+                        _buildActionButtons(),
+                    ],
                   ),
+                ),
+              ),
       ),
     );
   }
@@ -367,17 +329,11 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Status',
-            style: whiteTextStyle.copyWith(fontSize: 14),
-          ),
+          Text('Status', style: whiteTextStyle.copyWith(fontSize: 14)),
           const SizedBox(height: 4),
           Text(
             _getStatusText(_schedule!.status),
-            style: whiteTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: semiBold,
-            ),
+            style: whiteTextStyle.copyWith(fontSize: 20, fontWeight: semiBold),
           ),
           const SizedBox(height: 16),
           Row(
@@ -395,10 +351,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
             children: [
               Icon(Icons.access_time, color: whiteColor, size: 16),
               const SizedBox(width: 8),
-              Text(
-                _schedule!.timeSlot.format(context),
-                style: whiteTextStyle,
-              ),
+              Text(_schedule!.timeSlot.format(context), style: whiteTextStyle),
             ],
           ),
         ],
@@ -414,10 +367,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
       children: [
         Text(
           'Sampah yang Dijemput',
-          style: blackTextStyle.copyWith(
-            fontSize: 16,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -444,10 +394,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
                     ),
                   ],
                 )
-              : WasteItemsListView(
-                  wasteItems: wasteItems,
-                  showTotal: true,
-                ),
+              : WasteItemsListView(wasteItems: wasteItems, showTotal: true),
         ),
       ],
     );
@@ -459,10 +406,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
       children: [
         Text(
           'Lokasi',
-          style: blackTextStyle.copyWith(
-            fontSize: 16,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -500,8 +444,8 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
                   child: _schedule!.location.latitude.isFinite
                       ? FlutterMap(
                           options: MapOptions(
-                            center: _schedule!.location,
-                            zoom: 15.0,
+                            initialCenter: _schedule!.location,
+                            initialZoom: 15.0,
                           ),
                           children: [
                             TileLayer(
@@ -515,7 +459,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
                                   width: 40,
                                   height: 40,
                                   point: _schedule!.location,
-                                  builder: (ctx) => const Icon(
+                                  child: const Icon(
                                     Icons.location_on,
                                     color: Colors.red,
                                     size: 40,
@@ -557,10 +501,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
       children: [
         Text(
           'Kontak',
-          style: blackTextStyle.copyWith(
-            fontSize: 16,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -611,10 +552,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
       children: [
         Text(
           'Catatan',
-          style: blackTextStyle.copyWith(
-            fontSize: 16,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 16, fontWeight: semiBold),
         ),
         const SizedBox(height: 12),
         Container(
@@ -651,7 +589,7 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
               icon: const Icon(Icons.check),
               label: const Text('Terima Jadwal'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: primaryColor,
+                backgroundColor: purpleColor,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -677,23 +615,8 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
             ),
           ),
         ],
-        if (status == ScheduleStatus.accepted) ...[
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _onStartSchedule,
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Mulai Pengambilan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: blueColor,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
+        // After accepting, mitra should start the schedule (no separate accepted status)
+        // Show Start button for pending schedules that have been assigned
         if (status == ScheduleStatus.inProgress) ...[
           SizedBox(
             width: double.infinity,
@@ -740,8 +663,6 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
         return 'Dibatalkan';
       case ScheduleStatus.missed:
         return 'Terlewat';
-      case ScheduleStatus.accepted:
-        return 'Diterima';
       default:
         return 'Menunggu';
     }

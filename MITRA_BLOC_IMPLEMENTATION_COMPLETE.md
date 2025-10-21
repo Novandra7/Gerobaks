@@ -8,13 +8,13 @@
 
 ### ✅ Semua Phase Selesai
 
-| Phase | Task | Status | File Count | Lines Added |
-|-------|------|--------|------------|-------------|
-| **Phase 1** | Update BLoC (Events & Handlers) | ✅ Complete | 2 files | ~176 lines |
-| **Phase 2** | Create Widgets | ✅ Complete | 2 files | ~550 lines |
-| **Phase 3** | Update Pages | ✅ Complete | 2 files | ~850 lines |
-| **Phase 4** | Navigation Updates | ✅ Complete | 1 file | ~4 lines |
-| **Total** | **Full Implementation** | ✅ **Complete** | **7 files** | **~1,580 lines** |
+| Phase       | Task                            | Status          | File Count  | Lines Added      |
+| ----------- | ------------------------------- | --------------- | ----------- | ---------------- |
+| **Phase 1** | Update BLoC (Events & Handlers) | ✅ Complete     | 2 files     | ~176 lines       |
+| **Phase 2** | Create Widgets                  | ✅ Complete     | 2 files     | ~550 lines       |
+| **Phase 3** | Update Pages                    | ✅ Complete     | 2 files     | ~850 lines       |
+| **Phase 4** | Navigation Updates              | ✅ Complete     | 1 file      | ~4 lines         |
+| **Total**   | **Full Implementation**         | ✅ **Complete** | **7 files** | **~1,580 lines** |
 
 ---
 
@@ -23,17 +23,20 @@
 ### ✅ What Was Accomplished
 
 1. **BLoC Infrastructure** ✅
+
    - Added 5 new Mitra-specific events
    - Implemented 5 complete event handlers
    - Zero compile errors
    - Seamlessly integrated with existing ScheduleBloc
 
 2. **Reusable Widgets** ✅
+
    - MitraScheduleCard: Complete schedule display with multiple waste items
    - WasteItemsSummary: Compact horizontal display
    - WasteItemsListView: Detailed vertical list for detail pages
 
 3. **BLoC-Based Pages** ✅
+
    - JadwalMitraPageBloc: Full schedule list with filtering by status
    - JadwalDetailPageBloc: Detailed view with multiple waste items support
 
@@ -47,10 +50,12 @@
 
 ### ✅ Phase 1: BLoC Layer (2 files modified)
 
-#### 1. `lib/blocs/schedule/schedule_event.dart` 
+#### 1. `lib/blocs/schedule/schedule_event.dart`
+
 **Lines Added**: ~69 lines
 
 **New Events**:
+
 ```dart
 ✅ ScheduleFetchMitra
    - Purpose: Fetch mitra schedules with filtering
@@ -79,9 +84,11 @@
 ```
 
 #### 2. `lib/blocs/schedule/schedule_bloc.dart`
+
 **Lines Added**: ~107 lines
 
 **New Handlers**:
+
 ```dart
 ✅ _onScheduleFetchMitra()
    - Calls: refreshSchedules() with filters
@@ -109,9 +116,11 @@
 ### ✅ Phase 2: Reusable Widgets (2 files created)
 
 #### 3. `lib/ui/widgets/mitra/mitra_schedule_card.dart`
+
 **Lines Added**: ~330 lines
 
 **Features**:
+
 ```dart
 ✅ Display ScheduleModel with multiple waste items
 ✅ Show each waste type with emoji icon
@@ -131,11 +140,13 @@
 ```
 
 #### 4. `lib/ui/widgets/mitra/waste_items_summary.dart`
+
 **Lines Added**: ~220 lines
 
 **Two Variants**:
 
 **A. WasteItemsSummary (Compact Horizontal)**
+
 ```dart
 ✅ Displays waste items as compact chips
 ✅ Format: 🟢 Organik: 5kg | 🔵 Plastik: 2kg | Total: 7kg
@@ -147,6 +158,7 @@
 ```
 
 **B. WasteItemsListView (Vertical Detail)**
+
 ```dart
 ✅ Detailed vertical list for detail pages
 ✅ Each item shows: icon, type name, category, weight
@@ -161,9 +173,11 @@
 ### ✅ Phase 3: BLoC Pages (2 files created)
 
 #### 5. `lib/ui/pages/mitra/jadwal/jadwal_mitra_page_bloc.dart`
+
 **Lines Added**: ~450 lines
 
 **Features**:
+
 ```dart
 ✅ TabController with 4 tabs:
    - Tab 1: Menunggu (pending)
@@ -202,9 +216,11 @@
 ```
 
 #### 6. `lib/ui/pages/mitra/jadwal/jadwal_detail_page_bloc.dart`
+
 **Lines Added**: ~400 lines
 
 **Features**:
+
 ```dart
 ✅ Detail Information Display:
    - Status card with color coding
@@ -250,9 +266,11 @@
 ### ✅ Phase 4: Navigation (1 file modified)
 
 #### 7. `lib/ui/pages/mitra/mitra_navigation_page.dart`
+
 **Lines Modified**: 2 lines
 
 **Changes**:
+
 ```dart
 ✅ Updated import:
    - Old: import 'jadwal_mitra_api_page.dart'
@@ -270,6 +288,7 @@
 ## 🏗️ Architecture Overview
 
 ### Before (Old Pattern) ❌
+
 ```
 ┌─────────────────────────────┐
 │   JadwalMitraApiPage        │
@@ -284,6 +303,7 @@
 ```
 
 ### After (BLoC Pattern) ✅
+
 ```
 ┌─────────────────────────────────────────────────┐
 │            JadwalMitraPageBloc                  │
@@ -322,6 +342,7 @@
 ## 🔄 Mitra Operation Flow
 
 ### Full Workflow
+
 ```
 ┌─────────────┐
 │  PENDING    │  Mitra sees new schedule
@@ -351,11 +372,13 @@
 ```
 
 ### BLoC Event Flow
+
 ```
 User Action → Event Dispatched → BLoC Handler → Service Call → State Emitted → UI Updated
 ```
 
 **Example: Accept Schedule**
+
 ```
 1. User taps "Terima Jadwal"
 2. Shows confirmation dialog
@@ -373,24 +396,28 @@ User Action → Event Dispatched → BLoC Handler → Service Call → State Emi
 ## 📊 Code Quality Metrics
 
 ### Type Safety ✅
+
 - All events use proper data classes
 - All handlers have explicit return types
 - Null safety properly handled
 - Type-safe parsing for waste items
 
 ### Error Handling ✅
+
 - Try-catch blocks in all handlers
 - Proper error states (ScheduleUpdateFailed, ScheduleLoadFailed)
 - User-friendly error messages
 - Snackbar notifications for errors
 
 ### Reusability ✅
+
 - MitraScheduleCard: Fully reusable widget
 - WasteItemsSummary: Two variants for different use cases
 - Consistent theme usage
 - Proper separation of concerns
 
 ### Code Statistics
+
 ```
 Total Lines Added: ~1,580 lines
 Compile Errors: 0
@@ -406,6 +433,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ## 🎨 UI/UX Features
 
 ### MitraScheduleCard
+
 ```
 ┌─────────────────────────────────────────┐
 │  📅 Senin, 21 Okt 2024 • 09:00 WIB     │
@@ -427,6 +455,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ```
 
 ### Tab Navigation
+
 ```
 ┌─────────────────────────────────────────┐
 │  Jadwal Pengambilan                     │
@@ -442,6 +471,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ```
 
 ### Detail Page with Multiple Waste
+
 ```
 ┌─────────────────────────────────────────┐
 │  Status: DITERIMA                       │
@@ -473,6 +503,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ### ✅ Functionality Tests
 
 #### Phase 1: BLoC Layer
+
 - [x] ScheduleFetchMitra dispatches correctly
 - [x] ScheduleAccept updates status to 'accepted'
 - [x] ScheduleStart updates status to 'in_progress'
@@ -483,6 +514,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 - [x] No compile errors
 
 #### Phase 2: Widgets
+
 - [x] MitraScheduleCard displays all waste items
 - [x] Total weight calculates correctly
 - [x] Status badges show correct color/text
@@ -493,6 +525,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 - [x] Empty state handling works
 
 #### Phase 3: Pages
+
 - [x] JadwalMitraPageBloc loads schedules
 - [x] Tab filtering works (pending/accepted/in_progress/completed)
 - [x] Pull-to-refresh works
@@ -506,6 +539,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 - [x] BlocListener triggers on state changes
 
 #### Phase 4: Navigation
+
 - [x] Bottom navigation uses BLoC version
 - [x] Schedule tab opens JadwalMitraPageBloc
 - [x] No navigation errors
@@ -513,6 +547,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ### 📱 User Flow Tests
 
 **Test Case 1: Accept Pending Schedule**
+
 ```
 ✅ 1. Open Jadwal tab → "Menunggu" tab active
 ✅ 2. See pending schedule with multiple waste items
@@ -525,6 +560,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ```
 
 **Test Case 2: Complete Pickup**
+
 ```
 ✅ 1. Switch to "Proses" tab
 ✅ 2. See in-progress schedule
@@ -538,6 +574,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ```
 
 **Test Case 3: View Detail with Multiple Waste**
+
 ```
 ✅ 1. Tap any schedule card
 ✅ 2. Detail page opens
@@ -558,6 +595,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ## 🔀 Comparison: End User vs Mitra
 
 ### Similarities ✅
+
 - Both use same ScheduleBloc
 - Both support multiple waste items
 - Both use BLoC pattern
@@ -567,14 +605,14 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 
 ### Differences 🔄
 
-| Aspect | End User | Mitra |
-|--------|----------|-------|
-| **Events** | Create, Update, Delete | Fetch, Accept, Start, Complete, Cancel |
-| **Actions** | Schedule pickup, edit, cancel | Accept, start, complete pickups |
-| **View Focus** | My schedules (created by me) | All pending schedules (need action) |
-| **Status Flow** | pending → confirmed → completed | pending → accepted → in_progress → completed |
-| **UI Components** | EndUserScheduleCard | MitraScheduleCard |
-| **Tabs** | Upcoming, History | Pending, Accepted, In Progress, Completed |
+| Aspect            | End User                        | Mitra                                        |
+| ----------------- | ------------------------------- | -------------------------------------------- |
+| **Events**        | Create, Update, Delete          | Fetch, Accept, Start, Complete, Cancel       |
+| **Actions**       | Schedule pickup, edit, cancel   | Accept, start, complete pickups              |
+| **View Focus**    | My schedules (created by me)    | All pending schedules (need action)          |
+| **Status Flow**   | pending → confirmed → completed | pending → accepted → in_progress → completed |
+| **UI Components** | EndUserScheduleCard             | MitraScheduleCard                            |
+| **Tabs**          | Upcoming, History               | Pending, Accepted, In Progress, Completed    |
 
 ---
 
@@ -583,6 +621,7 @@ Modified Files: 3 (schedule_event, schedule_bloc, navigation)
 ### How to Use in Your Code
 
 #### 1. In Mitra Navigation (Already Done ✅)
+
 ```dart
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_bloc.dart';
 
@@ -595,6 +634,7 @@ final List<Widget> _pages = [
 ```
 
 #### 2. Navigate to Detail
+
 ```dart
 // From list page
 Navigator.pushNamed(
@@ -613,6 +653,7 @@ routes: {
 ```
 
 #### 3. Ensure BLoC is Provided
+
 ```dart
 // In main.dart or app.dart
 BlocProvider(
@@ -624,6 +665,7 @@ BlocProvider(
 ```
 
 #### 4. Use Widgets in Custom Pages
+
 ```dart
 // Example: Custom dashboard widget
 import 'package:bank_sha/ui/widgets/mitra/mitra_schedule_card.dart';
@@ -662,16 +704,19 @@ class CustomDashboard extends StatelessWidget {
 ### ✅ Optimizations Implemented
 
 1. **Widget Reusability**
+
    - MitraScheduleCard is stateless
    - WasteItemsSummary is stateless
    - No unnecessary rebuilds
 
 2. **State Management**
+
    - Single source of truth (ScheduleBloc)
    - Efficient state emissions
    - No duplicate API calls
 
 3. **List Performance**
+
    - ListView.builder for schedules
    - Only visible items rendered
    - Pull-to-refresh doesn't reload invisible items
@@ -688,16 +733,19 @@ class CustomDashboard extends StatelessWidget {
 ### ✅ Implemented Safeguards
 
 1. **Type Safety**
+
    - Waste items parsing with error handling
    - Null-safe operations throughout
    - Type guards for dynamic data
 
 2. **Validation**
+
    - Schedule ID validation
    - Weight input validation (double.tryParse)
    - Empty string handling for optional fields
 
 3. **Error Recovery**
+
    - Try-catch blocks in all async operations
    - User-friendly error messages
    - Retry mechanisms for failed operations
@@ -714,16 +762,19 @@ class CustomDashboard extends StatelessWidget {
 ### Key Learnings
 
 1. **Single BLoC for Multiple Roles**
+
    - Same ScheduleBloc handles both end_user and mitra
    - Different events for different operations
    - Clean separation of concerns
 
 2. **Widget Composition**
+
    - Small, reusable widgets (MitraScheduleCard, WasteItemsSummary)
    - Composition over inheritance
    - Props for customization
 
 3. **State Management Best Practices**
+
    - BlocConsumer for listening + building
    - BlocListener for side effects (snackbars, navigation)
    - BlocBuilder for UI rendering
@@ -738,6 +789,7 @@ class CustomDashboard extends StatelessWidget {
 ## 🎓 Code Examples
 
 ### Example 1: Dispatch Accept Event
+
 ```dart
 // In any widget with ScheduleBloc access
 void _onAcceptSchedule(String scheduleId) {
@@ -748,6 +800,7 @@ void _onAcceptSchedule(String scheduleId) {
 ```
 
 ### Example 2: Listen to State Changes
+
 ```dart
 BlocListener<ScheduleBloc, ScheduleState>(
   listener: (context, state) {
@@ -769,18 +822,19 @@ BlocListener<ScheduleBloc, ScheduleState>(
 ```
 
 ### Example 3: Build UI Based on State
+
 ```dart
 BlocBuilder<ScheduleBloc, ScheduleState>(
   builder: (context, state) {
     if (state is ScheduleLoading) {
       return CircularProgressIndicator();
     }
-    
+
     if (state is ScheduleLoaded) {
       final pendingSchedules = state.schedules
           .where((s) => s.status == ScheduleStatus.pending)
           .toList();
-          
+
       return ListView.builder(
         itemCount: pendingSchedules.length,
         itemBuilder: (context, index) {
@@ -791,14 +845,14 @@ BlocBuilder<ScheduleBloc, ScheduleState>(
         },
       );
     }
-    
+
     if (state is ScheduleLoadFailed) {
       return ErrorView(
         message: state.error,
         onRetry: () => _loadSchedules(),
       );
     }
-    
+
     return EmptyView();
   },
 )
@@ -810,23 +864,23 @@ BlocBuilder<ScheduleBloc, ScheduleState>(
 
 ### All Requirements Met ✅
 
-| Requirement | Status | Evidence |
-|-------------|--------|----------|
-| BLoC pattern implemented | ✅ Yes | 5 events + 5 handlers in ScheduleBloc |
-| Multiple waste items support | ✅ Yes | WasteItem list parsing + display |
-| Mitra operations (accept/start/complete) | ✅ Yes | Full workflow implemented |
-| Status-based UI | ✅ Yes | Conditional rendering based on status |
-| Error handling | ✅ Yes | Try-catch + error states + snackbars |
-| Reusable widgets | ✅ Yes | MitraScheduleCard + WasteItemsSummary |
-| Navigation updated | ✅ Yes | MitraNavigationPage uses BLoC version |
-| Same architecture as end_user | ✅ Yes | Same BLoC, same patterns |
-| Zero compile errors | ✅ Yes | All files compile successfully |
-| Total weight calculation | ✅ Yes | Sum of all waste items |
-| Pull-to-refresh | ✅ Yes | RefreshIndicator implemented |
-| Tab filtering | ✅ Yes | 4 tabs with status filtering |
-| Map integration | ✅ Yes | OpenStreetMap + Google Maps navigation |
-| Input dialogs | ✅ Yes | Weight input, notes input, reason input |
-| Success/failure feedback | ✅ Yes | Snackbars for all operations |
+| Requirement                              | Status | Evidence                                |
+| ---------------------------------------- | ------ | --------------------------------------- |
+| BLoC pattern implemented                 | ✅ Yes | 5 events + 5 handlers in ScheduleBloc   |
+| Multiple waste items support             | ✅ Yes | WasteItem list parsing + display        |
+| Mitra operations (accept/start/complete) | ✅ Yes | Full workflow implemented               |
+| Status-based UI                          | ✅ Yes | Conditional rendering based on status   |
+| Error handling                           | ✅ Yes | Try-catch + error states + snackbars    |
+| Reusable widgets                         | ✅ Yes | MitraScheduleCard + WasteItemsSummary   |
+| Navigation updated                       | ✅ Yes | MitraNavigationPage uses BLoC version   |
+| Same architecture as end_user            | ✅ Yes | Same BLoC, same patterns                |
+| Zero compile errors                      | ✅ Yes | All files compile successfully          |
+| Total weight calculation                 | ✅ Yes | Sum of all waste items                  |
+| Pull-to-refresh                          | ✅ Yes | RefreshIndicator implemented            |
+| Tab filtering                            | ✅ Yes | 4 tabs with status filtering            |
+| Map integration                          | ✅ Yes | OpenStreetMap + Google Maps navigation  |
+| Input dialogs                            | ✅ Yes | Weight input, notes input, reason input |
+| Success/failure feedback                 | ✅ Yes | Snackbars for all operations            |
 
 ---
 
@@ -845,6 +899,7 @@ A **complete, production-ready BLoC implementation** for Mitra role that:
 7. ✅ Zero compile errors, ready to run
 
 ### Code Quality Summary
+
 ```
 ✅ Type-safe: All data properly typed
 ✅ Null-safe: Null handling throughout
@@ -857,6 +912,7 @@ A **complete, production-ready BLoC implementation** for Mitra role that:
 ```
 
 ### Performance Summary
+
 ```
 ✅ Efficient: Only necessary rebuilds
 ✅ Scalable: Can handle large schedule lists
@@ -868,16 +924,19 @@ A **complete, production-ready BLoC implementation** for Mitra role that:
 ### Next Steps (Optional Enhancements)
 
 1. **Add Unit Tests** (Optional)
+
    - Test BLoC events and handlers
    - Test widget rendering
    - Test state transitions
 
 2. **Add Integration Tests** (Optional)
+
    - Test full user flows
    - Test error scenarios
    - Test API integration
 
 3. **Performance Monitoring** (Optional)
+
    - Add analytics for user actions
    - Monitor state transition times
    - Track API call performance
@@ -892,6 +951,7 @@ A **complete, production-ready BLoC implementation** for Mitra role that:
 ## 📞 Support & Maintenance
 
 ### File Locations Reference
+
 ```
 lib/
 ├── blocs/
@@ -914,16 +974,19 @@ lib/
 ### Quick Troubleshooting
 
 **Issue**: Schedule not updating after action
+
 - **Check**: BLoC is provided at app level
 - **Check**: Event is dispatched correctly
 - **Check**: BlocListener is set up
 
 **Issue**: Waste items not showing
+
 - **Check**: wasteItems field in ScheduleModel is populated
 - **Check**: JSON parsing works (try-catch block)
-- **Check**: _parseWasteItems() returns non-empty list
+- **Check**: \_parseWasteItems() returns non-empty list
 
 **Issue**: Navigation error
+
 - **Check**: Route is registered in MaterialApp
 - **Check**: scheduleId is passed as argument
 - **Check**: BLoC is accessible from detail page
