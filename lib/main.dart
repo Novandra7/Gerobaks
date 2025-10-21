@@ -21,6 +21,7 @@ import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
+import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_detail_page_bloc.dart';
 // Import all BLoCs
 import 'package:bank_sha/blocs/blocs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -344,6 +345,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 : {},
           ),
           '/navigation-demo': (context) => const NavigationDemoPage(),
+          '/jadwal-detail-bloc': (context) {
+            final scheduleId =
+                ModalRoute.of(context)?.settings.arguments as String;
+            return JadwalDetailPageBloc(scheduleId: scheduleId);
+          },
         },
       ),
     );

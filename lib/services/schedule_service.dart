@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
+import 'package:bank_sha/services/schedule_service_complete.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
@@ -14,6 +15,7 @@ class ScheduleService {
   final Uuid _uuid = const Uuid();
   late LocalStorageService _localStorage;
   final ScheduleApiService _remoteService = ScheduleApiService();
+  final ScheduleServiceComplete _apiService = ScheduleServiceComplete();
   bool _isInitialized = false;
 
   // Key for storing schedules in local storage
@@ -791,5 +793,67 @@ class ScheduleService {
       throw Exception('Gagal mengupdate jadwal');
     }
     return updated;
+  }
+
+  // ============================================================================
+  // MITRA ACTIONS - Call backend API endpoints
+  // ============================================================================
+
+  /// Mitra accepts a schedule
+  Future<dynamic> acceptSchedule(String scheduleId) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.acceptSchedule(id);
+    } catch (e) {
+      debugPrint('Error accepting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra starts the pickup
+  Future<dynamic> startSchedule(String scheduleId) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.startSchedule(id);
+    } catch (e) {
+      debugPrint('Error starting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra completes the pickup
+  Future<dynamic> completeSchedule({
+    required String scheduleId,
+    double? actualWeight,
+    String? notes,
+  }) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.completeSchedulePickup(
+        scheduleId: id,
+        actualWeight: actualWeight,
+        notes: notes,
+      );
+    } catch (e) {
+      debugPrint('Error completing schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Cancel schedule with reason
+  Future<dynamic> cancelScheduleWithReason({
+    required String scheduleId,
+    required String reason,
+  }) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.cancelScheduleWithReason(
+        scheduleId: id,
+        reason: reason,
+      );
+    } catch (e) {
+      debugPrint('Error cancelling schedule: $e');
+      rethrow;
+    }
   }
 }

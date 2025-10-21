@@ -324,7 +324,140 @@ class ScheduleServiceComplete {
   // Helper Methods
   // ========================================
 
-  /// Cancel schedule (set status to cancelled)
+  /// Mitra accepts a schedule (POST /api/schedules/{id}/accept)
+  ///
+  /// Parameters:
+  /// - [scheduleId]: Schedule ID to accept
+  ///
+  /// Returns: Updated schedule object
+  ///
+  /// Example:
+  /// ```dart
+  /// final schedule = await scheduleService.acceptSchedule(123);
+  /// ```
+  Future<dynamic> acceptSchedule(int scheduleId) async {
+    try {
+      print('✅ Accepting schedule #$scheduleId');
+
+      final response = await _apiClient.postJson(
+        '/api/schedules/$scheduleId/accept',
+        {},
+      );
+
+      print('✅ Schedule accepted successfully');
+      return response['data'];
+    } catch (e) {
+      print('❌ Error accepting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra starts the pickup (POST /api/schedules/{id}/start)
+  ///
+  /// Parameters:
+  /// - [scheduleId]: Schedule ID to start
+  ///
+  /// Returns: Updated schedule object
+  ///
+  /// Example:
+  /// ```dart
+  /// final schedule = await scheduleService.startSchedule(123);
+  /// ```
+  Future<dynamic> startSchedule(int scheduleId) async {
+    try {
+      print('🚀 Starting schedule #$scheduleId');
+
+      final response = await _apiClient.postJson(
+        '/api/schedules/$scheduleId/start',
+        {},
+      );
+
+      print('✅ Schedule started successfully');
+      return response['data'];
+    } catch (e) {
+      print('❌ Error starting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra completes the pickup (POST /api/schedules/{id}/complete)
+  ///
+  /// Parameters:
+  /// - [scheduleId]: Schedule ID to complete
+  /// - [actualWeight]: Actual waste weight collected (optional)
+  /// - [notes]: Completion notes (optional)
+  ///
+  /// Returns: Updated schedule object
+  ///
+  /// Example:
+  /// ```dart
+  /// final schedule = await scheduleService.completeSchedulePickup(
+  ///   scheduleId: 123,
+  ///   actualWeight: 15.5,
+  ///   notes: 'Collected successfully',
+  /// );
+  /// ```
+  Future<dynamic> completeSchedulePickup({
+    required int scheduleId,
+    double? actualWeight,
+    String? notes,
+  }) async {
+    try {
+      print('✅ Completing schedule #$scheduleId');
+
+      final body = <String, dynamic>{};
+      if (actualWeight != null) body['actual_weight'] = actualWeight;
+      if (notes != null) body['completion_notes'] = notes;
+
+      final response = await _apiClient.postJson(
+        '/api/schedules/$scheduleId/complete',
+        body,
+      );
+
+      print('✅ Schedule completed successfully');
+      return response['data'];
+    } catch (e) {
+      print('❌ Error completing schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Cancel schedule with reason (POST /api/schedules/{id}/cancel)
+  ///
+  /// Parameters:
+  /// - [scheduleId]: Schedule ID to cancel
+  /// - [reason]: Cancellation reason
+  ///
+  /// Returns: Updated schedule object
+  ///
+  /// Example:
+  /// ```dart
+  /// final schedule = await scheduleService.cancelScheduleWithReason(
+  ///   scheduleId: 123,
+  ///   reason: 'User not available',
+  /// );
+  /// ```
+  Future<dynamic> cancelScheduleWithReason({
+    required int scheduleId,
+    required String reason,
+  }) async {
+    try {
+      print('❌ Cancelling schedule #$scheduleId');
+
+      final response = await _apiClient.postJson(
+        '/api/schedules/$scheduleId/cancel',
+        {'cancellation_reason': reason},
+      );
+
+      print('✅ Schedule cancelled successfully');
+      return response['data'];
+    } catch (e) {
+      print('❌ Error cancelling schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Cancel schedule (set status to cancelled) - Legacy method
   ///
   /// Parameters:
   /// - [scheduleId]: Schedule ID to cancel

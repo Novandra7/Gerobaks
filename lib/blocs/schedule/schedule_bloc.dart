@@ -25,6 +25,13 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
     on<ScheduleUpdateWasteItem>(_onUpdateWasteItem);
     on<ScheduleClearWasteItems>(_onClearWasteItems);
     on<ScheduleResetForm>(_onResetForm);
+
+    // Mitra Operations
+    on<ScheduleFetchMitra>(_onScheduleFetchMitra);
+    on<ScheduleAccept>(_onScheduleAccept);
+    on<ScheduleStart>(_onScheduleStart);
+    on<ScheduleComplete>(_onScheduleComplete);
+    on<ScheduleCancel>(_onScheduleCancel);
   }
 
   // Fetch schedules
@@ -178,4 +185,113 @@ class ScheduleBloc extends Bloc<ScheduleEvent, ScheduleState> {
 
   // Getter for current form state
   ScheduleFormState get currentFormState => _currentFormState;
+
+  // ============================================================================
+  // MITRA-SPECIFIC HANDLERS
+  // ============================================================================
+
+  // Fetch schedules for Mitra
+  Future<void> _onScheduleFetchMitra(
+    ScheduleFetchMitra event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleLoading());
+
+      // Fetch schedules assigned to this mitra
+      final schedules = await _scheduleService.refreshSchedules(
+        page: event.page,
+        perPage: event.perPage,
+        status: event.status,
+        // Additional filtering by date if provided
+      );
+
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleFailed(e.toString()));
+    }
+  }
+
+  // Mitra accepts a schedule
+  Future<void> _onScheduleAccept(
+    ScheduleAccept event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Call backend API to accept schedule
+      await _scheduleService.acceptSchedule(event.scheduleId);
+
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra starts the pickup
+  Future<void> _onScheduleStart(
+    ScheduleStart event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Call backend API to start schedule
+      await _scheduleService.startSchedule(event.scheduleId);
+
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra completes the pickup
+  Future<void> _onScheduleComplete(
+    ScheduleComplete event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Call backend API to complete schedule with actual weight and notes
+      await _scheduleService.completeSchedule(
+        scheduleId: event.scheduleId,
+        actualWeight: event.actualWeight,
+        notes: event.notes,
+      );
+
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
+
+  // Mitra cancels/rejects a schedule
+  Future<void> _onScheduleCancel(
+    ScheduleCancel event,
+    Emitter<ScheduleState> emit,
+  ) async {
+    try {
+      emit(const ScheduleUpdating());
+
+      // Call backend API to cancel schedule with reason
+      await _scheduleService.cancelScheduleWithReason(
+        scheduleId: event.scheduleId,
+        reason: event.reason ?? 'Cancelled by user',
+      );
+
+      // Refresh schedules to get updated data
+      final schedules = await _scheduleService.refreshSchedules();
+      emit(ScheduleSuccess(schedules));
+    } catch (e) {
+      emit(ScheduleUpdateFailed(e.toString()));
+    }
+  }
 }
