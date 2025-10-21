@@ -29,13 +29,49 @@
 
 ### 📋 Product Requirements & Specifications
 
-| Dokumen       | Deskripsi                                                                 | Link                                        |
-| ------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
-| **PRD**       | Product Requirement Document - Kebutuhan dan spesifikasi produk lengkap   | [📖 Baca PRD](PRD-Gerobaks.md)              |
-| **PSD**       | Product Specification Document - Spesifikasi teknis dan arsitektur sistem | [⚙️ Baca PSD](PSD-Gerobaks.md)              |
-| **User Flow** | Alur pengguna untuk petugas mitra                                         | [👥 User Flow Petugas](UserFlow-Petugas.md) |
+| Dokumen       | Deskripsi                                                                 | Link                                                          |
+| ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| **PRD**       | Product Requirement Document - Kebutuhan dan spesifikasi produk lengkap   | [📖 Baca PRD](docs/architecture/PRD-Gerobaks.md)              |
+| **PSD**       | Product Specification Document - Spesifikasi teknis dan arsitektur sistem | [⚙️ Baca PSD](docs/architecture/PSD-Gerobaks.md)              |
+| **User Flow** | Alur pengguna untuk petugas mitra                                         | [👥 User Flow Petugas](docs/architecture/UserFlow-Petugas.md) |
+| **All Docs**  | Complete documentation index with all guides and references               | [📚 Browse Documentation](docs/README.md)                     |
 
 </div>
+
+---
+
+## 📂 Project Structure
+
+```
+Gerobaks/
+├── 📁 docs/                   # Complete project documentation
+│   ├── api/                   # API integration guides
+│   ├── architecture/          # PRD, PSD, UserFlow, system design
+│   ├── features/              # Feature-specific documentation
+│   ├── implementation/        # BLoC patterns, code guides
+│   ├── testing/               # MVP testing guide
+│   ├── fixes/                 # Bug fixes and solutions
+│   ├── guides/                # Quick reference guides
+│   ├── reports/               # Analysis and diagnostic reports
+│   └── changelog/             # Version history
+├── 📁 scripts/                # Utility scripts
+│   ├── test/                  # Testing scripts
+│   ├── run/                   # Run scripts for development
+│   ├── setup/                 # Setup and installation scripts
+│   └── utils/                 # Utility scripts
+├── 📁 lib/                    # Flutter application code
+│   ├── blocs/                 # BLoC state management (7 modules)
+│   ├── models/                # Data models
+│   ├── services/              # API and local services
+│   ├── ui/                    # UI components and pages
+│   └── utils/                 # Utility functions
+├── 📁 test-results/           # Automated test results
+├── 📁 database/               # SQL scripts and DB documentation
+├── 📁 screenshots/            # Application screenshots
+└── 📁 assets/                 # Images, fonts, icons
+```
+
+> **💡 Tip**: For complete documentation, browse [docs/README.md](docs/README.md) which provides an organized index of all project documentation.
 
 ---
 

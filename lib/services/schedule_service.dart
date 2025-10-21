@@ -667,4 +667,129 @@ class ScheduleService {
       );
     }
   }
+
+  // NEW METHOD: Create schedule with multiple waste items
+  Future<ScheduleModel> createScheduleWithWasteItems({
+    required String date,
+    required String time,
+    required String address,
+    required double latitude,
+    required double longitude,
+    required List<dynamic> wasteItems, // WasteItem from event
+    String? notes,
+  }) async {
+    await _ensureInitialized();
+
+    // Convert date string (YYYY-MM-DD) to DateTime
+    final dateParts = date.split('-');
+    final scheduledDate = DateTime(
+      int.parse(dateParts[0]),
+      int.parse(dateParts[1]),
+      int.parse(dateParts[2]),
+    );
+
+    // Convert time string (HH:mm) to TimeOfDay
+    final timeParts = time.split(':');
+    final timeSlot = TimeOfDay(
+      hour: int.parse(timeParts[0]),
+      minute: int.parse(timeParts[1]),
+    );
+
+    // Create schedule model with new waste items
+    final schedule = ScheduleModel(
+      id: null,
+      userId: '', // Will be set by API/context
+      scheduledDate: scheduledDate,
+      timeSlot: timeSlot,
+      location: LatLng(latitude, longitude),
+      address: address,
+      notes: notes,
+      status: ScheduleStatus.pending,
+      frequency: ScheduleFrequency.once,
+      driverId: null,
+      createdAt: DateTime.now(),
+      wasteItems: wasteItems.cast<dynamic>(),
+      isPaid: false,
+    );
+
+    final created = await createSchedule(schedule);
+    if (created == null) {
+      throw Exception('Gagal membuat jadwal baru');
+    }
+    return created;
+  }
+
+  // NEW METHOD: Update schedule with multiple waste items
+  Future<ScheduleModel> updateScheduleWithWasteItems({
+    required String scheduleId,
+    String? date,
+    String? time,
+    String? address,
+    double? latitude,
+    double? longitude,
+    List<dynamic>? wasteItems,
+    String? status,
+    String? notes,
+  }) async {
+    await _ensureInitialized();
+
+    // Get existing schedule
+    final schedules = await _loadLocalSchedules();
+    final index = schedules.indexWhere((s) => s.id == scheduleId);
+
+    if (index == -1) {
+      throw Exception('Jadwal tidak ditemukan');
+    }
+
+    final existingSchedule = schedules[index];
+
+    // Parse date if provided
+    DateTime? scheduledDate;
+    if (date != null) {
+      final dateParts = date.split('-');
+      scheduledDate = DateTime(
+        int.parse(dateParts[0]),
+        int.parse(dateParts[1]),
+        int.parse(dateParts[2]),
+      );
+    }
+
+    // Parse time if provided
+    TimeOfDay? timeSlot;
+    if (time != null) {
+      final timeParts = time.split(':');
+      timeSlot = TimeOfDay(
+        hour: int.parse(timeParts[0]),
+        minute: int.parse(timeParts[1]),
+      );
+    }
+
+    // Parse status if provided
+    ScheduleStatus? newStatus;
+    if (status != null) {
+      newStatus = ScheduleStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == status,
+        orElse: () => existingSchedule.status,
+      );
+    }
+
+    // Update schedule
+    final updatedSchedule = existingSchedule.copyWith(
+      scheduledDate: scheduledDate,
+      timeSlot: timeSlot,
+      address: address,
+      location: (latitude != null && longitude != null)
+          ? LatLng(latitude, longitude)
+          : null,
+      wasteItems: wasteItems?.cast<dynamic>(),
+      status: newStatus,
+      notes: notes,
+    );
+
+    final updated = await updateSchedule(updatedSchedule);
+    if (updated == null) {
+      throw Exception('Gagal mengupdate jadwal');
+    }
+    return updated;
+  }
 }

@@ -2,8 +2,10 @@ import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:bank_sha/utils/map_utils.dart';
 import 'package:flutter/material.dart';
@@ -29,39 +31,39 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
   String _searchQuery = '';
   String _selectedStatusFilter = 'Semua';
   final TextEditingController _searchController = TextEditingController();
-  
+
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID');
     _initialize();
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _initialize() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // Initialize schedule service
       await _scheduleService.initialize();
-      
+
       // Get user ID
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
       if (userData != null) {
         _userId = userData['id'] as String;
       }
-      
+
       // Load schedules
       await _loadSchedules();
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -72,13 +74,16 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       });
     }
   }
-  
+
   Future<void> _loadSchedules() async {
     if (_userId == null) return;
-    
+
     try {
-      final schedules = await _scheduleService.getUserSchedulesByDate(_userId!, selectedDate);
-      
+      final schedules = await _scheduleService.getUserSchedulesByDate(
+        _userId!,
+        selectedDate,
+      );
+
       setState(() {
         _schedules = schedules;
         _filterSchedules();
@@ -87,29 +92,39 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       print('Error loading schedules: $e');
     }
   }
-  
+
   void _filterSchedules() {
     setState(() {
       _filteredSchedules = _schedules.where((schedule) {
         // Filter by status
-        bool statusMatch = _selectedStatusFilter == 'Semua' || 
+        bool statusMatch =
+            _selectedStatusFilter == 'Semua' ||
             _getStatusText(schedule.status) == _selectedStatusFilter;
-        
+
         // Filter by search query
-        bool searchMatch = _searchQuery.isEmpty ||
-            schedule.address.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            (schedule.notes != null && 
-             schedule.notes!.toLowerCase().contains(_searchQuery.toLowerCase())) ||
-            (schedule.wasteType != null && 
-             schedule.wasteType!.toLowerCase().contains(_searchQuery.toLowerCase())) ||
-            (schedule.contactName != null && 
-             schedule.contactName!.toLowerCase().contains(_searchQuery.toLowerCase()));
-        
+        bool searchMatch =
+            _searchQuery.isEmpty ||
+            schedule.address.toLowerCase().contains(
+              _searchQuery.toLowerCase(),
+            ) ||
+            (schedule.notes != null &&
+                schedule.notes!.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                )) ||
+            (schedule.wasteType != null &&
+                schedule.wasteType!.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                )) ||
+            (schedule.contactName != null &&
+                schedule.contactName!.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ));
+
         return statusMatch && searchMatch;
       }).toList();
     });
   }
-  
+
   String _getStatusText(ScheduleStatus status) {
     switch (status) {
       case ScheduleStatus.pending:
@@ -124,7 +139,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         return 'Terlewat';
     }
   }
-  
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -144,7 +159,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         );
       },
     );
-    
+
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
@@ -152,18 +167,23 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       _loadSchedules();
     }
   }
-  
+
   void _navigateToAddSchedule() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AddSchedulePage()),
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: context.read<ScheduleBloc>(),
+          child: const AddSchedulePageNew(),
+        ),
+      ),
     );
-    
+
     if (result != null) {
       _loadSchedules();
     }
   }
-  
+
   Future<void> _cancelSchedule(ScheduleModel schedule) async {
     try {
       final result = await DialogHelper.showConfirmDialog(
@@ -173,13 +193,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         confirmText: 'Ya, Batalkan',
         cancelText: 'Tidak',
       );
-      
+
       if (result == true) {
         final updatedSchedule = await _scheduleService.updateScheduleStatus(
-          schedule.id!, 
-          ScheduleStatus.cancelled
+          schedule.id!,
+          ScheduleStatus.cancelled,
         );
-        
+
         if (updatedSchedule != null && mounted) {
           DialogHelper.showSuccessDialog(
             context: context,
@@ -194,13 +214,14 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         DialogHelper.showErrorDialog(
           context: context,
           title: 'Gagal Membatalkan Jadwal',
-          message: 'Terjadi kesalahan saat membatalkan jadwal. Silakan coba lagi nanti.',
+          message:
+              'Terjadi kesalahan saat membatalkan jadwal. Silakan coba lagi nanti.',
         );
       }
       print('Error cancelling schedule: $e');
     }
   }
-  
+
   void _viewScheduleDetail(ScheduleModel schedule) {
     showModalBottomSheet(
       context: context,
@@ -212,7 +233,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       builder: (context) => _buildScheduleDetailSheet(schedule),
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -242,10 +263,8 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         elevation: 4,
         highlightElevation: 8,
       ),
-      body: _isLoading 
-          ? Center(
-              child: CircularProgressIndicator(color: greenColor),
-            )
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: greenColor))
           : RefreshIndicator(
               onRefresh: _loadSchedules,
               color: greenColor,
@@ -267,7 +286,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                     padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                     child: _buildHeaderStats(),
                   ),
-                  
+
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.zero,
@@ -287,7 +306,9 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                     borderRadius: BorderRadius.circular(25),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
+                                        color: Colors.black.withAlpha(
+                                          13,
+                                        ), // 0.05 * 255 = 13
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -301,19 +322,36 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                         _filterSchedules();
                                       });
                                     },
-                                    style: blackTextStyle.copyWith(fontSize: 15),
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 15,
+                                    ),
                                     decoration: InputDecoration(
                                       hintText: 'Cari jadwal...',
-                                      hintStyle: greyTextStyle.copyWith(fontSize: 15),
+                                      hintStyle: greyTextStyle.copyWith(
+                                        fontSize: 15,
+                                      ),
                                       prefixIcon: Padding(
-                                        padding: const EdgeInsets.only(left: 16, right: 8),
-                                        child: Icon(Icons.search, color: greyColor, size: 22),
+                                        padding: const EdgeInsets.only(
+                                          left: 16,
+                                          right: 8,
+                                        ),
+                                        child: Icon(
+                                          Icons.search,
+                                          color: greyColor,
+                                          size: 22,
+                                        ),
                                       ),
                                       suffixIcon: _searchQuery.isNotEmpty
                                           ? Padding(
-                                              padding: const EdgeInsets.only(right: 8),
+                                              padding: const EdgeInsets.only(
+                                                right: 8,
+                                              ),
                                               child: IconButton(
-                                                icon: Icon(Icons.close, color: greyColor, size: 18),
+                                                icon: Icon(
+                                                  Icons.close,
+                                                  color: greyColor,
+                                                  size: 18,
+                                                ),
                                                 onPressed: () {
                                                   setState(() {
                                                     _searchQuery = '';
@@ -325,10 +363,11 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                             )
                                           : null,
                                       border: InputBorder.none,
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        vertical: 15,
-                                        horizontal: 16,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 15,
+                                            horizontal: 16,
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -343,7 +382,9 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                   borderRadius: BorderRadius.circular(25),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withAlpha(13), // 0.05 * 255 = 13
+                                      color: Colors.black.withAlpha(
+                                        13,
+                                      ), // 0.05 * 255 = 13
                                       blurRadius: 10,
                                       offset: const Offset(0, 2),
                                     ),
@@ -362,7 +403,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                             ],
                           ),
                         ),
-                        
+
                         // Status filter chips
                         Container(
                           height: 44,
@@ -383,7 +424,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                             ),
                           ),
                         ),
-                        
+
                         // Section title with counter and selected date
                         Padding(
                           padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -400,9 +441,14 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: greenColor.withAlpha(26), // 0.1 * 255 = 26
+                                  color: greenColor.withAlpha(
+                                    26,
+                                  ), // 0.1 * 255 = 26
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
@@ -417,19 +463,26 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                             ],
                           ),
                         ),
-                        
+
                         // Schedule list
                         _filteredSchedules.isEmpty
                             ? _buildEmptyState()
                             : ListView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(24, 0, 24, 90),
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  0,
+                                  24,
+                                  90,
+                                ),
                                 itemCount: _filteredSchedules.length,
                                 itemBuilder: (context, index) {
                                   return Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
-                                    child: _buildScheduleItem(_filteredSchedules[index]),
+                                    child: _buildScheduleItem(
+                                      _filteredSchedules[index],
+                                    ),
                                   );
                                 },
                               ),
@@ -441,7 +494,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             ),
     );
   }
-  
+
   Widget _buildScheduleDetailSheet(ScheduleModel schedule) {
     Color statusColor;
     String statusText;
@@ -474,7 +527,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         statusIcon = Icons.schedule_outlined;
         break;
     }
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -493,7 +546,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Header
           Row(
             children: [
@@ -503,11 +556,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                   color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  statusIcon,
-                  color: statusColor,
-                  size: 24,
-                ),
+                child: Icon(statusIcon, color: statusColor, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -525,18 +574,17 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
                             children: [
-                              Icon(
-                                statusIcon,
-                                color: statusColor,
-                                size: 12,
-                              ),
+                              Icon(statusIcon, color: statusColor, size: 12),
                               const SizedBox(width: 4),
                               Text(
                                 statusText,
@@ -557,84 +605,92 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Detail items
           _buildDetailItem(
             icon: Icons.calendar_today_rounded,
             title: 'Tanggal',
-            value: DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(selectedDate),
+            value: DateFormat(
+              'EEEE, d MMMM yyyy',
+              'id_ID',
+            ).format(selectedDate),
           ),
-          
+
           _buildDetailItem(
             icon: Icons.access_time_rounded,
             title: 'Waktu',
-            value: '${schedule.timeSlot.hour}:${schedule.timeSlot.minute.toString().padLeft(2, '0')} WIB',
+            value:
+                '${schedule.timeSlot.hour}:${schedule.timeSlot.minute.toString().padLeft(2, '0')} WIB',
           ),
-          
+
           _buildDetailItem(
             icon: Icons.location_on_rounded,
             title: 'Alamat',
             value: schedule.address,
           ),
-          
+
           // Display coordinates
           _buildDetailItem(
             icon: Icons.pin_drop_rounded,
             title: 'Koordinat',
-            value: '${schedule.location.latitude}, ${schedule.location.longitude}',
+            value:
+                '${schedule.location.latitude}, ${schedule.location.longitude}',
             isCoordinates: true,
           ),
-          
+
           if (schedule.wasteType != null)
             _buildDetailItem(
               icon: Icons.delete_outline_rounded,
               title: 'Jenis Sampah',
               value: schedule.wasteType!,
             ),
-          
+
           if (schedule.estimatedWeight != null)
             _buildDetailItem(
               icon: Icons.scale_rounded,
               title: 'Estimasi Berat',
               value: '${schedule.estimatedWeight} kg',
             ),
-          
+
           if (schedule.contactName != null)
             _buildDetailItem(
               icon: Icons.person_outline_rounded,
               title: 'Nama Kontak',
               value: schedule.contactName!,
             ),
-          
+
           if (schedule.contactPhone != null)
             _buildDetailItem(
               icon: Icons.phone_rounded,
               title: 'Nomor Telepon',
               value: schedule.contactPhone!,
             ),
-          
+
           if (schedule.notes != null && schedule.notes!.isNotEmpty)
             _buildDetailItem(
               icon: Icons.note_rounded,
               title: 'Catatan',
               value: schedule.notes!,
             ),
-          
+
           _buildDetailItem(
             icon: Icons.repeat_rounded,
             title: 'Frekuensi',
             value: _getFrequencyText(schedule.frequency),
           ),
-          
+
           if (schedule.completedAt != null)
             _buildDetailItem(
               icon: Icons.check_circle,
               title: 'Diselesaikan Pada',
-              value: DateFormat('d MMM yyyy, HH:mm', 'id_ID').format(schedule.completedAt!),
+              value: DateFormat(
+                'd MMM yyyy, HH:mm',
+                'id_ID',
+              ).format(schedule.completedAt!),
             ),
-            
+
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           if (schedule.status == ScheduleStatus.pending)
             SizedBox(
@@ -652,19 +708,17 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                 },
                 child: Text(
                   'Batalkan Jadwal',
-                  style: whiteTextStyle.copyWith(
-                    fontWeight: medium,
-                  ),
+                  style: whiteTextStyle.copyWith(fontWeight: medium),
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 24),
         ],
       ),
     );
   }
-  
+
   // Function to view the location on a map inside the app
   void _openMapView(double lat, double lng) {
     Navigator.push(
@@ -679,10 +733,10 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       ),
     );
   }
-  
+
   Widget _buildDetailItem({
-    required IconData icon, 
-    required String title, 
+    required IconData icon,
+    required String title,
     required String value,
     bool isCoordinates = false,
   }) {
@@ -697,23 +751,14 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
               color: greenColor.withAlpha(26), // 0.1 * 255 = 26
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: greenColor,
-              size: 16,
-            ),
+            child: Icon(icon, color: greenColor, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: greyTextStyle.copyWith(
-                    fontSize: 12,
-                  ),
-                ),
+                Text(title, style: greyTextStyle.copyWith(fontSize: 12)),
                 const SizedBox(height: 2),
                 Row(
                   children: [
@@ -746,7 +791,9 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: greenColor.withAlpha(26), // 0.1 * 255 = 26
+                                color: greenColor.withAlpha(
+                                  26,
+                                ), // 0.1 * 255 = 26
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Icon(
@@ -795,7 +842,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       ),
     );
   }
-  
+
   String _getFrequencyText(ScheduleFrequency frequency) {
     switch (frequency) {
       case ScheduleFrequency.once:
@@ -810,15 +857,19 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         return 'Setiap bulan';
     }
   }
-  
+
   // Enhanced UI components
-  
+
   Widget _buildHeaderStats() {
     // Count schedules by status
-    int pendingCount = _schedules.where((s) => s.status == ScheduleStatus.pending).length;
-    int inProgressCount = _schedules.where((s) => s.status == ScheduleStatus.inProgress).length;
+    int pendingCount = _schedules
+        .where((s) => s.status == ScheduleStatus.pending)
+        .length;
+    int inProgressCount = _schedules
+        .where((s) => s.status == ScheduleStatus.inProgress)
+        .length;
     // We're not using completedCount yet, but will track all schedules
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -829,10 +880,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             const SizedBox(width: 12),
             Text(
               'Jadwal Pengambilan',
-              style: whiteTextStyle.copyWith(
-                fontSize: 20,
-                fontWeight: bold,
-              ),
+              style: whiteTextStyle.copyWith(fontSize: 20, fontWeight: bold),
             ),
           ],
         ),
@@ -840,9 +888,9 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         Text(
           'Kelola jadwal pengambilan sampah Anda dengan mudah',
           style: whiteTextStyle.copyWith(
-            fontSize: 14, 
+            fontSize: 14,
             fontWeight: light,
-            color: Colors.white.withAlpha(230) // 0.9 * 255 = 230
+            color: Colors.white.withAlpha(230), // 0.9 * 255 = 230
           ),
         ),
         const SizedBox(height: 20),
@@ -874,8 +922,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       ],
     );
   }
-  
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -893,10 +946,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             const SizedBox(height: 6),
             Text(
               value,
-              style: whiteTextStyle.copyWith(
-                fontSize: 18,
-                fontWeight: bold,
-              ),
+              style: whiteTextStyle.copyWith(fontSize: 18, fontWeight: bold),
             ),
             const SizedBox(height: 2),
             Text(
@@ -913,15 +963,15 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       ),
     );
   }
-  
+
   Widget _buildFilterChip(String status) {
     final isSelected = _selectedStatusFilter == status;
-    
+
     // Get appropriate color based on status
     Color statusColor = greenColor;
     IconData statusIcon;
-    
-    switch(status.toLowerCase()) {
+
+    switch (status.toLowerCase()) {
       case 'menunggu':
         statusColor = Colors.orange;
         statusIcon = Icons.access_time_rounded;
@@ -946,7 +996,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         statusColor = greenColor;
         statusIcon = Icons.list_alt_rounded;
     }
-    
+
     return Padding(
       padding: const EdgeInsets.only(right: 12),
       child: GestureDetector(
@@ -959,10 +1009,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 10,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? statusColor : whiteColor,
             borderRadius: BorderRadius.circular(20),
@@ -990,11 +1037,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             children: [
               // Only show icon when selected
               if (isSelected) ...[
-                Icon(
-                  statusIcon,
-                  color: whiteColor,
-                  size: 14,
-                ),
+                Icon(statusIcon, color: whiteColor, size: 14),
                 const SizedBox(width: 6),
               ],
               Text(
@@ -1015,7 +1058,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
@@ -1043,19 +1086,13 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           const SizedBox(height: 20),
           Text(
             'Belum Ada Jadwal',
-            style: blackTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'Anda belum memiliki jadwal pengambilan sampah untuk tanggal ini.',
-            style: greyTextStyle.copyWith(
-              fontSize: 14,
-              height: 1.5,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 14, height: 1.5),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -1128,10 +1165,12 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
               height: 6,
               decoration: BoxDecoration(
                 color: statusColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1146,7 +1185,9 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: statusColor.withAlpha(26), // 0.1 * 255 = 26
+                              color: statusColor.withAlpha(
+                                26,
+                              ), // 0.1 * 255 = 26
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -1166,7 +1207,10 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: statusColor.withAlpha(26), // 0.1 * 255 = 26
                           borderRadius: BorderRadius.circular(12),
@@ -1176,11 +1220,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              statusIcon,
-                              color: statusColor,
-                              size: 14,
-                            ),
+                            Icon(statusIcon, color: statusColor, size: 14),
                             const SizedBox(width: 4),
                             Text(
                               statusText,
@@ -1227,11 +1267,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                   // Waste type and weight
                   Row(
                     children: [
-                      Icon(
-                        Icons.delete_outline,
-                        color: greenColor,
-                        size: 16,
-                      ),
+                      Icon(Icons.delete_outline, color: greenColor, size: 16),
                       const SizedBox(width: 8),
                       Text(
                         '${schedule.wasteType ?? 'Sampah'} ${schedule.estimatedWeight != null ? '(${schedule.estimatedWeight!} kg)' : ''}',
@@ -1242,15 +1278,12 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                       ),
                     ],
                   ),
-                  if (schedule.contactName != null && schedule.contactName!.isNotEmpty) ...[
+                  if (schedule.contactName != null &&
+                      schedule.contactName!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(
-                          Icons.person_outline,
-                          color: greenColor,
-                          size: 16,
-                        ),
+                        Icon(Icons.person_outline, color: greenColor, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           schedule.contactName!,
@@ -1262,7 +1295,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                       ],
                     ),
                   ],
-                  
+
                   const SizedBox(height: 16),
                   const Divider(height: 1),
                   const SizedBox(height: 16),
@@ -1292,18 +1325,20 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: schedule.status == ScheduleStatus.pending ? Colors.red[400] : Colors.grey,
+                            backgroundColor:
+                                schedule.status == ScheduleStatus.pending
+                                ? Colors.red[400]
+                                : Colors.grey,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          onPressed: schedule.status == ScheduleStatus.pending ? 
-                            () => _cancelSchedule(schedule) : null,
+                          onPressed: schedule.status == ScheduleStatus.pending
+                              ? () => _cancelSchedule(schedule)
+                              : null,
                           child: Text(
                             'Batalkan',
-                            style: whiteTextStyle.copyWith(
-                              fontWeight: medium,
-                            ),
+                            style: whiteTextStyle.copyWith(fontWeight: medium),
                           ),
                         ),
                       ),

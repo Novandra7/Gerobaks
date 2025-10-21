@@ -46,7 +46,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   equatable: ^2.0.5
   geocoding: ^2.2.0
-  google_maps_flutter: ^2.9.0
+  # google_maps_flutter: ^2.9.0  # REMOVED: No longer using embedded Google Maps
   # flutter_secure_storage: ^8.0.0  # Menghapus karena masalah kompatibilitas
   
   # Audio recording and playback
