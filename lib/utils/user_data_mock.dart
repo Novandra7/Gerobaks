@@ -1,7 +1,5 @@
-import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/utils/api_routes.dart';
 import 'package:logger/logger.dart';
 
 /// Class UserDataMock sekarang hanya berfungsi sebagai helper untuk
@@ -9,11 +7,6 @@ import 'package:logger/logger.dart';
 /// Tidak lagi menggunakan data hardcoded.
 class UserDataMock {
   static final _logger = Logger();
-  static final ApiClient _api = ApiClient();
-  static final AuthApiService _authService = AuthApiService();
-
-  // Variabel di atas tetap disimpan untuk kompatibilitas dengan kode lama
-  // yang mungkin masih mereferensikannya
 
   // Data kosong - semua data sekarang diambil dari API
   static final List<Map<String, dynamic>> endUsers = [];

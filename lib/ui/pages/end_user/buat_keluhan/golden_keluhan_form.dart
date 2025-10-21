@@ -24,7 +24,6 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
   // API and user data
   late EndUserApiService _apiService;
   late LocalStorageService _localStorage;
-  Map<String, dynamic>? _userData;
   bool _isSubmitting = false;
 
   @override
@@ -42,10 +41,10 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
 
   Future<void> _loadUserData() async {
     try {
-      final userData = await _localStorage.getUserData();
+      await _localStorage.getUserData();
       if (mounted) {
         setState(() {
-          _userData = userData;
+          // User data loaded successfully
         });
       }
     } catch (e) {
@@ -437,7 +436,7 @@ class _GoldenKeluhanFormState extends State<GoldenKeluhanForm> {
         border: Border.all(color: greyColor.withOpacity(0.3)),
       ),
       child: DropdownButtonFormField<T>(
-        initialValue: value,
+        value: value,
         isExpanded: true,
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
