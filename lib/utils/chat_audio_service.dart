@@ -123,12 +123,12 @@ class ChatAudioService {
 <<<<<<< HEAD
 
       // Use the path from the recorder if available, otherwise use our stored path
-      final finalPath = recordingPath ?? _currentRecordingPath;
+      final finalPath = recordingPath ?? currentRecordingPath;
 =======
       _recordingStartTime = null;
-      final recordingPath = _currentRecordingPath;
+      final recordingPath = currentRecordingPath;
 >>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
-      _currentRecordingPath = null;
+      currentRecordingPath;
 
       debugPrint('Recording stopped, saved at: $finalPath');
       return finalPath;
