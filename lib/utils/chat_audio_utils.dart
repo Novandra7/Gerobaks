@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart'
-    as permission_handler;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'chat_audio_service.dart';
@@ -214,7 +211,7 @@ class ChatAudioUtils {
 
   /// Open app settings untuk permission
   static Future<bool> openAppSettings() async {
-    return await permission_handler.openAppSettings();
+    return await openAppSettings();
   }
 
   /// Get voice message info dari file path
@@ -311,6 +308,3 @@ class VoiceMessageInfo {
     return 'VoiceMessageInfo(file: $fileName, size: $formattedFileSize, created: $createdAt)';
   }
 }
-=======
-
->>>>>>> 2e541a34a65c54536f2513f1cd751746eb9fc575
