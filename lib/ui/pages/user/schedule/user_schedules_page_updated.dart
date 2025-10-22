@@ -116,7 +116,10 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
 
                 if (state is ScheduleFailed) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.error), backgroundColor: redcolor),
+                    SnackBar(
+                      content: Text(state.error),
+                      backgroundColor: redcolor,
+                    ),
                   );
                   setState(() {
                     _isLoading = false;

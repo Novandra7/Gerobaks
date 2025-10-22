@@ -689,8 +689,14 @@ class ScheduleService {
         return item;
       } else if (item is Map<String, dynamic>) {
         return WasteItem(
-          wasteType: item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
-          estimatedWeight: (item['weight'] ?? item['estimatedWeight'] ?? item['estimated_weight'] ?? 0.0).toDouble(),
+          wasteType:
+              item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
+          estimatedWeight:
+              (item['weight'] ??
+                      item['estimatedWeight'] ??
+                      item['estimated_weight'] ??
+                      0.0)
+                  .toDouble(),
           unit: item['unit'] ?? 'kg',
           notes: item['notes'],
         );
@@ -770,8 +776,17 @@ class ScheduleService {
           return item;
         } else if (item is Map<String, dynamic>) {
           return WasteItem(
-            wasteType: item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
-            estimatedWeight: (item['weight'] ?? item['estimatedWeight'] ?? item['estimated_weight'] ?? 0.0).toDouble(),
+            wasteType:
+                item['category'] ??
+                item['wasteType'] ??
+                item['waste_type'] ??
+                '',
+            estimatedWeight:
+                (item['weight'] ??
+                        item['estimatedWeight'] ??
+                        item['estimated_weight'] ??
+                        0.0)
+                    .toDouble(),
             unit: item['unit'] ?? 'kg',
             notes: item['notes'],
           );

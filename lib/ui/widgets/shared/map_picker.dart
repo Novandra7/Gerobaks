@@ -9,10 +9,10 @@ class MapPickerPage extends StatefulWidget {
   final LatLng? initialLocation;
 
   const MapPickerPage({
-    Key? key,
+    super.key,
     required this.onLocationSelected,
     this.initialLocation,
-  }) : super(key: key);
+  });
 
   @override
   State<MapPickerPage> createState() => _MapPickerPageState();
@@ -28,7 +28,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
   void initState() {
     super.initState();
     _mapController = MapController();
-    
+
     if (widget.initialLocation != null) {
       _selectedLocation = widget.initialLocation!;
       _getAddressFromLatLng(_selectedLocation);
@@ -39,7 +39,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
 
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoading = true);
-    
+
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -75,13 +75,15 @@ class _MapPickerPageState extends State<MapPickerPage> {
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         setState(() {
-          _selectedAddress = '${place.street}, ${place.subLocality}, ${place.locality}';
+          _selectedAddress =
+              '${place.street}, ${place.subLocality}, ${place.locality}';
         });
       }
     } catch (e) {
       print('Error getting address: $e');
       setState(() {
-        _selectedAddress = 'Lat: ${location.latitude.toStringAsFixed(6)}, Lng: ${location.longitude.toStringAsFixed(6)}';
+        _selectedAddress =
+            'Lat: ${location.latitude.toStringAsFixed(6)}, Lng: ${location.longitude.toStringAsFixed(6)}';
       });
     }
   }
@@ -144,10 +146,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
               ),
             ],
           ),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
           Positioned(
             bottom: 0,
             left: 0,
@@ -169,7 +168,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    _selectedAddress.isEmpty ? 'Pilih lokasi di peta' : _selectedAddress,
+                    _selectedAddress.isEmpty
+                        ? 'Pilih lokasi di peta'
+                        : _selectedAddress,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -179,7 +180,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: _selectedAddress.isEmpty ? null : _confirmLocation,
+                    onPressed: _selectedAddress.isEmpty
+                        ? null
+                        : _confirmLocation,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
