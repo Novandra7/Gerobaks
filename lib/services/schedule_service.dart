@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
+import 'package:bank_sha/models/waste_item.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/services/schedule_service_complete.dart';
@@ -710,7 +711,10 @@ class ScheduleService {
       frequency: ScheduleFrequency.once,
       driverId: null,
       createdAt: DateTime.now(),
-      wasteItems: wasteItems.cast<dynamic>(),
+      wasteItems: wasteItems.map((item) {
+        if (item is WasteItem) return item;
+        return WasteItem.fromJson(item as Map<String, dynamic>);
+      }).toList(),
       isPaid: false,
     );
 
@@ -783,7 +787,10 @@ class ScheduleService {
       location: (latitude != null && longitude != null)
           ? LatLng(latitude, longitude)
           : null,
-      wasteItems: wasteItems?.cast<dynamic>(),
+      wasteItems: wasteItems?.map((item) {
+        if (item is WasteItem) return item;
+        return WasteItem.fromJson(item as Map<String, dynamic>);
+      }).toList(),
       status: newStatus,
       notes: notes,
     );

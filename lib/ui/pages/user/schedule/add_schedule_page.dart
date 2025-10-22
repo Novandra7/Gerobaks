@@ -5,7 +5,6 @@ import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
-import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -93,14 +92,24 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
       if (userData != null) {
-        _userId = userData['id'] as String;
+        // Safe casting - handle both int and String types
+        final userIdValue = userData['id'];
+        _userId = userIdValue?.toString();
 
-        // Get user data from mock based on user ID
-        final userMockData = UserDataMock.getUserById(_userId!);
-        if (userMockData != null) {
-          _nameController.text = userMockData['name'] ?? '';
-          _phoneController.text = userMockData['phone'] ?? '';
-          _addressController.text = userMockData['address'] ?? '';
+        // Get user data directly from userData (already from API)
+        // Ensure all values are strings with proper null handling
+        if (_userId != null) {
+          // Safe handling for name - could be null or any type
+          final name = userData['name'];
+          _nameController.text = name != null ? name.toString() : '';
+
+          // Safe handling for phone - could be null or any type
+          final phone = userData['phone'];
+          _phoneController.text = phone != null ? phone.toString() : '';
+
+          // Safe handling for address - could be null or any type
+          final address = userData['address'];
+          _addressController.text = address != null ? address.toString() : '';
         }
       }
 
@@ -658,7 +667,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                       _hasScheduledWaste = value;
                                     });
                                   },
-                                  activeColor: greenColor,
+                                  activeThumbColor: greenColor,
                                   activeTrackColor: greenColor.withOpacity(0.3),
                                   inactiveThumbColor: greyColor,
                                   inactiveTrackColor: greyColor.withOpacity(
@@ -855,7 +864,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                       }
                                     });
                                   },
-                                  activeColor: greenColor,
+                                  activeThumbColor: greenColor,
                                   activeTrackColor: greenColor.withOpacity(0.3),
                                   inactiveThumbColor: greyColor,
                                   inactiveTrackColor: greyColor.withOpacity(
@@ -926,7 +935,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               children: [
                                 // Multi-select dropdown field
                                 DropdownButtonFormField<String>(
-                                  value: null, // Always null for multi-select
+                                  initialValue:
+                                      null, // Always null for multi-select
                                   isExpanded: true,
                                   decoration: InputDecoration(
                                     labelText: 'Jenis Sampah',

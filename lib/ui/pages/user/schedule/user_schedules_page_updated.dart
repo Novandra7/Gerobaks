@@ -6,6 +6,8 @@ import 'package:bank_sha/ui/widgets/shared/schedule_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
+import 'package:bank_sha/blocs/schedule/schedule_event.dart';
+import 'package:bank_sha/blocs/schedule/schedule_state.dart';
 import 'package:intl/intl.dart';
 
 class UserSchedulesPageNew extends StatefulWidget {
@@ -114,7 +116,10 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
 
                 if (state is ScheduleFailed) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.e), backgroundColor: redcolor),
+                    SnackBar(
+                      content: Text(state.error),
+                      backgroundColor: redcolor,
+                    ),
                   );
                   setState(() {
                     _isLoading = false;
