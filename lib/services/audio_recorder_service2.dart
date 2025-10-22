@@ -16,7 +16,7 @@ import 'package:record/record.dart';
 ///
 /// Tidak didukung: Linux, Windows
 class AudioRecorderService2 {
-  Record? _recorder;
+  AudioRecorder? _recorder;
   bool _isRecording = false;
   String? _path;
   Timer? _timer;
@@ -49,7 +49,7 @@ class AudioRecorderService2 {
         return;
       }
 
-      _recorder ??= Record();
+      _recorder ??= AudioRecorder();
       debugPrint('Audio recorder initialized successfully');
     } catch (e) {
       debugPrint('Error initializing audio recorder: $e');
@@ -162,8 +162,15 @@ class AudioRecorderService2 {
 
       debugPrint('Starting recording to: $_path');
 
-      // Start recording - menggunakan API sederhana dari local record package
-      await _recorder!.start();
+      // Start recording - menggunakan API v6 dengan RecordConfig
+      await _recorder!.start(
+        RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          sampleRate: 44100,
+          bitRate: 128000,
+        ),
+        path: _path!,
+      );
 
       _isRecording = true;
       _recordDuration = 0;
