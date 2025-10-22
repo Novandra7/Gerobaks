@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
+import 'package:bank_sha/models/waste_item.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/services/schedule_service_complete.dart';
@@ -682,6 +683,22 @@ class ScheduleService {
   }) async {
     await _ensureInitialized();
 
+    // Convert List<dynamic> to List<WasteItem>
+    final List<WasteItem> convertedWasteItems = wasteItems.map((item) {
+      if (item is WasteItem) {
+        return item;
+      } else if (item is Map<String, dynamic>) {
+        return WasteItem(
+          wasteType: item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
+          estimatedWeight: (item['weight'] ?? item['estimatedWeight'] ?? item['estimated_weight'] ?? 0.0).toDouble(),
+          unit: item['unit'] ?? 'kg',
+          notes: item['notes'],
+        );
+      } else {
+        throw Exception('Invalid waste item format');
+      }
+    }).toList();
+
     // Convert date string (YYYY-MM-DD) to DateTime
     final dateParts = date.split('-');
     final scheduledDate = DateTime(
@@ -710,7 +727,7 @@ class ScheduleService {
       frequency: ScheduleFrequency.once,
       driverId: null,
       createdAt: DateTime.now(),
-      wasteItems: wasteItems.cast<dynamic>(),
+      wasteItems: convertedWasteItems,
       isPaid: false,
     );
 
@@ -744,6 +761,25 @@ class ScheduleService {
     }
 
     final existingSchedule = schedules[index];
+
+    // Convert List<dynamic>? to List<WasteItem>?
+    List<WasteItem>? convertedWasteItems;
+    if (wasteItems != null) {
+      convertedWasteItems = wasteItems.map((item) {
+        if (item is WasteItem) {
+          return item;
+        } else if (item is Map<String, dynamic>) {
+          return WasteItem(
+            wasteType: item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
+            estimatedWeight: (item['weight'] ?? item['estimatedWeight'] ?? item['estimated_weight'] ?? 0.0).toDouble(),
+            unit: item['unit'] ?? 'kg',
+            notes: item['notes'],
+          );
+        } else {
+          throw Exception('Invalid waste item format');
+        }
+      }).toList();
+    }
 
     // Parse date if provided
     DateTime? scheduledDate;
@@ -783,7 +819,7 @@ class ScheduleService {
       location: (latitude != null && longitude != null)
           ? LatLng(latitude, longitude)
           : null,
-      wasteItems: wasteItems?.cast<dynamic>(),
+      wasteItems: convertedWasteItems,
       status: newStatus,
       notes: notes,
     );

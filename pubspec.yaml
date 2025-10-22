@@ -51,7 +51,7 @@ dependencies:
 
   # Audio recording and playback
   audioplayers: ^6.0.0
-  record: ^4.4.4
+  record: ^6.1.2
   path_provider: ^2.1.5
   permission_handler: ^11.3.0
 
