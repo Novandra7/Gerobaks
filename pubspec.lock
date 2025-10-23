@@ -680,7 +680,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "11.0.2"
-    version: "11.0.2"
   leak_tracker_flutter_testing:
     dependency: transitive
     description:
