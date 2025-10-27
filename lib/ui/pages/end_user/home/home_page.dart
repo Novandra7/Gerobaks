@@ -1,5 +1,6 @@
 import 'package:bank_sha/ui/pages/end_user/popupiklan.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
 import 'package:bank_sha/utils/subscription_guard.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -85,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(
                   builder: (context) => BlocProvider.value(
                     value: context.read<ScheduleBloc>(),
-                    child: const AddSchedulePageNew(),
+                    child: const AddSchedulePage(),
                   ),
                 ),
               );

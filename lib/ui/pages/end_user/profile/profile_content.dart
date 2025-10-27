@@ -7,13 +7,13 @@ import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/ui/widgets/shared/responsive_menu.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/user_service.dart';
-import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/mixins/app_dialog_mixin.dart';
+import 'package:bank_sha/blocs/blocs.dart';
 
 class ProfileContent extends StatefulWidget {
   final double horizontalPadding;
@@ -389,21 +389,20 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                     );
                       
                     if (confirm) {
-                      // Logout using AuthApiService (API method)
-                      final authService = AuthApiService();
-                      await authService.logout();
-                      
-                      // For backward compatibility, also logout from local services
-                      await _userService.logout();
-                      
+                      // Use AuthBloc to handle logout properly
                       if (mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignInPage(),
-                          ),
-                          (route) => false,
-                        );
+                        context.read<AuthBloc>().add(const LogoutRequested());
+                        
+                        // Wait a moment for logout to complete, then navigate
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        
+                        if (mounted) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            '/sign-in',
+                            (route) => false,
+                          );
+                        }
                       }
                     }
                   },

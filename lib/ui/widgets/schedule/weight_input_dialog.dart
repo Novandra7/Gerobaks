@@ -126,7 +126,7 @@ class _WeightInputDialogState extends State<WeightInputDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: _selectedUnit,
+                      value: _selectedUnit,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
