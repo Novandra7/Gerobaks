@@ -17,53 +17,44 @@ import 'package:bank_sha/blocs/blocs.dart';
 
 class ProfileContent extends StatefulWidget {
   final double horizontalPadding;
-  
-  const ProfileContent({
-    super.key,
-    this.horizontalPadding = 24.0,
-  });
+
+  const ProfileContent({super.key, this.horizontalPadding = 24.0});
 
   @override
   State<ProfileContent> createState() => _ProfileContentState();
 }
 
-class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, SingleTickerProviderStateMixin {
+class _ProfileContentState extends State<ProfileContent>
+    with AppDialogMixin, SingleTickerProviderStateMixin {
   bool _isLoading = true;
   UserModel? _user;
   late UserService _userService;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Setup animations
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
+
     // Load real user data
     _loadUserData();
-    
+
     // Start animation after a brief delay
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
@@ -71,20 +62,20 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
       }
     });
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadUserData() async {
     try {
       _userService = await UserService.getInstance();
       await _userService.init();
-      
+
       final user = await _userService.getCurrentUser();
-      
+
       if (mounted) {
         setState(() {
           _user = user;
@@ -100,7 +91,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
       }
     }
   }
-  
+
   // Skeleton loading for profile
   Widget _buildSkeletonLoading() {
     return Container(
@@ -111,7 +102,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 24),
-          
+
           // Profile Info Skeleton
           Column(
             children: [
@@ -122,9 +113,9 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
               SkeletonItems.text(width: 180, height: 14),
             ],
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Menu Items Skeleton
           for (int i = 0; i < 6; i++) ...[
             Container(
@@ -150,12 +141,12 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
     if (_isLoading) {
       return _buildSkeletonLoading();
     }
-    
+
     // Get screen width for responsiveness
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = isTablet ? 32.0 : widget.horizontalPadding;
-    
+
     return Container(
       color: uicolor,
       width: double.infinity,
@@ -174,139 +165,150 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                 // Profile Info
                 Column(
                   children: [
-                  ProfilePicturePicker(
-                    currentPicture: _user?.profilePicUrl ?? 'assets/img_profile.png',
-                    onPictureSelected: (String newPicture) async {
-                      try {
-                        await _userService.updateUserProfile(
-                          profilePicUrl: newPicture,
-                        );
-                        _loadUserData(); // Refresh data
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Gagal mengubah foto profil: $e')),
+                    ProfilePicturePicker(
+                      currentPicture:
+                          _user?.profilePicUrl ?? 'assets/img_profile.png',
+                      onPictureSelected: (String newPicture) async {
+                        try {
+                          await _userService.updateUserProfile(
+                            profilePicUrl: newPicture,
                           );
+                          _loadUserData(); // Refresh data
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Gagal mengubah foto profil: $e'),
+                              ),
+                            );
+                          }
                         }
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _user?.name ?? 'Pengguna',
-                    style: blackTextStyle.copyWith(
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: semiBold,
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _user?.email ?? 'email@gerobaks.com',
-                    style: greyTextStyle.copyWith(
-                      fontSize: isTablet ? 14 : 12,
-                    ),
-                  ),
-                  if (_user != null) ...[
-                    const SizedBox(height: 8),
-                    // Badge verifikasi telepon
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _user!.isPhoneVerified ? greenColor : Colors.red,
-                        borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 12),
+                    Text(
+                      _user?.name ?? 'Pengguna',
+                      style: blackTextStyle.copyWith(
+                        fontSize: isTablet ? 18 : 16,
+                        fontWeight: semiBold,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _user!.isPhoneVerified 
-                              ? Icons.check_circle_outline 
-                              : Icons.info_outline,
-                            color: Colors.white,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _user!.isPhoneVerified 
-                              ? 'Telepon Terverifikasi' 
-                              : 'Telepon Belum Terverifikasi',
-                            style: whiteTextStyle.copyWith(
-                              fontSize: 10,
-                              fontWeight: medium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _user?.email ?? 'email@gerobaks.com',
+                      style: greyTextStyle.copyWith(
+                        fontSize: isTablet ? 14 : 12,
+                      ),
+                    ),
+                    if (_user != null) ...[
+                      const SizedBox(height: 8),
+                      // Badge verifikasi telepon
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _user!.isPhoneVerified
+                              ? greenColor
+                              : Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _user!.isPhoneVerified
+                                  ? Icons.check_circle_outline
+                                  : Icons.info_outline,
+                              color: Colors.white,
+                              size: 14,
                             ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _user!.isPhoneVerified
+                                  ? 'Telepon Terverifikasi'
+                                  : 'Telepon Belum Terverifikasi',
+                              style: whiteTextStyle.copyWith(
+                                fontSize: 10,
+                                fontWeight: medium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      _user?.email ?? 'email@gerobaks.com',
+                      style: greyTextStyle.copyWith(
+                        fontSize: isTablet ? 15 : 14,
+                        fontWeight: regular,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () {
+                        // Navigasi ke halaman riwayat poin ketika card diklik
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PointsHistoryPage(),
                           ),
-                        ],
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Ink(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 20 : 16,
+                          vertical: isTablet ? 12 : 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: greenColor.withOpacity(0.5),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: greenColor.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.stars_rounded,
+                              color: greenColor,
+                              size: isTablet ? 24 : 20,
+                            ),
+                            SizedBox(width: isTablet ? 10 : 8),
+                            Text(
+                              '${_user?.points ?? 0} Poin',
+                              style: greenTextStyle.copyWith(
+                                fontWeight: semiBold,
+                                fontSize: isTablet ? 16 : 14,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: greenColor,
+                              size: isTablet ? 16 : 14,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 4),
-                  Text(
-                    _user?.email ?? 'email@gerobaks.com',
-                    style: greyTextStyle.copyWith(
-                      fontSize: isTablet ? 15 : 14,
-                      fontWeight: regular,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  InkWell(
-                    onTap: () {
-                      // Navigasi ke halaman riwayat poin ketika card diklik
-                      Navigator.push(
-                        context, 
-                        MaterialPageRoute(
-                          builder: (context) => const PointsHistoryPage(),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Ink(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 20 : 16, 
-                        vertical: isTablet ? 12 : 10
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: greenColor.withOpacity(0.5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: greenColor.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.stars_rounded,
-                            color: greenColor,
-                            size: isTablet ? 24 : 20,
-                          ),
-                          SizedBox(width: isTablet ? 10 : 8),
-                          Text(
-                            '${_user?.points ?? 0} Poin',
-                            style: greenTextStyle.copyWith(
-                              fontWeight: semiBold,
-                              fontSize: isTablet ? 16 : 14,
-                            ),
-                          ),
-                          SizedBox(width: 6),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: greenColor,
-                            size: isTablet ? 16 : 14,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
 
-              const SizedBox(height: 36), // Jarak lebih besar untuk memisahkan profil dan menu
-
+                const SizedBox(
+                  height: 36,
+                ), // Jarak lebih besar untuk memisahkan profil dan menu
                 // Menu Items with Responsive Layout
                 ResponsiveAppMenu(
                   iconURL: 'assets/ic_profile_profile.png',
@@ -315,7 +317,9 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const Myprofile()),
+                      MaterialPageRoute(
+                        builder: (context) => const Myprofile(),
+                      ),
                     );
                   },
                 ),
@@ -325,7 +329,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                   isHighlighted: false,
                   onTap: () {
                     Navigator.push(
-                      context, 
+                      context,
                       MaterialPageRoute(
                         builder: (context) => const PointsHistoryPage(),
                       ),
@@ -347,7 +351,9 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const PrivacyPolicy()),
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyPolicy(),
+                      ),
                     );
                   },
                 ),
@@ -373,7 +379,7 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                     );
                   },
                 ),
-                  ResponsiveAppMenu(
+                ResponsiveAppMenu(
                   iconURL: 'assets/ic_logout_profile.png',
                   title: 'Log out',
                   isHighlighted: false,
@@ -387,15 +393,15 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                       cancelText: 'Batal',
                       icon: Icons.logout,
                     );
-                      
+
                     if (confirm) {
                       // Use AuthBloc to handle logout properly
                       if (mounted) {
                         context.read<AuthBloc>().add(const LogoutRequested());
-                        
+
                         // Wait a moment for logout to complete, then navigate
                         await Future.delayed(const Duration(milliseconds: 500));
-                        
+
                         if (mounted) {
                           Navigator.pushNamedAndRemoveUntil(
                             context,
@@ -406,7 +412,8 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin, Si
                       }
                     }
                   },
-                ),                const SizedBox(height: 32),
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),

@@ -50,7 +50,7 @@ class _SplashPageState extends State<SplashPage>
         // Check API token first (more reliable than localStorage flags)
         final authService = AuthApiService();
         final token = await authService.getToken();
-        
+
         print("🚀 [SPLASH] Token exists: ${token != null && token.isNotEmpty}");
 
         if (token == null || token.isEmpty) {
