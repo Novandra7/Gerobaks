@@ -162,6 +162,41 @@ class ScheduleService {
         schedule.timeSlot,
       );
 
+      // Prefer mobile-friendly endpoint for end-user schedule creation
+      try {
+        final wasteItems = <Map<String, dynamic>>[];
+        if (schedule.wasteType != null) {
+          wasteItems.add({
+            'type': schedule.wasteType,
+            if (schedule.estimatedWeight != null)
+              'estimated_weight': schedule.estimatedWeight,
+          });
+        }
+
+        final apiModel = await _remoteService.createScheduleMobile(
+          pickupLocation: schedule.address,
+          scheduledAt: scheduledAt,
+          latitude: schedule.location.latitude,
+          longitude: schedule.location.longitude,
+          notes: schedule.notes,
+          wasteItems: wasteItems.isNotEmpty ? wasteItems : null,
+        );
+
+        // Use apiModel below (same as original flow)
+        final remoteSchedule = _mergeRemoteWithLocal(
+          ScheduleModel.fromApi(apiModel),
+          schedule.copyWith(id: apiModel.id.toString()),
+        );
+
+        await _upsertLocalSchedule(remoteSchedule);
+        await _setupScheduleNotifications(remoteSchedule);
+        return remoteSchedule;
+      } catch (e) {
+        debugPrint('Remote createSchedule (mobile) failed: $e');
+        // fall through to old createSchedule attempt
+      }
+
+      // Fallback: try the legacy createSchedule endpoint
       final apiModel = await _remoteService.createSchedule(
         title: _deriveTitle(schedule),
         description: schedule.address,
@@ -174,6 +209,7 @@ class ScheduleService {
         scheduledAt: scheduledAt,
       );
 
+      // Note: flow above returns when mobile succeeded; this block handles legacy endpoint result
       final remoteSchedule = _mergeRemoteWithLocal(
         ScheduleModel.fromApi(apiModel),
         schedule.copyWith(id: apiModel.id.toString()),

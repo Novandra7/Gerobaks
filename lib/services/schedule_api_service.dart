@@ -1,6 +1,7 @@
 import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/utils/api_routes.dart';
+import 'package:intl/intl.dart';
 
 class ScheduleApiService {
   ScheduleApiService._internal();
@@ -118,6 +119,67 @@ class ScheduleApiService {
 
   Future<ScheduleApiModel> updateScheduleStatus(int id, String status) {
     return updateSchedule(id, status: status);
+  }
+
+  /// Create schedule using mobile-specific endpoint (/api/schedules/mobile)
+  /// Expected fields: pickup_location (string), scheduled_at (DateTime or String),
+  /// optional: dropoff_location, latitude, longitude, notes, waste_items (list)
+  Future<ScheduleApiModel> createScheduleMobile({
+    required String pickupLocation,
+    required DateTime scheduledAt,
+    String? dropoffLocation,
+    double? latitude,
+    double? longitude,
+    String? notes,
+    List<Map<String, dynamic>>? wasteItems,
+  }) async {
+    final body = <String, dynamic>{
+      'pickup_location': pickupLocation,
+      'scheduled_at': _formatToBackend(scheduledAt),
+      if (dropoffLocation != null && dropoffLocation.isNotEmpty)
+        'dropoff_location': dropoffLocation,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+      if (wasteItems != null && wasteItems.isNotEmpty)
+        'waste_items': wasteItems,
+    };
+
+    final json = await _api.postJson(ApiRoutes.schedulesMobile, body);
+    if (json is Map<String, dynamic>) {
+      return ScheduleApiModel.fromJson(json);
+    }
+    throw HttpException(
+      'Invalid schedule create (mobile) response: ${json.runtimeType}',
+    );
+  }
+
+  /// Convenience method to fetch schedules for a given user id via query
+  Future<List<ScheduleApiModel>> getUserSchedules(String userId) async {
+    final json = await _api.getJson(
+      ApiRoutes.schedules,
+      query: {'user_id': userId},
+    );
+    if (json is! Map<String, dynamic>) {
+      throw HttpException(
+        'Invalid schedules response for user: ${json.runtimeType}',
+      );
+    }
+
+    final data = json['data'];
+    final items = (data is List)
+        ? data
+              .whereType<Map<String, dynamic>>()
+              .map(ScheduleApiModel.fromJson)
+              .toList()
+        : <ScheduleApiModel>[];
+    return items;
+  }
+
+  String _formatToBackend(DateTime dt) {
+    // Format as YYYY-MM-DD HH:MM:SS to match backend expectations
+    final fmt = DateFormat('yyyy-MM-dd HH:mm:ss');
+    return fmt.format(dt);
   }
 }
 
