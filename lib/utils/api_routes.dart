@@ -45,8 +45,8 @@ class ApiRoutes {
   static String scheduleCancel(int id) => '/api/schedules/$id/cancel';
 
   // Tracking Routes
-  static const String trackings = '/api/trackings';
-  static String tracking(int id) => '/api/trackings/$id';
+  static const String trackings = '/api/tracking';
+  static String tracking(int id) => '/api/tracking/$id';
   static String trackingBySchedule(int scheduleId) =>
       '/api/tracking/schedule/$scheduleId';
 

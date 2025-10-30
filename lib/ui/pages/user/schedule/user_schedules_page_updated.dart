@@ -287,6 +287,7 @@ class _UserSchedulesPageNewState extends State<UserSchedulesPageNew> {
                 arguments: schedule,
               );
             },
+            trackingArgument: schedule,
           ),
         );
       }).toList(),
