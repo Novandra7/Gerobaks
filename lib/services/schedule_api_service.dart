@@ -54,6 +54,39 @@ class ScheduleApiService {
     );
   }
 
+  /// Create schedule using mobile endpoint (for end_user role)
+  /// Required fields: alamat, tanggal, waktu, koordinat.lat, koordinat.lng, jenis_layanan
+  Future<ScheduleApiModel> createScheduleMobile({
+    required String alamat,
+    required String tanggal, // Format: YYYY-MM-DD
+    required String waktu, // Format: HH:mm
+    required double lat,
+    required double lng,
+    required String jenisLayanan,
+    String? catatan,
+    String? metodePembayaran,
+  }) async {
+    final body = <String, dynamic>{
+      'alamat': alamat,
+      'tanggal': tanggal,
+      'waktu': waktu,
+      'koordinat': {'lat': lat, 'lng': lng},
+      'jenis_layanan': jenisLayanan,
+      if (catatan != null && catatan.isNotEmpty) 'catatan': catatan,
+      if (metodePembayaran != null && metodePembayaran.isNotEmpty)
+        'metode_pembayaran': metodePembayaran,
+    };
+
+    final json = await _api.postJson(ApiRoutes.schedulesMobile, body);
+    if (json is Map<String, dynamic>) {
+      return ScheduleApiModel.fromJson(json);
+    }
+    throw HttpException(
+      'Invalid schedule create response: ${json.runtimeType}',
+    );
+  }
+
+  /// Create schedule using standard endpoint (for mitra/admin role)
   Future<ScheduleApiModel> createSchedule({
     required String title,
     String? description,

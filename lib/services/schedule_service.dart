@@ -157,21 +157,45 @@ class ScheduleService {
     final fallbackId = _uuid.v4();
 
     try {
-      final scheduledAt = _combineDateAndTime(
-        schedule.scheduledDate,
-        schedule.timeSlot,
-      );
+      // Format date and time for mobile API
+      final tanggal =
+          '${schedule.scheduledDate.year.toString().padLeft(4, '0')}-'
+          '${schedule.scheduledDate.month.toString().padLeft(2, '0')}-'
+          '${schedule.scheduledDate.day.toString().padLeft(2, '0')}';
 
-      final apiModel = await _remoteService.createSchedule(
-        title: _deriveTitle(schedule),
-        description: schedule.address,
-        latitude: schedule.location.latitude,
-        longitude: schedule.location.longitude,
-        status: _statusToApi(schedule.status),
-        assignedTo: schedule.driverId != null
-            ? int.tryParse(schedule.driverId!)
-            : null,
-        scheduledAt: scheduledAt,
+      final waktu =
+          '${schedule.timeSlot.hour.toString().padLeft(2, '0')}:'
+          '${schedule.timeSlot.minute.toString().padLeft(2, '0')}';
+
+      // Determine jenis_layanan based on wasteType
+      String jenisLayanan = 'pickup_sampah_campuran'; // default
+      if (schedule.wasteType != null) {
+        final wasteTypeLower = schedule.wasteType!.toLowerCase();
+        if (wasteTypeLower.contains('organik') ||
+            wasteTypeLower.contains('organic')) {
+          jenisLayanan = 'pickup_sampah_organik';
+        } else if (wasteTypeLower.contains('anorganik') ||
+            wasteTypeLower.contains('inorganic')) {
+          jenisLayanan = 'pickup_sampah_anorganik';
+        } else if (wasteTypeLower.contains('daur ulang') ||
+            wasteTypeLower.contains('recyclable')) {
+          jenisLayanan = 'pickup_sampah_daur_ulang';
+        } else if (wasteTypeLower.contains('b3') ||
+            wasteTypeLower.contains('hazardous')) {
+          jenisLayanan = 'pickup_sampah_b3';
+        }
+      }
+
+      // Use mobile endpoint for end_user
+      final apiModel = await _remoteService.createScheduleMobile(
+        alamat: schedule.address,
+        tanggal: tanggal,
+        waktu: waktu,
+        lat: schedule.location.latitude,
+        lng: schedule.location.longitude,
+        jenisLayanan: jenisLayanan,
+        catatan: schedule.notes,
+        metodePembayaran: 'cash', // Default payment method
       );
 
       final remoteSchedule = _mergeRemoteWithLocal(
@@ -183,7 +207,7 @@ class ScheduleService {
       await _setupScheduleNotifications(remoteSchedule);
       return remoteSchedule;
     } catch (e) {
-      debugPrint('Remote createSchedule failed: $e');
+      debugPrint('Remote createSchedule (mobile) failed: $e');
     }
 
     final fallbackSchedule = ScheduleModel(
