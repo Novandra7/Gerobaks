@@ -38,8 +38,12 @@ class Tracking {
       address: map['address'],
       status: map['status'],
       notes: map['notes'],
-      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.parse(
+        map['timestamp'] ?? DateTime.now().toIso8601String(),
+      ),
+      createdAt: DateTime.parse(
+        map['created_at'] ?? DateTime.now().toIso8601String(),
+      ),
     );
   }
 
@@ -85,13 +89,8 @@ class TrackingService {
       };
 
       final response = await _api.getJson(ApiRoutes.trackings, query: query);
-      
-      if (response != null && response['success'] == true) {
-        final data = response['data'] as List;
-        return data.map((item) => Tracking.fromMap(item)).toList();
-      }
-
-      throw Exception('Failed to load tracking data');
+      final data = _extractDataList(response);
+      return data.map((item) => Tracking.fromMap(item)).toList();
     } catch (e) {
       print('❌ Failed to get tracking data: $e');
       rethrow;
@@ -101,14 +100,12 @@ class TrackingService {
   /// Get tracking history for specific schedule (last 200 points)
   Future<List<Tracking>> getTrackingBySchedule(int scheduleId) async {
     try {
-      final response = await _api.get(ApiRoutes.trackingBySchedule(scheduleId));
-      
-      if (response != null && response['success'] == true) {
-        final data = response['data'] as List;
-        return data.map((item) => Tracking.fromMap(item)).toList();
-      }
+      final response = await _api.getJson(
+        ApiRoutes.trackingBySchedule(scheduleId),
+      );
 
-      throw Exception('Failed to load tracking history for schedule $scheduleId');
+      final data = _extractDataList(response);
+      return data.map((item) => Tracking.fromMap(item)).toList();
     } catch (e) {
       print('❌ Failed to get tracking history for schedule $scheduleId: $e');
       rethrow;
@@ -139,9 +136,9 @@ class TrackingService {
       };
 
       final response = await _api.postJson(ApiRoutes.trackings, requestData);
-      
-      if (response != null && response['success'] == true) {
-        return Tracking.fromMap(response['data']);
+      final data = _extractDataMap(response);
+      if (data != null) {
+        return Tracking.fromMap(data);
       }
 
       throw Exception('Failed to record tracking');
@@ -210,13 +207,15 @@ class TrackingService {
       try {
         final trackingList = await getTrackingBySchedule(scheduleId);
         yield trackingList;
-        
+
         // Wait 10 seconds before next update
         await Future.delayed(const Duration(seconds: 10));
       } catch (e) {
         print('❌ Error in tracking stream: $e');
         yield [];
-        await Future.delayed(const Duration(seconds: 30)); // Longer delay on error
+        await Future.delayed(
+          const Duration(seconds: 30),
+        ); // Longer delay on error
       }
     }
   }
@@ -224,15 +223,17 @@ class TrackingService {
   /// Calculate distance between two points (in kilometers)
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371; // Earth radius in kilometers
-    
+
     final double dLat = _toRadians(lat2 - lat1);
     final double dLon = _toRadians(lon2 - lon1);
-    
-    final double a = 
+
+    final double a =
         (dLat / 2).abs() * (dLat / 2).abs() +
-        (lat1 * 3.14159 / 180).abs() * (lat2 * 3.14159 / 180).abs() * 
-        (dLon / 2).abs() * (dLon / 2).abs();
-    
+        (lat1 * 3.14159 / 180).abs() *
+            (lat2 * 3.14159 / 180).abs() *
+            (dLon / 2).abs() *
+            (dLon / 2).abs();
+
     final double c = 2 * (a.abs()).abs();
     return earthRadius * c;
   }
@@ -244,13 +245,13 @@ class TrackingService {
   /// Calculate total distance traveled from tracking points
   double calculateTotalDistance(List<Tracking> trackingPoints) {
     if (trackingPoints.length < 2) return 0.0;
-    
+
     double totalDistance = 0.0;
-    
+
     for (int i = 1; i < trackingPoints.length; i++) {
       final prev = trackingPoints[i - 1];
       final current = trackingPoints[i];
-      
+
       totalDistance += calculateDistance(
         prev.latitude,
         prev.longitude,
@@ -258,7 +259,7 @@ class TrackingService {
         current.longitude,
       );
     }
-    
+
     return totalDistance;
   }
 
@@ -293,17 +294,81 @@ class TrackingService {
     try {
       final lastPosition = await getLastPosition(scheduleId);
       if (lastPosition == null) return false;
-      
+
       // Consider as being tracked if last update was within 5 minutes
       final now = DateTime.now();
       final lastUpdate = lastPosition.timestamp;
       final difference = now.difference(lastUpdate).inMinutes;
-      
-      return difference <= 5 && 
-             (lastPosition.status == 'started' || lastPosition.status == 'in_progress');
+
+      return difference <= 5 &&
+          (lastPosition.status == 'started' ||
+              lastPosition.status == 'in_progress');
     } catch (e) {
       print('❌ Failed to check if schedule $scheduleId is being tracked: $e');
       return false;
     }
+  }
+
+  List<Map<String, dynamic>> _extractDataList(dynamic response) {
+    if (response is List) {
+      return response.whereType<Map<String, dynamic>>().toList();
+    }
+
+    if (response is Map<String, dynamic>) {
+      final success = response['success'];
+      if (success is bool && !success) {
+        final message = response['message'] ?? 'Permintaan pelacakan gagal';
+        throw Exception(message.toString());
+      }
+
+      final data = response['data'];
+      if (data is List) {
+        return data.whereType<Map<String, dynamic>>().toList();
+      }
+
+      if (data is Map<String, dynamic>) {
+        final inner = data['data'];
+        if (inner is List) {
+          return inner.whereType<Map<String, dynamic>>().toList();
+        }
+      }
+    }
+
+    return const <Map<String, dynamic>>[];
+  }
+
+  Map<String, dynamic>? _extractDataMap(dynamic response) {
+    if (response is Map<String, dynamic>) {
+      final success = response['success'];
+      if (success is bool && !success) {
+        final message = response['message'] ?? 'Permintaan pelacakan gagal';
+        throw Exception(message.toString());
+      }
+
+      final data = response['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+
+      if (data is List && data.isNotEmpty) {
+        final first = data.first;
+        if (first is Map<String, dynamic>) return first;
+      }
+
+      // Some endpoints might return the entity directly without wrapping
+      final keys = response.keys.map((e) => e.toString()).toList();
+      const entityKeys = ['schedule_id', 'latitude', 'longitude'];
+      final hasEntityKeys = entityKeys.any(keys.contains);
+      if (hasEntityKeys) {
+        return response;
+      }
+    }
+
+    if (response is List && response.isNotEmpty) {
+      final first = response.first;
+      if (first is Map<String, dynamic>) return first;
+    }
+
+    return null;
   }
 }

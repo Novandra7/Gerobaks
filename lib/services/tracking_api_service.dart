@@ -24,10 +24,18 @@ class TrackingApiService {
       if (heading != null) 'heading': heading,
       if (recordedAt != null) 'recorded_at': recordedAt.toIso8601String(),
     };
-    await _api.postJson(ApiRoutes.trackings, body);
+    final response = await _api.postJson(ApiRoutes.trackings, body);
+
+    if (response is Map<String, dynamic>) {
+      final success = response['success'];
+      if (success is bool && !success) {
+        final message = response['message'] ?? 'Gagal mengirim data tracking';
+        throw HttpException(message.toString());
+      }
+    }
   }
 
-  Future<List<dynamic>> getHistory({
+  Future<List<Map<String, dynamic>>> getHistory({
     required int scheduleId,
     int limit = 200,
     DateTime? since,
@@ -40,7 +48,27 @@ class TrackingApiService {
       if (until != null) 'until': until.toIso8601String(),
     };
     final json = await _api.getJson(ApiRoutes.trackings, query: query);
-    if (json is List) return json;
-    return [];
+    return _normalizeList(json);
+  }
+
+  List<Map<String, dynamic>> _normalizeList(dynamic json) {
+    if (json is List) {
+      return json.whereType<Map<String, dynamic>>().toList();
+    }
+
+    if (json is Map<String, dynamic>) {
+      final data = json['data'];
+      if (data is List) {
+        return data.whereType<Map<String, dynamic>>().toList();
+      }
+      if (data is Map<String, dynamic>) {
+        final inner = data['data'];
+        if (inner is List) {
+          return inner.whereType<Map<String, dynamic>>().toList();
+        }
+      }
+    }
+
+    return const <Map<String, dynamic>>[];
   }
 }

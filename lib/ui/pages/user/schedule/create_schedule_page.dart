@@ -23,20 +23,20 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   final _weightController = TextEditingController();
   final _contactNameController = TextEditingController();
   final _contactPhoneController = TextEditingController();
-  
+
   LatLng? _selectedLocation;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
   ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
   String _selectedWasteType = 'Organik';
-  
+
   bool _isLoading = false;
   bool _isLocationSelected = false;
   List<TimeOfDay> _availableTimeSlots = [];
   String? _userId;
-  
+
   final ScheduleService _scheduleService = ScheduleService();
-  
+
   @override
   void initState() {
     super.initState();
@@ -44,11 +44,11 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     _loadAvailableTimeSlots();
     _initializeScheduleService();
   }
-  
+
   Future<void> _initializeScheduleService() async {
     await _scheduleService.initialize();
   }
-  
+
   Future<void> _getUserId() async {
     final localStorage = await LocalStorageService.getInstance();
     final userData = await localStorage.getUserData();
@@ -58,7 +58,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       });
     }
   }
-  
+
   void _loadAvailableTimeSlots() {
     // Contoh slot waktu yang tersedia, dari jam 8 pagi hingga 4 sore dengan interval 1 jam
     setState(() {
@@ -92,7 +92,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
         ),
       ),
     );
-    
+
     // Jika result null, user mungkin menekan tombol back, jadi kita tidak melakukan apa-apa
     // Jika tidak null, Map Picker sudah mengatur _addressController dan _selectedLocation
   }
@@ -102,7 +102,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)), // Allow booking up to 90 days in advance
+      lastDate: DateTime.now().add(
+        const Duration(days: 90),
+      ), // Allow booking up to 90 days in advance
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -112,16 +114,14 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               onSurface: blackColor,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: greenColor,
-              ),
+              style: TextButton.styleFrom(foregroundColor: greenColor),
             ),
           ),
           child: child!,
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -154,9 +154,10 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                 spacing: 10,
                 runSpacing: 10,
                 children: _availableTimeSlots.map((timeSlot) {
-                  final isSelected = timeSlot.hour == _selectedTime.hour && 
-                                    timeSlot.minute == _selectedTime.minute;
-                  
+                  final isSelected =
+                      timeSlot.hour == _selectedTime.hour &&
+                      timeSlot.minute == _selectedTime.minute;
+
                   return InkWell(
                     onTap: () {
                       setState(() {
@@ -179,9 +180,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                       child: Text(
                         '${timeSlot.hour.toString().padLeft(2, '0')}:${timeSlot.minute.toString().padLeft(2, '0')}',
-                        style: isSelected 
-                          ? whiteTextStyle.copyWith(fontWeight: medium)
-                          : blackTextStyle,
+                        style: isSelected
+                            ? whiteTextStyle.copyWith(fontWeight: medium)
+                            : blackTextStyle,
                       ),
                     ),
                   );
@@ -256,10 +257,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
           ),
           title: Text(
             'Jadwal Berhasil Dibuat',
-            style: blackTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
             textAlign: TextAlign.center,
           ),
           content: Column(
@@ -272,11 +270,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                   color: greenColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.check_circle,
-                  color: greenColor,
-                  size: 60,
-                ),
+                child: Icon(Icons.check_circle, color: greenColor, size: 60),
               ),
               const SizedBox(height: 16),
               Text(
@@ -294,10 +288,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               },
               child: Text(
                 'Kembali ke Jadwal',
-                style: TextStyle(
-                  color: greenColor,
-                  fontWeight: semiBold,
-                ),
+                style: TextStyle(color: greenColor, fontWeight: semiBold),
               ),
             ),
           ],
@@ -316,10 +307,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
           ),
           title: Text(
             'Gagal Membuat Jadwal',
-            style: blackTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
             textAlign: TextAlign.center,
           ),
           content: Column(
@@ -332,11 +320,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                   color: Colors.red.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.error,
-                  color: Colors.red,
-                  size: 60,
-                ),
+                child: const Icon(Icons.error, color: Colors.red, size: 60),
               ),
               const SizedBox(height: 16),
               Text(
@@ -353,10 +337,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               },
               child: Text(
                 'Tutup',
-                style: TextStyle(
-                  color: greenColor,
-                  fontWeight: semiBold,
-                ),
+                style: TextStyle(color: greenColor, fontWeight: semiBold),
               ),
             ),
           ],
@@ -380,19 +361,27 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     return Scaffold(
       backgroundColor: lightBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Buat Jadwal Baru',
-          style: blackTextStyle.copyWith(
-            fontSize: 20,
-            fontWeight: semiBold,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.eco, color: greenColor, size: 24),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Hari ini pengambilan sampah organik!',
+                style: blackTextStyle.copyWith(
+                  fontSize: 20,
+                  fontWeight: semiBold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         centerTitle: true,
         backgroundColor: whiteColor,
         elevation: 0,
-        iconTheme: IconThemeData(
-          color: blackColor,
-        ),
+        iconTheme: IconThemeData(color: blackColor),
       ),
       body: Form(
         key: _formKey,
@@ -429,31 +418,19 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Pilih Lokasi di Peta',
-                      prefixIcon: Icon(
-                        Icons.location_on,
-                        color: greyColor,
-                      ),
-                      suffixIcon: Icon(
-                        Icons.map,
-                        color: greenColor,
-                      ),
+                      prefixIcon: Icon(Icons.location_on, color: greyColor),
+                      suffixIcon: Icon(Icons.map, color: greenColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greenColor,
-                        ),
+                        borderSide: BorderSide(color: greenColor),
                       ),
                     ),
                   ),
@@ -463,9 +440,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                           height: 150,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: greyColor,
-                            ),
+                            border: Border.all(color: greyColor),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(14),
@@ -479,7 +454,8 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                               ),
                               children: [
                                 TileLayer(
-                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  urlTemplate:
+                                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                   userAgentPackageName: 'com.example.app',
                                 ),
                                 MarkerLayer(
@@ -502,20 +478,14 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                           height: 150,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: greyColor,
-                            ),
+                            border: Border.all(color: greyColor),
                             color: Colors.grey[200],
                           ),
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.map,
-                                  size: 40,
-                                  color: greyColor,
-                                ),
+                                Icon(Icons.map, size: 40, color: greyColor),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Pilih lokasi di peta',
@@ -528,9 +498,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Date & Time Section
             Container(
               padding: const EdgeInsets.all(20),
@@ -549,7 +519,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Date Selection
                   InkWell(
                     onTap: () => _selectDate(context),
@@ -560,17 +530,12 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: greyColor,
-                        ),
+                        border: Border.all(color: greyColor),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.calendar_today,
-                            color: greyColor,
-                          ),
+                          Icon(Icons.calendar_today, color: greyColor),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -578,12 +543,13 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                               children: [
                                 Text(
                                   'Tanggal',
-                                  style: greyTextStyle.copyWith(
-                                    fontSize: 12,
-                                  ),
+                                  style: greyTextStyle.copyWith(fontSize: 12),
                                 ),
                                 Text(
-                                  DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate),
+                                  DateFormat(
+                                    'EEEE, d MMMM yyyy',
+                                    'id_ID',
+                                  ).format(_selectedDate),
                                   style: blackTextStyle,
                                 ),
                               ],
@@ -598,9 +564,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Time Selection
                   InkWell(
                     onTap: () => _showTimeSlotSelection(),
@@ -611,17 +577,12 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: greyColor,
-                        ),
+                        border: Border.all(color: greyColor),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.access_time,
-                            color: greyColor,
-                          ),
+                          Icon(Icons.access_time, color: greyColor),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -629,9 +590,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                               children: [
                                 Text(
                                   'Jam',
-                                  style: greyTextStyle.copyWith(
-                                    fontSize: 12,
-                                  ),
+                                  style: greyTextStyle.copyWith(fontSize: 12),
                                 ),
                                 Text(
                                   '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
@@ -649,18 +608,16 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Frequency Selection
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Frekuensi',
-                        style: greyTextStyle.copyWith(
-                          fontSize: 12,
-                        ),
+                        style: greyTextStyle.copyWith(fontSize: 12),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -668,10 +625,22 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                         runSpacing: 8,
                         children: [
                           _buildFrequencyChip(ScheduleFrequency.once, 'Sekali'),
-                          _buildFrequencyChip(ScheduleFrequency.daily, 'Harian'),
-                          _buildFrequencyChip(ScheduleFrequency.weekly, 'Mingguan'),
-                          _buildFrequencyChip(ScheduleFrequency.biWeekly, '2 Minggu'),
-                          _buildFrequencyChip(ScheduleFrequency.monthly, 'Bulanan'),
+                          _buildFrequencyChip(
+                            ScheduleFrequency.daily,
+                            'Harian',
+                          ),
+                          _buildFrequencyChip(
+                            ScheduleFrequency.weekly,
+                            'Mingguan',
+                          ),
+                          _buildFrequencyChip(
+                            ScheduleFrequency.biWeekly,
+                            '2 Minggu',
+                          ),
+                          _buildFrequencyChip(
+                            ScheduleFrequency.monthly,
+                            'Bulanan',
+                          ),
                         ],
                       ),
                     ],
@@ -679,9 +648,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Details Section
             Container(
               padding: const EdgeInsets.all(20),
@@ -700,16 +669,14 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Waste Type Selection
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Jenis Sampah',
-                        style: greyTextStyle.copyWith(
-                          fontSize: 12,
-                        ),
+                        style: greyTextStyle.copyWith(fontSize: 12),
                       ),
                       const SizedBox(height: 8),
                       Wrap(
@@ -724,9 +691,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Estimated Weight
                   TextFormField(
                     controller: _weightController,
@@ -738,21 +705,17 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greenColor,
-                        ),
+                        borderSide: BorderSide(color: greenColor),
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Notes
                   TextFormField(
                     controller: _notesController,
@@ -764,24 +727,20 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greenColor,
-                        ),
+                        borderSide: BorderSide(color: greenColor),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Contact Information
             Container(
               padding: const EdgeInsets.all(20),
@@ -800,7 +759,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Contact Name
                   TextFormField(
                     controller: _contactNameController,
@@ -817,21 +776,17 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greenColor,
-                        ),
+                        borderSide: BorderSide(color: greenColor),
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Contact Phone
                   TextFormField(
                     controller: _contactPhoneController,
@@ -849,38 +804,32 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greyColor,
-                        ),
+                        borderSide: BorderSide(color: greyColor),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: greenColor,
-                        ),
+                        borderSide: BorderSide(color: greenColor),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Submit Button
             _isLoading
                 ? Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        greenColor,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(greenColor),
                     ),
                   )
                 : CustomFilledButton(
                     title: 'Buat Jadwal',
                     onPressed: _submitSchedule,
                   ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -890,7 +839,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
   Widget _buildFrequencyChip(ScheduleFrequency frequency, String label) {
     final bool isSelected = _selectedFrequency == frequency;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -899,16 +848,11 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 6,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? greenColor : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? greenColor : greyColor,
-          ),
+          border: Border.all(color: isSelected ? greenColor : greyColor),
         ),
         child: Text(
           label,
@@ -922,7 +866,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
   Widget _buildWasteTypeChip(String wasteType) {
     final bool isSelected = _selectedWasteType == wasteType;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -931,16 +875,11 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 6,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? greenColor : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? greenColor : greyColor,
-          ),
+          border: Border.all(color: isSelected ? greenColor : greyColor),
         ),
         child: Text(
           wasteType,

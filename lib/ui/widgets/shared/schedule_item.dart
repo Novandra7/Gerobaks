@@ -7,15 +7,17 @@ class ScheduleItem extends StatelessWidget {
   final String time;
   final String status;
   final VoidCallback onTap;
+  final Object? trackingArgument;
 
   const ScheduleItem({
-    Key? key,
+    super.key,
     required this.title,
     required this.date,
     required this.time,
     required this.status,
     required this.onTap,
-  }) : super(key: key);
+    this.trackingArgument,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -102,31 +104,13 @@ class ScheduleItem extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 14,
-                  color: greyColor,
-                ),
+                Icon(Icons.calendar_today_outlined, size: 14, color: greyColor),
                 const SizedBox(width: 4),
-                Text(
-                  date,
-                  style: greyTextStyle.copyWith(
-                    fontSize: 12,
-                  ),
-                ),
+                Text(date, style: greyTextStyle.copyWith(fontSize: 12)),
                 const SizedBox(width: 12),
-                Icon(
-                  Icons.access_time,
-                  size: 14,
-                  color: greyColor,
-                ),
+                Icon(Icons.access_time, size: 14, color: greyColor),
                 const SizedBox(width: 4),
-                Text(
-                  time,
-                  style: greyTextStyle.copyWith(
-                    fontSize: 12,
-                  ),
-                ),
+                Text(time, style: greyTextStyle.copyWith(fontSize: 12)),
               ],
             ),
             const SizedBox(height: 16),
@@ -152,13 +136,17 @@ class ScheduleItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                if (status.toLowerCase() == 'inprogress' || 
+                if (status.toLowerCase() == 'inprogress' ||
                     status.toLowerCase() == 'dalam proses')
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
                         // Navigate to tracking page for in-progress schedules
-                        Navigator.pushNamed(context, '/tracking');
+                        Navigator.pushNamed(
+                          context,
+                          '/tracking',
+                          arguments: trackingArgument,
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: greenColor,
@@ -169,9 +157,7 @@ class ScheduleItem extends StatelessWidget {
                       ),
                       child: Text(
                         'Lacak',
-                        style: whiteTextStyle.copyWith(
-                          fontWeight: medium,
-                        ),
+                        style: whiteTextStyle.copyWith(fontWeight: medium),
                       ),
                     ),
                   ),

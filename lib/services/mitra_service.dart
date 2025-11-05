@@ -20,17 +20,17 @@ class MitraService {
   final ApiServiceManager _authManager = ApiServiceManager();
 
   /// Get dashboard summary data for mitra
-  /// 
+  ///
   /// Returns active orders, completed orders today, total points, and unread notifications
   Future<Map<String, dynamic>> getDashboardSummary() async {
     try {
       _authManager.requireRole('mitra');
-      
+
       final userData = await _authManager.getCurrentUserData();
       final mitraId = userData['id'];
-      
+
       final response = await _api.getJson(ApiRoutes.mitraDashboard(mitraId));
-      
+
       if (response != null && response['success'] == true) {
         return response['data'];
       }
@@ -43,7 +43,7 @@ class MitraService {
   }
 
   /// Get assignments for mitra
-  /// 
+  ///
   /// Returns list of scheduled pickups assigned to the mitra
   Future<List<ScheduleModel>> getAssignments({
     String? status,
@@ -51,10 +51,10 @@ class MitraService {
   }) async {
     try {
       _authManager.requireRole('mitra');
-      
+
       final userData = await _authManager.getCurrentUserData();
       final mitraId = userData['id'];
-      
+
       final query = <String, dynamic>{
         'mitra_id': mitraId,
         if (status != null) 'status': status,
@@ -62,7 +62,7 @@ class MitraService {
       };
 
       final response = await _api.getJson(ApiRoutes.schedules, query: query);
-      
+
       if (response != null && response['success'] == true) {
         final List<dynamic> items = response['data']['data'];
         return items.map((item) => ScheduleModelFromMap.fromMap(item)).toList();
@@ -76,24 +76,22 @@ class MitraService {
   }
 
   /// Get mitra's orders
-  /// 
+  ///
   /// Returns list of orders assigned to the mitra
-  Future<List<OrderModel>> getOrders({
-    String? status,
-  }) async {
+  Future<List<OrderModel>> getOrders({String? status}) async {
     try {
       _authManager.requireRole('mitra');
-      
+
       final userData = await _authManager.getCurrentUserData();
       final mitraId = userData['id'];
-      
+
       final query = <String, dynamic>{
         'mitra_id': mitraId,
         if (status != null) 'status': status,
       };
 
       final response = await _api.getJson(ApiRoutes.orders, query: query);
-      
+
       if (response != null && response['success'] == true) {
         final List<dynamic> items = response['data']['data'];
         return items.map((item) => OrderModel.fromMap(item)).toList();
@@ -107,17 +105,16 @@ class MitraService {
   }
 
   /// Update order status
-  /// 
+  ///
   /// Changes status of an order to assigned, in_progress, completed, or cancelled
   Future<OrderModel> updateOrderStatus(int orderId, String status) async {
     try {
       _authManager.requireRole('mitra');
-      
-      final response = await _api.patchJson(
-        ApiRoutes.orderStatus(orderId), 
-        {'status': status}
-      );
-      
+
+      final response = await _api.patchJson(ApiRoutes.orderStatus(orderId), {
+        'status': status,
+      });
+
       if (response != null && response['success'] == true) {
         return OrderModel.fromMap(response['data']);
       }
@@ -130,7 +127,7 @@ class MitraService {
   }
 
   /// Submit tracking location
-  /// 
+  ///
   /// Records mitra's current location during pickup/delivery
   Future<Map<String, dynamic>> submitTracking({
     required int scheduleId,
@@ -141,7 +138,7 @@ class MitraService {
   }) async {
     try {
       _authManager.requireRole('mitra');
-      
+
       final requestData = {
         'schedule_id': scheduleId,
         'latitude': latitude,
@@ -151,9 +148,9 @@ class MitraService {
       };
 
       final response = await _api.postJson(ApiRoutes.trackings, requestData);
-      
-      if (response != null && response['success'] == true) {
-        return response['data'];
+      final data = _extractDataMap(response);
+      if (data != null) {
+        return data;
       }
 
       throw Exception('Gagal mengirim data lokasi');
@@ -164,21 +161,19 @@ class MitraService {
   }
 
   /// Get activities for mitra
-  /// 
+  ///
   /// Returns list of activities assigned to the mitra
   Future<List<ActivityModel>> getActivities() async {
     try {
       _authManager.requireRole('mitra');
-      
+
       final userData = await _authManager.getCurrentUserData();
       final mitraId = userData['id'];
-      
-      final query = <String, dynamic>{
-        'mitra_id': mitraId,
-      };
+
+      final query = <String, dynamic>{'mitra_id': mitraId};
 
       final response = await _api.getJson(ApiRoutes.activities, query: query);
-      
+
       if (response != null && response['success'] == true) {
         final List<dynamic> items = response['data']['data'];
         return items.map((item) => ActivityModelFromMap.fromMap(item)).toList();
@@ -192,24 +187,17 @@ class MitraService {
   }
 
   /// Get tracking history
-  /// 
+  ///
   /// Returns list of tracking locations for a schedule
   Future<List<TrackingModel>> getTrackingHistory(int scheduleId) async {
     try {
       _authManager.requireRole('mitra');
-      
-      final query = <String, dynamic>{
-        'schedule_id': scheduleId,
-      };
+
+      final query = <String, dynamic>{'schedule_id': scheduleId};
 
       final response = await _api.getJson(ApiRoutes.trackings, query: query);
-      
-      if (response != null && response['success'] == true) {
-        final List<dynamic> items = response['data']['data'];
-        return items.map((item) => TrackingModel.fromMap(item)).toList();
-      }
-
-      throw Exception('Gagal memuat data riwayat pelacakan');
+      final list = _extractDataList(response);
+      return list.map((item) => TrackingModel.fromMap(item)).toList();
     } catch (e) {
       print('❌ Failed to get tracking history: $e');
       rethrow;
@@ -217,17 +205,19 @@ class MitraService {
   }
 
   /// Update schedule status
-  /// 
+  ///
   /// Changes status of a schedule (pending, assigned, in_progress, completed, cancelled)
-  Future<ScheduleModel> updateScheduleStatus(int scheduleId, String status) async {
+  Future<ScheduleModel> updateScheduleStatus(
+    int scheduleId,
+    String status,
+  ) async {
     try {
       _authManager.requireRole('mitra');
-      
-      final response = await _api.patchJson(
-        ApiRoutes.schedule(scheduleId), 
-        {'status': status}
-      );
-      
+
+      final response = await _api.patchJson(ApiRoutes.schedule(scheduleId), {
+        'status': status,
+      });
+
       if (response != null && response['success'] == true) {
         return ScheduleModelFromMap.fromMap(response['data']);
       }
@@ -238,4 +228,66 @@ class MitraService {
       rethrow;
     }
   }
+}
+
+Map<String, dynamic>? _extractDataMap(dynamic response) {
+  if (response is Map<String, dynamic>) {
+    final success = response['success'];
+    if (success is bool && !success) {
+      final message = response['message'] ?? 'Permintaan pelacakan gagal';
+      throw Exception(message.toString());
+    }
+
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+
+    if (data is List && data.isNotEmpty) {
+      final first = data.first;
+      if (first is Map<String, dynamic>) {
+        return first;
+      }
+    }
+
+    final keys = response.keys.map((e) => e.toString()).toList();
+    if (keys.contains('schedule_id') && keys.contains('latitude')) {
+      return response;
+    }
+  }
+
+  if (response is List && response.isNotEmpty) {
+    final first = response.first;
+    if (first is Map<String, dynamic>) return first;
+  }
+
+  return null;
+}
+
+List<Map<String, dynamic>> _extractDataList(dynamic response) {
+  if (response is List) {
+    return response.whereType<Map<String, dynamic>>().toList();
+  }
+
+  if (response is Map<String, dynamic>) {
+    final success = response['success'];
+    if (success is bool && !success) {
+      final message = response['message'] ?? 'Permintaan pelacakan gagal';
+      throw Exception(message.toString());
+    }
+
+    final data = response['data'];
+    if (data is List) {
+      return data.whereType<Map<String, dynamic>>().toList();
+    }
+
+    if (data is Map<String, dynamic>) {
+      final inner = data['data'];
+      if (inner is List) {
+        return inner.whereType<Map<String, dynamic>>().toList();
+      }
+    }
+  }
+
+  return const <Map<String, dynamic>>[];
 }

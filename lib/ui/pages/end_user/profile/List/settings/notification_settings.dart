@@ -61,7 +61,9 @@ class _NotificationSettingsState extends State<NotificationSettings> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Notifikasi pantun rutin telah dinonaktifkan'),
+              content: const Text(
+                'Notifikasi pantun rutin telah dinonaktifkan',
+              ),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -73,7 +75,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
       setState(() {
         _routinePantunEnabled = !value;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -148,9 +150,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                                   const SizedBox(height: 4),
                                   Text(
                                     'Kelola pengaturan notifikasi Gerobaks',
-                                    style: greyTextStyle.copyWith(
-                                      fontSize: 14,
-                                    ),
+                                    style: greyTextStyle.copyWith(fontSize: 14),
                                   ),
                                 ],
                               ),
@@ -185,14 +185,16 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: _routinePantunEnabled 
+                                color: _routinePantunEnabled
                                     ? greenColor.withOpacity(0.1)
                                     : Colors.grey.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
                                 Icons.auto_stories,
-                                color: _routinePantunEnabled ? greenColor : Colors.grey,
+                                color: _routinePantunEnabled
+                                    ? greenColor
+                                    : Colors.grey,
                                 size: 24,
                               ),
                             ),
@@ -222,11 +224,11 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                             Switch(
                               value: _routinePantunEnabled,
                               onChanged: _toggleRoutinePantun,
-                              activeThumbColor: greenColor,
+                              activeColor: greenColor,
                             ),
                           ],
                         ),
-                        
+
                         if (_routinePantunEnabled) ...[
                           const SizedBox(height: 16),
                           Container(
@@ -323,12 +325,15 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                               onPressed: () async {
                                 try {
                                   // Show test notification immediately
-                                  await _notificationService.showTestRoutinePantun();
-                                  
+                                  await _notificationService
+                                      .showTestRoutinePantun();
+
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: const Text('Pantun uji coba telah dikirim!'),
+                                        content: const Text(
+                                          'Pantun uji coba telah dikirim!',
+                                        ),
                                         backgroundColor: greenColor,
                                         behavior: SnackBarBehavior.floating,
                                       ),
@@ -338,7 +343,9 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Gagal mengirim pantun: $e'),
+                                        content: Text(
+                                          'Gagal mengirim pantun: $e',
+                                        ),
                                         backgroundColor: Colors.red,
                                         behavior: SnackBarBehavior.floating,
                                       ),
@@ -349,7 +356,9 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: greenColor,
                                 foregroundColor: whiteColor,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -358,11 +367,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.send,
-                                    size: 18,
-                                    color: whiteColor,
-                                  ),
+                                  Icon(Icons.send, size: 18, color: whiteColor),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Kirim Pantun Sekarang',

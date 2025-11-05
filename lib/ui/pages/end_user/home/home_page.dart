@@ -2,6 +2,8 @@ import 'package:bank_sha/ui/pages/end_user/popupiklan.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
 import 'package:bank_sha/utils/subscription_guard.dart';
+import 'package:bank_sha/services/popup_notification_service.dart';
+import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/activity_page_improved.dart';
@@ -36,10 +38,31 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    // Tampilkan popup iklan setelah build selesai
-    Future.delayed(const Duration(milliseconds: 500), () {
-      showIklanPopup(context);
-    });
+    // Tampilkan popup iklan, lalu notifikasi jadwal setelah iklan ditutup
+    _showInitialPopups();
+  }
+
+  void _showInitialPopups() async {
+    try {
+      // Tunggu sebentar setelah build selesai
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Tampilkan popup iklan dan tunggu sampai ditutup
+      await showIklanPopup(context);
+
+      // Setelah popup iklan ditutup, tampilkan notifikasi jadwal (jika ada)
+      if (mounted && WasteScheduleService.hasTodayPickup()) {
+        // Beri jeda sebentar untuk transisi yang smooth
+        await Future.delayed(const Duration(milliseconds: 300));
+        PopupNotificationService.showWasteScheduleNotification(context);
+      }
+    } catch (e) {
+      // Jika ada error dengan popup iklan, tetap tampilkan notifikasi jadwal
+      if (mounted && WasteScheduleService.hasTodayPickup()) {
+        await Future.delayed(const Duration(milliseconds: 800));
+        PopupNotificationService.showWasteScheduleNotification(context);
+      }
+    }
   }
 
   @override

@@ -1,21 +1,39 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:bloc/bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:bank_sha/services/tracking_service_new.dart'
+    show Tracking, TrackingService;
 import 'tracking_event.dart';
 import 'tracking_state.dart';
 
 class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   // Cache for route data to avoid repeated API calls
   final Map<String, List<LatLng>> _routeCache = {};
+  StreamSubscription<List<Tracking>>? _trackingSubscription;
 
-  TrackingBloc() : super(TrackingState.initial()) {
+  TrackingBloc({
+    TrackingService? trackingService,
+    int? initialScheduleId,
+    LatLng? initialDestination,
+  }) : _trackingService = trackingService ?? TrackingService(),
+       super(
+         TrackingState.initial(
+           scheduleId: initialScheduleId,
+           destination: initialDestination,
+         ),
+       ) {
     on<FetchRoute>(_onFetchRoute);
     on<UpdateTruckLocation>(_onUpdateLocation);
     on<UpdateDestination>(_onUpdateDestination);
+    on<TrackingHistoryUpdated>(_onHistoryUpdated);
+    on<TrackingHistoryFailed>(_onHistoryFailed);
   }
+
+  final TrackingService _trackingService;
 
   void _onUpdateDestination(
     UpdateDestination event,
@@ -44,6 +62,48 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
     FetchRoute event,
     Emitter<TrackingState> emit,
   ) async {
+    final scheduleId = event.scheduleId ?? state.scheduleId;
+    final desiredDestination = event.destination ?? state.destination;
+
+    if (scheduleId != null) {
+      final updatedDestination = desiredDestination ?? state.destination;
+
+      emit(
+        state.copyWith(
+          isLoading: true,
+          error: null,
+          scheduleId: scheduleId,
+          destination: updatedDestination,
+        ),
+      );
+
+      await _trackingSubscription?.cancel();
+      _trackingSubscription = _trackingService
+          .watchTrackingBySchedule(scheduleId)
+          .listen(
+            (items) {
+              add(
+                TrackingHistoryUpdated(
+                  scheduleId: scheduleId,
+                  items: items,
+                  destination: updatedDestination,
+                ),
+              );
+            },
+            onError: (error, stackTrace) {
+              print('Error streaming tracking history: $error');
+              add(
+                TrackingHistoryFailed(
+                  scheduleId: scheduleId,
+                  message: 'Gagal memuat data pelacakan',
+                ),
+              );
+            },
+          );
+
+      return;
+    }
+
     emit(state.copyWith(isLoading: true, error: null));
 
     // Generate cache key based on start and end points
@@ -167,9 +227,77 @@ class TrackingBloc extends Bloc<TrackingEvent, TrackingState> {
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     // Clear cache when bloc is closed
     _routeCache.clear();
+    await _trackingSubscription?.cancel();
     return super.close();
+  }
+
+  void _onHistoryUpdated(
+    TrackingHistoryUpdated event,
+    Emitter<TrackingState> emit,
+  ) {
+    if (state.scheduleId != event.scheduleId) {
+      return;
+    }
+
+    final desiredDestination = event.destination ?? state.destination;
+
+    if (event.items.isEmpty) {
+      final hasRoute = state.routePoints.isNotEmpty;
+      emit(
+        state.copyWith(
+          isLoading: false,
+          error: null,
+          scheduleId: event.scheduleId,
+          destination: desiredDestination,
+          resetLastUpdated: !hasRoute,
+        ),
+      );
+      return;
+    }
+
+    final sorted = List<Tracking>.from(event.items)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    final historyPoints = sorted
+        .map((e) => LatLng(e.latitude, e.longitude))
+        .toList();
+
+    final latest = historyPoints.last;
+    final truckBearing = historyPoints.length >= 2
+        ? calculateBearing(historyPoints[historyPoints.length - 2], latest)
+        : state.truckBearing;
+
+    emit(
+      state.copyWith(
+        routePoints: historyPoints,
+        truckPosition: latest,
+        destination: desiredDestination,
+        truckBearing: truckBearing,
+        isLoading: false,
+        error: null,
+        scheduleId: event.scheduleId,
+        lastUpdated: sorted.last.timestamp,
+      ),
+    );
+  }
+
+  void _onHistoryFailed(
+    TrackingHistoryFailed event,
+    Emitter<TrackingState> emit,
+  ) {
+    if (state.scheduleId != event.scheduleId) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        isLoading: false,
+        error: event.message,
+        scheduleId: event.scheduleId,
+      ),
+    );
   }
 }

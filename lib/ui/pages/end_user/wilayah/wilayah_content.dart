@@ -10,85 +10,74 @@ import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 
 class WilayahContent extends StatefulWidget {
   final double horizontalPadding;
-  
-  const WilayahContent({
-    super.key,
-    this.horizontalPadding = 24.0,
-  });
+
+  const WilayahContent({super.key, this.horizontalPadding = 24.0});
 
   @override
   State<WilayahContent> createState() => _WilayahContentState();
 }
 
-class _WilayahContentState extends State<WilayahContent> with SingleTickerProviderStateMixin {
+class _WilayahContentState extends State<WilayahContent>
+    with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   @override
   void initState() {
     super.initState();
     context.read<TrackingBloc>().add(FetchRoute());
-    
+
     // Setup animations
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
+
     _simulateLoading();
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   // Method to show trash point details in a bottom modal
   void _showTrashPointDetails(
-    BuildContext context, 
-    String name, 
-    LatLng location, 
-    {
-      required bool isAvailable,
-      required int capacity,
-      required int currentUsage,
-      required String lastEmptied,
-    }
-  ) {
+    BuildContext context,
+    String name,
+    LatLng location, {
+    required bool isAvailable,
+    required int capacity,
+    required int currentUsage,
+    required String lastEmptied,
+  }) {
     // Calculate usage percentage
     final usagePercent = (currentUsage / capacity * 100).round();
-    
+
     // Get screen width for responsiveness
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         width: isTablet ? screenWidth * 0.7 : screenWidth,
-        margin: isTablet 
-            ? EdgeInsets.symmetric(horizontal: screenWidth * 0.15, vertical: 20) 
+        margin: isTablet
+            ? EdgeInsets.symmetric(horizontal: screenWidth * 0.15, vertical: 20)
             : null,
         padding: EdgeInsets.only(
           top: 20,
@@ -98,9 +87,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
         ),
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -118,7 +105,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                 ),
               ),
             ),
-            
+
             // Title with status indicator
             Row(
               children: [
@@ -140,20 +127,19 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Status with improved visual
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12, 
-                vertical: 6
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: isAvailable ? Colors.green.shade50 : Colors.red.shade50,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isAvailable ? greenColor.withOpacity(0.5) : redcolor.withOpacity(0.5),
+                  color: isAvailable
+                      ? greenColor.withOpacity(0.5)
+                      : redcolor.withOpacity(0.5),
                 ),
               ),
               child: Row(
@@ -166,7 +152,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    isAvailable ? "Tersedia" : "Penuh",
+                    isAvailable ? "langganan" : "Tidak Langganan",
                     style: blackTextStyle.copyWith(
                       fontWeight: medium,
                       color: isAvailable ? greenColor : redcolor,
@@ -176,38 +162,34 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Location coordinates
             Row(
               children: [
                 Icon(
-                  Icons.location_on_outlined, 
+                  Icons.location_on_outlined,
                   size: isTablet ? 20 : 18,
                   color: Colors.grey[600],
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}",
-                  style: greyTextStyle.copyWith(
-                    fontSize: isTablet ? 15 : 14,
-                  ),
+                  style: greyTextStyle.copyWith(fontSize: isTablet ? 15 : 14),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Usage bar with improved visual
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.grey.shade200,
-                ),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,47 +229,43 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                   const SizedBox(height: 8),
                   Text(
                     "$currentUsage / $capacity kg",
-                    style: greyTextStyle.copyWith(
-                      fontSize: isTablet ? 14 : 12,
-                    ),
+                    style: greyTextStyle.copyWith(fontSize: isTablet ? 14 : 12),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Last emptied info
             Row(
               children: [
                 Icon(
-                  Icons.history, 
+                  Icons.history,
                   size: isTablet ? 20 : 18,
                   color: Colors.grey[600],
                 ),
                 const SizedBox(width: 8),
                 Text(
                   "Terakhir dikosongkan: $lastEmptied",
-                  style: greyTextStyle.copyWith(
-                    fontSize: isTablet ? 15 : 14,
-                  ),
+                  style: greyTextStyle.copyWith(fontSize: isTablet ? 15 : 14),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Action button with improved style
             SizedBox(
               height: isTablet ? 52 : 48,
               child: ElevatedButton(
-                onPressed: isAvailable 
-                  ? () {
-                      Navigator.pop(context);
-                      // Navigate to schedule pickup page
-                      Navigator.pushNamed(context, '/home');
-                    }
-                  : null,
+                onPressed: isAvailable
+                    ? () {
+                        Navigator.pop(context);
+                        // Navigate to schedule pickup page
+                        Navigator.pushNamed(context, '/home');
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: greenColor,
                   disabledBackgroundColor: Colors.grey[300],
@@ -311,32 +289,32 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
       ),
     );
   }
-  
+
   Future<void> _simulateLoading() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     // Simulate map data loading
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (mounted) {
       setState(() {
         _isLoading = false;
       });
-      
+
       // Start animation after loading is complete
       _animationController.forward();
     }
   }
-  
+
   // Map skeleton loader with improved visual
   Widget _buildMapSkeletonLoader() {
     // Get screen width for responsiveness
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = widget.horizontalPadding;
-    
+
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(
@@ -360,14 +338,21 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
               ),
               child: SkeletonItems.card(
                 height: isTablet ? 500 : 400,
-                width: MediaQuery.of(context).size.width * (isTablet ? 0.9 : 0.85),
+                width:
+                    MediaQuery.of(context).size.width * (isTablet ? 0.9 : 0.85),
                 borderRadius: 16,
               ),
             ),
             SizedBox(height: isTablet ? 24 : 20),
-            SkeletonItems.text(width: isTablet ? 220 : 180, height: isTablet ? 24 : 20),
+            SkeletonItems.text(
+              width: isTablet ? 220 : 180,
+              height: isTablet ? 24 : 20,
+            ),
             SizedBox(height: isTablet ? 12 : 8),
-            SkeletonItems.text(width: isTablet ? 280 : 240, height: isTablet ? 18 : 14),
+            SkeletonItems.text(
+              width: isTablet ? 280 : 240,
+              height: isTablet ? 18 : 14,
+            ),
           ],
         ),
       ),
@@ -380,12 +365,12 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
     final horizontalPadding = widget.horizontalPadding;
-    
+
     // Show skeleton loading
     if (_isLoading) {
       return _buildMapSkeletonLoader();
     }
-    
+
     return BlocBuilder<TrackingBloc, TrackingState>(
       builder: (context, state) {
         // Titik-titik polygon zona hijau
@@ -402,7 +387,9 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
             position: _slideAnimation,
             child: Container(
               margin: EdgeInsets.symmetric(
-                horizontal: isTablet ? horizontalPadding / 2 : horizontalPadding / 4,
+                horizontal: isTablet
+                    ? horizontalPadding / 2
+                    : horizontalPadding / 4,
                 vertical: isTablet ? 16 : 8,
               ),
               child: Column(
@@ -419,7 +406,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                       ),
                     ),
                   ),
-                  
+
                   // Map container
                   Expanded(
                     child: ClipRRect(
@@ -435,7 +422,8 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                             children: [
                               // Peta dasar
                               TileLayer(
-                                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                                urlTemplate:
+                                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                                 subdomains: const ['a', 'b', 'c', 'd'],
                                 userAgentPackageName: 'com.gerobaks.app',
                               ),
@@ -464,8 +452,8 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     child: GestureDetector(
                                       onTap: () {
                                         _showTrashPointDetails(
-                                          context, 
-                                          "Tempat Sampah A", 
+                                          context,
+                                          "Tempat Sampah A",
                                           LatLng(-0.503106, 117.150248),
                                           isAvailable: true,
                                           capacity: 30,
@@ -491,8 +479,8 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     child: GestureDetector(
                                       onTap: () {
                                         _showTrashPointDetails(
-                                          context, 
-                                          "Tempat Sampah B", 
+                                          context,
+                                          "Tempat Sampah B",
                                           LatLng(-0.503248, 117.150693),
                                           isAvailable: false,
                                           capacity: 50,
@@ -518,8 +506,8 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     child: GestureDetector(
                                       onTap: () {
                                         _showTrashPointDetails(
-                                          context, 
-                                          "Tempat Sampah C", 
+                                          context,
+                                          "Tempat Sampah C",
                                           LatLng(-0.502784, 117.149304),
                                           isAvailable: false,
                                           capacity: 40,
@@ -539,7 +527,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                               ),
                             ],
                           ),
-                          
+
                           // Map controls
                           Positioned(
                             bottom: 16,
@@ -570,12 +558,15 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                       color: Colors.blue,
                                     ),
                                     onPressed: () {
-                                      Navigator.pushNamed(context, '/wilayah-full-screen');
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/wilayah-full-screen',
+                                      );
                                     },
                                     tooltip: 'Layar Penuh',
                                   ),
                                 ),
-                                
+
                                 // Tombol lokasi saya
                                 Container(
                                   width: isTablet ? 48 : 40,
@@ -600,7 +591,9 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     ),
                                     onPressed: () {
                                       // Simulate finding current location
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             'Mencari lokasi Anda...',
@@ -614,7 +607,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     tooltip: 'Lokasi Saya',
                                   ),
                                 ),
-                                
+
                                 // Tombol zoom in
                                 Container(
                                   width: isTablet ? 48 : 40,
@@ -643,7 +636,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                     tooltip: 'Perbesar',
                                   ),
                                 ),
-                                
+
                                 // Tombol zoom out
                                 Container(
                                   width: isTablet ? 48 : 40,
@@ -674,7 +667,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                               ],
                             ),
                           ),
-                          
+
                           // Legend
                           Positioned(
                             top: 16,
@@ -706,7 +699,9 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                       const SizedBox(width: 6),
                                       Text(
                                         'Tersedia',
-                                        style: blackTextStyle.copyWith(fontSize: 12),
+                                        style: blackTextStyle.copyWith(
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -722,7 +717,9 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                                       const SizedBox(width: 6),
                                       Text(
                                         'Penuh',
-                                        style: blackTextStyle.copyWith(fontSize: 12),
+                                        style: blackTextStyle.copyWith(
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -734,7 +731,7 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
                       ),
                     ),
                   ),
-                  
+
                   // Information text
                   Padding(
                     padding: const EdgeInsets.only(left: 8, top: 12),
@@ -755,4 +752,3 @@ class _WilayahContentState extends State<WilayahContent> with SingleTickerProvid
     );
   }
 }
-
