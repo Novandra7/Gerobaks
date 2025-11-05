@@ -125,25 +125,38 @@ class ScheduleApiService {
   /// Expected fields: pickup_location (string), scheduled_at (DateTime or String),
   /// optional: dropoff_location, latitude, longitude, notes, waste_items (list)
   Future<ScheduleApiModel> createScheduleMobile({
-    required String pickupLocation,
+    required String address,
     required DateTime scheduledAt,
-    String? dropoffLocation,
-    double? latitude,
-    double? longitude,
+    required double latitude,
+    required double longitude,
+    required String serviceType,
     String? notes,
+    String? paymentMethod,
     List<Map<String, dynamic>>? wasteItems,
   }) async {
     final body = <String, dynamic>{
-      'pickup_location': pickupLocation,
-      'scheduled_at': _formatToBackend(scheduledAt),
-      if (dropoffLocation != null && dropoffLocation.isNotEmpty)
-        'dropoff_location': dropoffLocation,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
-      if (notes != null && notes.isNotEmpty) 'notes': notes,
-      if (wasteItems != null && wasteItems.isNotEmpty)
-        'waste_items': wasteItems,
+      'alamat': address,
+      'tanggal': DateFormat('yyyy-MM-dd').format(scheduledAt),
+      'waktu': DateFormat('HH:mm').format(scheduledAt),
+      'koordinat': {'lat': latitude, 'lng': longitude},
+      'jenis_layanan': serviceType,
+      'metode_pembayaran': paymentMethod ?? 'cash',
+      if (notes != null && notes.isNotEmpty) 'catatan': notes,
     };
+
+    if (wasteItems != null && wasteItems.isNotEmpty) {
+      body['detail_sampah'] = wasteItems
+          .map(
+            (item) => {
+              'jenis': (item['type'] ?? item['jenis'] ?? 'campuran')
+                  .toString()
+                  .toLowerCase(),
+              if (item['estimated_weight'] != null)
+                'perkiraan_berat': item['estimated_weight'],
+            },
+          )
+          .toList();
+    }
 
     final json = await _api.postJson(ApiRoutes.schedulesMobile, body);
     if (json is Map<String, dynamic>) {

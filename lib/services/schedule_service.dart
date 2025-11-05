@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
+import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:flutter/material.dart';
@@ -174,15 +175,16 @@ class ScheduleService {
         }
 
         final apiModel = await _remoteService.createScheduleMobile(
-          pickupLocation: schedule.address,
+          address: schedule.address,
           scheduledAt: scheduledAt,
           latitude: schedule.location.latitude,
           longitude: schedule.location.longitude,
+          serviceType: _mapServiceType(schedule.wasteType),
           notes: schedule.notes,
+          paymentMethod: 'cash',
           wasteItems: wasteItems.isNotEmpty ? wasteItems : null,
         );
 
-        // Use apiModel below (same as original flow)
         final remoteSchedule = _mergeRemoteWithLocal(
           ScheduleModel.fromApi(apiModel),
           schedule.copyWith(id: apiModel.id.toString()),
@@ -191,35 +193,44 @@ class ScheduleService {
         await _upsertLocalSchedule(remoteSchedule);
         await _setupScheduleNotifications(remoteSchedule);
         return remoteSchedule;
+      } on HttpException catch (e) {
+        debugPrint('Remote createSchedule (mobile) failed: $e');
+        if (_shouldPropagate(e.statusCode)) rethrow;
+        // fall through to legacy endpoint when retry makes sense
       } catch (e) {
         debugPrint('Remote createSchedule (mobile) failed: $e');
-        // fall through to old createSchedule attempt
       }
 
       // Fallback: try the legacy createSchedule endpoint
-      final apiModel = await _remoteService.createSchedule(
-        title: _deriveTitle(schedule),
-        description: schedule.address,
-        latitude: schedule.location.latitude,
-        longitude: schedule.location.longitude,
-        status: _statusToApi(schedule.status),
-        assignedTo: schedule.driverId != null
-            ? int.tryParse(schedule.driverId!)
-            : null,
-        scheduledAt: scheduledAt,
-      );
+      try {
+        final apiModel = await _remoteService.createSchedule(
+          title: _deriveTitle(schedule),
+          description: schedule.address,
+          latitude: schedule.location.latitude,
+          longitude: schedule.location.longitude,
+          status: _statusToApi(schedule.status),
+          assignedTo: schedule.driverId != null
+              ? int.tryParse(schedule.driverId!)
+              : null,
+          scheduledAt: scheduledAt,
+        );
 
-      // Note: flow above returns when mobile succeeded; this block handles legacy endpoint result
-      final remoteSchedule = _mergeRemoteWithLocal(
-        ScheduleModel.fromApi(apiModel),
-        schedule.copyWith(id: apiModel.id.toString()),
-      );
+        final remoteSchedule = _mergeRemoteWithLocal(
+          ScheduleModel.fromApi(apiModel),
+          schedule.copyWith(id: apiModel.id.toString()),
+        );
 
-      await _upsertLocalSchedule(remoteSchedule);
-      await _setupScheduleNotifications(remoteSchedule);
-      return remoteSchedule;
+        await _upsertLocalSchedule(remoteSchedule);
+        await _setupScheduleNotifications(remoteSchedule);
+        return remoteSchedule;
+      } on HttpException catch (e) {
+        debugPrint('Remote createSchedule failed: $e');
+        if (_shouldPropagate(e.statusCode)) rethrow;
+      } catch (e) {
+        debugPrint('Remote createSchedule failed: $e');
+      }
     } catch (e) {
-      debugPrint('Remote createSchedule failed: $e');
+      debugPrint('Unexpected error in createSchedule: $e');
     }
 
     final fallbackSchedule = ScheduleModel(
@@ -702,5 +713,24 @@ class ScheduleService {
         amount: (i + 1) * 10000.0,
       );
     }
+  }
+}
+
+bool _shouldPropagate(int? statusCode) {
+  if (statusCode == null) return false;
+  return statusCode >= 400 && statusCode < 500;
+}
+
+String _mapServiceType(String? wasteType) {
+  final normalized = wasteType?.toLowerCase().trim();
+  switch (normalized) {
+    case 'organik':
+      return 'pickup_sampah_organik';
+    case 'anorganik':
+      return 'pickup_sampah_anorganik';
+    case 'b3':
+      return 'pickup_sampah_b3';
+    default:
+      return 'pickup_sampah_campuran';
   }
 }
