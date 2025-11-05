@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
-import 'chat_audio_service.dart';
+import '../services/chat_audio_service.dart';
 
 /// Utility functions untuk mengelola voice messages di chat
 class ChatAudioUtils {

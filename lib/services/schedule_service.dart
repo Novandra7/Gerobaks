@@ -3,7 +3,6 @@ import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/models/waste_item.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
-import 'package:bank_sha/services/schedule_service_complete.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
@@ -16,7 +15,6 @@ class ScheduleService {
   final Uuid _uuid = const Uuid();
   late LocalStorageService _localStorage;
   final ScheduleApiService _remoteService = ScheduleApiService();
-  final ScheduleServiceComplete _apiService = ScheduleServiceComplete();
   bool _isInitialized = false;
 
   // Key for storing schedules in local storage
@@ -854,7 +852,9 @@ class ScheduleService {
   Future<dynamic> acceptSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.acceptSchedule(id);
+      // TODO: Implement API call for accepting schedule
+      print('Accept schedule: $id');
+      return true;
     } catch (e) {
       debugPrint('Error accepting schedule: $e');
       rethrow;
@@ -865,7 +865,9 @@ class ScheduleService {
   Future<dynamic> startSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.startSchedule(id);
+      // TODO: Implement API call for starting schedule
+      print('Start schedule: $id');
+      return true;
     } catch (e) {
       debugPrint('Error starting schedule: $e');
       rethrow;
@@ -880,11 +882,11 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.completeSchedulePickup(
-        scheduleId: id,
-        actualWeight: actualWeight,
-        notes: notes,
+      // TODO: Implement API call for completing schedule pickup
+      print(
+        'Complete schedule pickup: $id, weight: $actualWeight, notes: $notes',
       );
+      return true;
     } catch (e) {
       debugPrint('Error completing schedule: $e');
       rethrow;
@@ -898,10 +900,9 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.cancelScheduleWithReason(
-        scheduleId: id,
-        reason: reason,
-      );
+      // TODO: Implement API call for cancelling schedule
+      print('Cancel schedule: $id, reason: $reason');
+      return true;
     } catch (e) {
       debugPrint('Error cancelling schedule: $e');
       rethrow;

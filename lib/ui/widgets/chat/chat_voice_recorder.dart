@@ -91,9 +91,12 @@ class _ChatVoiceRecorderState extends State<ChatVoiceRecorder>
     }
 
     if (!_audioService.isVoiceRecordingAvailable()) {
+      final platformInfo = _audioService.getPlatformInfo();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_audioService.getPlatformInfo()),
+          content: Text(
+            'Voice recording tidak didukung: ${platformInfo['os']} ${platformInfo['version']}',
+          ),
           backgroundColor: Colors.red,
         ),
       );

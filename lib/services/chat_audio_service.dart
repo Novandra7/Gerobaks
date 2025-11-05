@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'audio_recorder_service2.dart';
+import 'audio_recorder_service.dart';
 
 /// Service adapter untuk mengintegrasikan AudioRecorderService2 dengan fitur chat
 ///
@@ -14,7 +14,7 @@ import 'audio_recorder_service2.dart';
 /// - Voice message validation dan optimization
 class ChatAudioService {
   static ChatAudioService? _instance;
-  AudioRecorderService2? _recorderService;
+  AudioRecorderService? _recorderService;
 
   // Private constructor untuk singleton pattern
   ChatAudioService._();
@@ -28,7 +28,7 @@ class ChatAudioService {
   /// Initialize the chat audio service
   Future<void> initialize() async {
     try {
-      _recorderService = AudioRecorderService2();
+      _recorderService = AudioRecorderService();
       debugPrint('ChatAudioService initialized successfully');
     } catch (e) {
       debugPrint('Error initializing ChatAudioService: $e');
@@ -38,12 +38,16 @@ class ChatAudioService {
 
   /// Check if voice recording is supported dan available untuk chat
   bool isVoiceRecordingAvailable() {
-    return AudioRecorderService2.isRecordingSupported();
+    // Untuk iOS dan Android, voice recording tersedia
+    return Platform.isIOS || Platform.isAndroid;
   }
 
   /// Get platform support information
-  String getPlatformInfo() {
-    return AudioRecorderService2.getPlatformSupportInfo();
+  Map<String, String> getPlatformInfo() {
+    return {
+      'os': Platform.operatingSystem,
+      'version': Platform.operatingSystemVersion,
+    };
   }
 
   /// Request permissions untuk voice recording di chat
