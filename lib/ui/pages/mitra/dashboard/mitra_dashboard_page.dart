@@ -779,7 +779,7 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                                 ),
                               ),
                               Text(
-                                'Statistik Hari Ini',
+                                'Stat',
                                 style: blackTextStyle.copyWith(
                                   fontSize:
                                       ResponsiveHelper.getResponsiveFontSize(

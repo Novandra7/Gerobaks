@@ -1,21 +1,103 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_new.dart';
-import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
-import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
-import 'package:bank_sha/ui/pages/mitra/chat/mitra_chat_list_page.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
-import 'package:bank_sha/utils/responsive_helper.dart';
-
-// Importing the new custom widgets
-import 'package:bank_sha/ui/widgets/mitra/dashboard_header.dart';
 import 'package:bank_sha/ui/widgets/mitra/statistics_grid.dart';
 import 'package:bank_sha/ui/widgets/mitra/schedule_section.dart';
 import 'package:bank_sha/ui/widgets/mitra/custom_bottom_navbar.dart';
 
+/// ======== CUSTOM APPBAR (Hello David! style) ========
+class DashboardGreetingAppBar extends StatelessWidget {
+  final String name;
+  final String? profileImage;
+  final VoidCallback? onNotificationPressed;
+
+  const DashboardGreetingAppBar({
+    super.key,
+    required this.name,
+    this.profileImage,
+    this.onNotificationPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // === PROFILE + GREETING ===
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundImage: profileImage != null
+                      ? AssetImage(profileImage!)
+                      : const AssetImage('assets/images/img_friend4.png'),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hello',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      '$name!',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            // === NOTIFICATION ICON + RED DOT ===
+            Stack(
+              children: [
+                IconButton(
+                  onPressed: onNotificationPressed,
+                  icon: const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 28,
+                    color: Colors.black,
+                  ),
+                ),
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// ================= DASHBOARD PAGE ===================
 class MitraDashboardPageNew extends StatefulWidget {
   const MitraDashboardPageNew({super.key});
 
@@ -26,13 +108,10 @@ class MitraDashboardPageNew extends StatefulWidget {
 class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
   int _currentIndex = 0;
   Map<String, dynamic>? currentUser;
-  bool _isOnline = false;
 
   final List<Widget> _pages = [
     const MitraDashboardContentNew(),
     const JadwalMitraPageNew(),
-    const PengambilanListPage(),
-    const LaporanMitraPage(),
     const ProfileMitraPage(),
   ];
 
@@ -54,8 +133,6 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
     }
   }
 
-  // Function intentionally removed to avoid linting warning
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,30 +143,6 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
           setState(() {
             _currentIndex = index;
           });
-        },
-        isOnline: _isOnline,
-        onPowerToggle: (online) {
-          setState(() {
-            _isOnline = online;
-          });
-
-          // Display snackbar for status change
-          // Show status notification
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                online
-                    ? 'Status Anda sekarang AKTIF'
-                    : 'Status Anda sekarang TIDAK AKTIF',
-              ),
-              backgroundColor: online ? const Color(0xFF01A643) : Colors.grey,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
         },
       ),
       body: AnimatedSwitcher(
@@ -103,6 +156,7 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
   }
 }
 
+/// ================= DASHBOARD CONTENT ===================
 class MitraDashboardContentNew extends StatefulWidget {
   const MitraDashboardContentNew({super.key});
 
@@ -116,6 +170,25 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
   final GlobalKey<RefreshIndicatorState> _refreshKey =
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
+
+  String getTodaySchedule() {
+    final now = DateFormat('EEEE', 'id_ID').format(DateTime.now());
+    switch (now.toLowerCase()) {
+      case 'senin':
+        return 'Organik';
+      case 'selasa':
+        return 'Anorganik';
+      case 'rabu':
+        return 'B3';
+      case 'kamis':
+      case 'jumat':
+      case 'sabtu':
+      case 'minggu':
+        return 'Campuran';
+      default:
+        return '-';
+    }
+  }
 
   @override
   void initState() {
@@ -141,297 +214,20 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
 
   Future<void> _refreshData() async {
     await _loadCurrentUser();
-    // Add additional refresh logic here as needed
     return Future.delayed(const Duration(milliseconds: 1500));
-  }
-
-  // Show details of a pickup in a bottom sheet
-  void _showPickupDetailsBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle bar
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-
-              // Title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Detail Pengambilan',
-                    style: blackTextStyle.copyWith(
-                      fontSize: 18,
-                      fontWeight: semiBold,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Menunggu',
-                      style: TextStyle(
-                        color: Colors.orange.shade800,
-                        fontWeight: medium,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Customer details
-              _buildDetailItem(
-                icon: Icons.person_outline,
-                title: 'Pelanggan',
-                value: 'Wahyu Indra',
-              ),
-
-              _buildDetailItem(
-                icon: Icons.phone_outlined,
-                title: 'Telepon',
-                value: '+62 812-3456-7890',
-              ),
-
-              _buildDetailItem(
-                icon: Icons.location_on_outlined,
-                title: 'Alamat',
-                value: 'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
-              ),
-
-              _buildDetailItem(
-                icon: Icons.access_time,
-                title: 'Waktu Pengambilan',
-                value: '14:00 - 16:00',
-              ),
-
-              _buildDetailItem(
-                icon: Icons.delete_outline,
-                title: 'Jenis Sampah',
-                value: 'Organik',
-              ),
-
-              _buildDetailItem(
-                icon: Icons.scale_outlined,
-                title: 'Perkiraan Berat',
-                value: '2 kg',
-              ),
-
-              const SizedBox(height: 20),
-
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.navigation_outlined),
-                      label: const Text('Navigasi'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A643),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.check_circle_outline),
-                      label: const Text('Selesai'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF00A643),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Color(0xFF00A643)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailItem({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE4F9E8),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 20, color: const Color(0xFF00A643)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: greyTextStyle.copyWith(fontSize: 12)),
-                const SizedBox(height: 4),
-                Text(value, style: blackTextStyle.copyWith(fontWeight: medium)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Update parent navigation index
-  void _updateParentIndex(int index) {
-    final parent = context
-        .findAncestorStateOfType<_MitraDashboardPageNewState>();
-    if (parent != null) {
-      parent.setState(() {
-        parent._currentIndex = index;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Create sample schedule card
-    final scheduleCard1 = ScheduleCard(
-      time: '14:00 - 16:00',
-      status: 'Menunggu',
-      name: 'Wahyu Indra',
-      address: 'JL. Muso Salim B, Kota Samarinda, Kalimantan Timur',
-      tags: [
-        ScheduleTag(
-          label: 'Organik',
-          backgroundColor: const Color(0xFF01A643).withOpacity(0.1),
-          textColor: const Color(0xFF01A643),
-        ),
-        ScheduleTag(
-          label: '2 kg',
-          backgroundColor: Colors.grey.withOpacity(0.1),
-          textColor: Colors.grey.shade700,
-        ),
-      ],
-      onTap: () {
-        // Navigate to detail page or show details
-        _showPickupDetailsBottomSheet(context);
-      },
-    );
-
-    final scheduleCard2 = ScheduleCard(
-      time: '17:00 - 18:00',
-      status: 'Menunggu',
-      name: 'Ahmad Rizal',
-      address: 'JL. Juanda No. 45, Kota Samarinda, Kalimantan Timur',
-      tags: [
-        ScheduleTag(
-          label: 'Anorganik',
-          backgroundColor: Colors.orange.withOpacity(0.1),
-          textColor: Colors.orange.shade700,
-        ),
-        ScheduleTag(
-          label: '3 kg',
-          backgroundColor: Colors.grey.withOpacity(0.1),
-          textColor: Colors.grey.shade700,
-        ),
-      ],
-      onTap: () {
-        // Navigate to detail page or show details
-        _showPickupDetailsBottomSheet(context);
-      },
-    );
-
-    // Create quick action items
-    final List<QuickActionItem> quickActions = [
-      QuickActionItem(
-        icon: Icons.location_on_outlined,
-        label: 'Wilayah',
-        onTap: () {
-          // Navigate to location page
-          Navigator.pushNamed(context, '/mitra-wilayah');
-        },
-      ),
-      QuickActionItem(
-        icon: Icons.list_alt_outlined,
-        label: 'Jadwal',
-        onTap: () {
-          _updateParentIndex(1);
-        },
-      ),
-      QuickActionItem(
-        icon: Icons.credit_card_outlined,
-        label: 'Bayar',
-        onTap: () {
-          // Navigate to payment page
-        },
-      ),
-      QuickActionItem(
-        icon: Icons.help_outline_outlined,
-        label: 'Bantuan',
-        onTap: () {
-          // Navigate to help page
-        },
-      ),
-    ];
+    final today = DateFormat('EEEE', 'id_ID').format(DateTime.now());
+    final scheduleToday = getTodaySchedule();
 
     return DashboardBackground(
-      backgroundColor: const Color(0xFFF9FFF8), // Background color from design
+      backgroundColor: const Color(0xFFF9FFF8),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(0), // Hide default AppBar
+          preferredSize: const Size.fromHeight(0),
           child: Container(),
         ),
         body: RefreshIndicator(
@@ -439,88 +235,104 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
           onRefresh: _refreshData,
           color: const Color(0xFF01A643),
           backgroundColor: Colors.white,
-          displacement: ResponsiveHelper.getResponsiveHeight(context, 40),
+          displacement: 40,
           child: SingleChildScrollView(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Section
-                DashboardHeader(
+                /// ====== CUSTOM APPBAR ======
+                DashboardGreetingAppBar(
                   name: currentUser != null
                       ? currentUser!['name'].split(' ')[0]
-                      : 'Fulan bin Fulan',
-                  vehicleNumber: 'KT 777 WAN',
-                  driverId: 'DRV-KTM-214',
-                  onChatPressed: () {
-                    // Navigate to Chat page
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const MitraChatListPage(),
-                      ),
-                    );
-                  },
+                      : 'Guest',
+                  profileImage: 'assets/img_friend4.png',
                   onNotificationPressed: () {
-                    // Navigate to Notification page
-                    // TODO: Replace with actual notification page when available
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
                           'Halaman notifikasi akan segera tersedia',
                         ),
-                        duration: Duration(seconds: 2),
                       ),
                     );
                   },
-                  quickActions: quickActions,
                 ),
 
-                SizedBox(
-                  height: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                const SizedBox(height: 20),
+
+                /// ====== JADWAL HARI INI (DIPINDAH KE ATAS) ======
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          color: Color(0xFF01A643),
+                          size: 32,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Jadwal Pengambilan Hari Ini',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$today: $scheduleToday',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF01A643),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
 
-                // Statistics Section
+                const SizedBox(height: 24),
+
+                /// ====== STATISTICS ======
                 StatisticsGrid(
                   onRefresh: () {
                     _refreshKey.currentState?.show();
                   },
                 ),
 
-                SizedBox(
-                  height: ResponsiveHelper.getResponsiveSpacing(context, 24),
-                ),
+                const SizedBox(height: 24),
 
-                // Schedule Section
-                ScheduleSection(scheduleCards: [scheduleCard1, scheduleCard2]),
+                /// ====== SCHEDULE SECTION LAMA ======
+                const ScheduleSection(scheduleCards: []),
 
-                // Bottom spacing for floating action button
-                SizedBox(
-                  height: ResponsiveHelper.getResponsiveSpacing(context, 80),
-                ),
+                const SizedBox(height: 80),
               ],
             ),
           ),
         ),
-        // Back to top button
-        floatingActionButton: FloatingActionButton.small(
-          backgroundColor: Colors.white,
-          elevation: 4,
-          onPressed: () {
-            // Scroll to top
-            _scrollController.animateTo(
-              0,
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeInOut,
-            );
-          },
-          child: Icon(
-            Icons.arrow_upward_rounded,
-            color: const Color(0xFF01A643),
-            size: ResponsiveHelper.getResponsiveIconSize(context, 20),
-          ),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }

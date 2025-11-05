@@ -15,7 +15,6 @@ import 'package:bank_sha/ui/pages/end_user/payment/payment_success_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_timeout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/checkout_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/payment_methods_page.dart';
-import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
@@ -51,7 +50,6 @@ import 'package:bank_sha/ui/pages/sign_up/sign_up_page_batch_4.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_subscription_page.dart';
 import 'package:bank_sha/ui/pages/splash_onboard/splash_page.dart';
 import 'package:bank_sha/ui/pages/end_user/tambah_jadwal_page.dart';
-import 'package:bank_sha/ui/pages/auth_wrapper.dart';
 
 import 'package:bank_sha/services/gemini_ai_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
@@ -285,7 +283,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/sign-up-uplod-profile': (context) => const SignUpUplodProfilePage(),
           '/sign-up-success': (context) => SignUpSuccessPage(),
           '/home': (context) => HomePage(),
-          '/mitra-dashboard': (context) => const MitraDashboardPage(),
           '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
           '/notif': (context) => const NotificationPage(),
           '/chat': (context) => ChatListPage(),
