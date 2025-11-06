@@ -2,7 +2,7 @@
 
 ## 📁 Struktur Folder Utama
 
-```
+````
 Gerobaks/
 ├── android/              # Konfigurasi platform Android
 ├── ios/                  # Konfigurasi platform iOS
@@ -84,20 +84,23 @@ Semua dokumentasi telah dipindahkan ke folder `docs/` dengan struktur yang teror
 1. Install dependencies:
 ```bash
 flutter pub get
-```
+````
 
 2. Setup environment:
+
 ```bash
 cp .env.example .env
 # Edit .env dengan konfigurasi Anda
 ```
 
 3. Jalankan aplikasi:
+
 ```bash
 flutter run
 ```
 
 Atau gunakan task yang tersedia di VS Code:
+
 - **Run Flutter App** - Menjalankan aplikasi
 - **Backend: Serve** - Menjalankan Laravel backend
 
