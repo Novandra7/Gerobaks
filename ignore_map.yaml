@@ -1,8 +1,0 @@
-record_linux:
-  platforms:
-    android: true
-    ios: true
-    windows: true
-    macos: true
-    web: true
-    linux: false
