@@ -9,11 +9,13 @@
 **Error:** `422 Unprocessable Content` saat run di production
 
 **Root Cause:**
+
 - ❌ App masih hit API local (`localhost`, `127.0.0.1`, `10.0.2.2`)
 - ❌ Cached URL di `ApiClient._cachedBaseUrl`
 - ❌ Stored custom URL di SharedPreferences dari development
 
 **Solution:**
+
 - ✅ Auto-detect production mode on startup
 - ✅ Auto-force production API jika terdeteksi local
 - ✅ Clear all caches automatically
@@ -24,21 +26,27 @@
 ## 📁 Files yang Diubah
 
 ### 1. **NEW:** `lib/utils/production_force_reset.dart`
+
 Production mode detection & force reset utility
 
 ### 2. **MODIFIED:** `lib/services/api_client.dart`
+
 Remove stale cache, always get fresh URL
 
 ### 3. **MODIFIED:** `lib/main.dart`
+
 Auto-force production mode on startup
 
 ### 4. **NEW:** `build_production.ps1`
+
 Script untuk clean build production
 
 ### 5. **NEW:** `test_production.ps1`
+
 Script untuk verify production mode
 
 ### 6. **NEW:** `PRODUCTION_API_FIX.md`
+
 Detailed documentation
 
 ---
@@ -78,6 +86,7 @@ build\app\outputs\flutter-apk\app-release.apk
 ```
 
 **Expected Logs:**
+
 ```
 🔄 Checking API configuration...
 ✅ Already in production mode
@@ -150,6 +159,7 @@ https://gerobaks.dumeg.com
 ### API Endpoints
 
 All endpoints automatically use production URL:
+
 - `/api/auth/login`
 - `/api/auth/register`
 - `/api/schedules`
@@ -174,19 +184,22 @@ APP_DEBUG=false
 ### Still Getting 422?
 
 1. **Check logs on startup**
+
    ```
    Is Production: true  ✅ Good!
    Is Production: false ❌ Problem!
    ```
 
 2. **Force production manually**
+
    ```dart
    import 'package:bank_sha/utils/production_force_reset.dart';
-   
+
    await ProductionForceReset.forceProductionMode();
    ```
 
 3. **Clear app data completely**
+
    ```bash
    flutter clean
    # Uninstall app from device
@@ -200,12 +213,12 @@ APP_DEBUG=false
 
 ### Common Issues
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| 422 Error | Local API URL | Auto-fixed on startup now |
-| Connection refused | Backend down | Check backend server |
-| Invalid token | Old token | Re-login |
-| Validation error | Wrong payload | Check backend validation |
+| Issue              | Cause         | Solution                  |
+| ------------------ | ------------- | ------------------------- |
+| 422 Error          | Local API URL | Auto-fixed on startup now |
+| Connection refused | Backend down  | Check backend server      |
+| Invalid token      | Old token     | Re-login                  |
+| Validation error   | Wrong payload | Check backend validation  |
 
 ---
 
@@ -282,6 +295,7 @@ curl -X POST https://gerobaks.dumeg.com/api/auth/login \
 **Status:** ✅ FIXED & PRODUCTION READY!
 
 **Next Steps:**
+
 1. Run `.\build_production.ps1`
 2. Test APK on device
 3. Verify production mode active

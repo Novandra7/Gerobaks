@@ -14,10 +14,12 @@ if (Test-Path ".env") {
     
     if ($apiUrl -match "https://gerobaks.dumeg.com") {
         Write-Host "   ✅ Production URL configured" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "   ❌ Not using production URL!" -ForegroundColor Red
     }
-} else {
+}
+else {
     Write-Host "   ❌ .env file not found!" -ForegroundColor Red
 }
 Write-Host ""

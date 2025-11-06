@@ -11,11 +11,13 @@
 ### Problem yang Ditemukan:
 
 1. **Cached API URL di ApiClient**
+
    - `ApiClient._cachedBaseUrl` menyimpan URL lama
    - Tidak auto-refresh saat config berubah
    - Menyebabkan app tetap hit localhost
 
 2. **SharedPreferences Conflict**
+
    - `custom_api_url` tersimpan dari development
    - Override default production URL
    - Perlu force reset ke production
@@ -41,20 +43,20 @@ class ProductionForceReset {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('custom_api_url');
     await prefs.remove('app_environment');
-    
+
     // Set production URL explicitly
     await AppConfig.setApiBaseUrl(AppConfig.PRODUCTION_API_URL);
-    
+
     // Reload and verify
     await AppConfig.loadStoredApiUrl();
   }
-  
+
   /// Check if in production mode
   static Future<bool> isProductionMode() async {
     final url = AppConfig.apiBaseUrl;
     return url.contains('gerobaks.dumeg.com');
   }
-  
+
   /// Get detailed config info
   static Future<Map<String, dynamic>> getConfigInfo() async {
     return {
@@ -67,6 +69,7 @@ class ProductionForceReset {
 ```
 
 **Features:**
+
 - ✅ Force reset semua config ke production
 - ✅ Clear cached URLs
 - ✅ Verify production mode
@@ -79,6 +82,7 @@ class ProductionForceReset {
 **File:** `lib/services/api_client.dart`
 
 **BEFORE:**
+
 ```dart
 String get _baseUrl {
   // Return cached value jika sudah ada
@@ -91,17 +95,18 @@ String get _baseUrl {
 ```
 
 **AFTER:**
+
 ```dart
 String get _baseUrl {
   // ALWAYS get fresh URL from AppConfig
   final currentUrl = AppConfig.apiBaseUrl;
-  
+
   // Update cache if changed
   if (_cachedBaseUrl != currentUrl) {
     print('🔄 API URL changed: $_cachedBaseUrl -> $currentUrl');
     _cachedBaseUrl = currentUrl;
   }
-  
+
   return currentUrl; // ✅ ALWAYS FRESH!
 }
 
@@ -113,6 +118,7 @@ static void clearCache() {
 ```
 
 **Benefits:**
+
 - ✅ No more stale cached URLs
 - ✅ Auto-detect URL changes
 - ✅ Manual cache clear available
@@ -132,7 +138,7 @@ Future<void> ensureEnvFileExists() async {
   // 🚨 FORCE PRODUCTION MODE
   print('🔄 Checking API configuration...');
   final isProduction = await ProductionForceReset.isProductionMode();
-  
+
   if (!isProduction) {
     print('⚠️ WARNING: Not in production mode! Forcing production...');
     await ProductionForceReset.forceProductionMode();
@@ -151,6 +157,7 @@ Future<void> ensureEnvFileExists() async {
 ```
 
 **Benefits:**
+
 - ✅ Auto-detect environment on startup
 - ✅ Auto-force production if needed
 - ✅ Clear all caches automatically
@@ -192,12 +199,12 @@ class AppConfig {
   static const String PRODUCTION_API_URL = 'https://gerobaks.dumeg.com';
   static const String DEVELOPMENT_API_URL = 'http://10.0.2.2:8000';
   static const String LOCALHOST_API_URL = 'http://localhost:8000';
-  
+
   static String get apiBaseUrl {
     if (_customApiUrl.isNotEmpty) {
       return _customApiUrl;
     }
-    
+
     try {
       return dotenv.env['API_BASE_URL'] ?? DEFAULT_API_URL;
     } catch (e) {
@@ -240,6 +247,7 @@ flutter run --release
 ```
 
 **Expected Logs:**
+
 ```
 🔄 Checking API configuration...
 ✅ Already in production mode
@@ -258,22 +266,28 @@ flutter run --release
 ### Possible Causes:
 
 1. **Still Using Local API**
+
    ```
    ❌ Current URL: http://localhost:8000
    ❌ Is Production: false
    ```
+
    **Solution:** App will auto-force production mode now
 
 2. **Cached Local URL in SharedPreferences**
+
    ```
    ⚠️ Stored URL: http://10.0.2.2:8000
    ```
+
    **Solution:** Production force reset will clear this
 
 3. **Invalid Auth Token**
+
    ```
    ❌ 422 Unprocessable Content
    ```
+
    **Solution:** Re-login to get fresh production token
 
 4. **Backend Not Running**
@@ -305,6 +319,7 @@ print('Is production: $isProduction');
 ```
 
 ### Expected Output:
+
 ```json
 {
   "current_url": "https://gerobaks.dumeg.com",
@@ -323,6 +338,7 @@ print('Is production: $isProduction');
 ### Complete Deployment Checklist:
 
 1. **Verify Configuration**
+
    ```bash
    # Check .env
    cat .env
@@ -330,6 +346,7 @@ print('Is production: $isProduction');
    ```
 
 2. **Clean Build**
+
    ```bash
    flutter clean
    flutter pub get
@@ -337,15 +354,17 @@ print('Is production: $isProduction');
    ```
 
 3. **Test Before Deploy**
+
    ```bash
    # Run in release mode
    flutter run --release
-   
+
    # Check logs for production URL
    # Should see: "✅ Already in production mode"
    ```
 
 4. **Deploy APK**
+
    ```bash
    # APK location
    build/app/outputs/flutter-apk/app-release.apk
@@ -378,16 +397,19 @@ print('Is production: $isProduction');
 ### Files Modified:
 
 1. **`lib/utils/production_force_reset.dart`** ⭐ NEW
+
    - Production mode detection
    - Force reset utility
    - Config inspection tools
 
 2. **`lib/services/api_client.dart`** 🔧 MODIFIED
+
    - Remove stale cache
    - Always get fresh URL
    - Add cache clear method
 
 3. **`lib/main.dart`** 🔧 MODIFIED
+
    - Auto-detect production mode
    - Auto-force production on startup
    - Clear caches automatically
@@ -403,11 +425,13 @@ print('Is production: $isProduction');
 ### After This Fix:
 
 1. **Test Thoroughly**
+
    - Test all CRUD operations
    - Verify all endpoints
    - Check error handling
 
 2. **Monitor Logs**
+
    - Watch for any `localhost` references
    - Check API call responses
    - Verify production mode on every startup
@@ -424,17 +448,20 @@ print('Is production: $isProduction');
 ### If Still Getting 422 Errors:
 
 1. **Check Backend**
+
    ```bash
    curl https://gerobaks.dumeg.com/api/health
    # Should return 200 OK
    ```
 
 2. **Verify Token**
+
    - Re-login to get fresh token
    - Check token expiration
    - Verify role permissions
 
 3. **Check Request Payload**
+
    - Verify required fields
    - Check data types
    - Validate against backend validation rules
@@ -454,6 +481,7 @@ print('Is production: $isProduction');
 **Status:** ✅ FIXED
 
 **Aplikasi sekarang:**
+
 - ✅ Auto-detect production mode
 - ✅ Auto-force production jika needed
 - ✅ No more cached local URLs

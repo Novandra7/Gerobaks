@@ -72,7 +72,7 @@ Future<void> ensureEnvFileExists() async {
   // 🚨 FORCE PRODUCTION MODE - Pastikan selalu gunakan production API
   print('🔄 Checking API configuration...');
   final isProduction = await ProductionForceReset.isProductionMode();
-  
+
   if (!isProduction) {
     print('⚠️ WARNING: Not in production mode! Forcing production...');
     await ProductionForceReset.forceProductionMode();

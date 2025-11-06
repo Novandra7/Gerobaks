@@ -46,13 +46,13 @@ class ApiClient {
   String get _baseUrl {
     // ALWAYS get fresh URL from AppConfig (no caching to prevent stale URLs)
     final currentUrl = AppConfig.apiBaseUrl;
-    
+
     // Update cache if changed
     if (_cachedBaseUrl != currentUrl) {
       print('🔄 API URL changed: $_cachedBaseUrl -> $currentUrl');
       _cachedBaseUrl = currentUrl;
     }
-    
+
     return currentUrl;
   }
 

@@ -32,12 +32,14 @@ if (Test-Path ".env") {
     $envContent = Get-Content ".env" -Raw
     if ($envContent -match "API_BASE_URL=https://gerobaks.dumeg.com") {
         Write-Host "✅ Production API URL configured correctly!" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "⚠️  WARNING: .env may not be configured for production!" -ForegroundColor Yellow
         Write-Host "Current .env content:" -ForegroundColor Yellow
         Get-Content ".env" | Select-String "API_BASE_URL"
     }
-} else {
+}
+else {
     Write-Host "❌ .env file not found!" -ForegroundColor Red
     exit 1
 }
