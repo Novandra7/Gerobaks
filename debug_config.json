@@ -1,6 +1,0 @@
-{
-  "enable-service-port-fallback": true,
-  "enable-dart-profiling": true,
-  "enable-vm-service": true,
-  "enable-impeller": false
-}

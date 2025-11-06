@@ -1,7 +1,10 @@
 import 'package:bank_sha/ui/pages/end_user/popupiklan.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
 import 'package:bank_sha/utils/subscription_guard.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
 import 'package:bank_sha/services/popup_notification_service.dart';
 import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:flutter/material.dart';
@@ -81,7 +84,10 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const AddSchedulePage(),
+                  builder: (context) => BlocProvider.value(
+                    value: context.read<ScheduleBloc>(),
+                    child: const AddSchedulePage(),
+                  ),
                 ),
               );
             }

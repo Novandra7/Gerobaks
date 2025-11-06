@@ -47,6 +47,24 @@ class _SplashPageState extends State<SplashPage>
       try {
         print("🚀 [SPLASH] Attempting auto-login from splash page");
 
+        // Check API token first (more reliable than localStorage flags)
+        final authService = AuthApiService();
+        final token = await authService.getToken();
+
+        print("🚀 [SPLASH] Token exists: ${token != null && token.isNotEmpty}");
+
+        if (token == null || token.isEmpty) {
+          print("🚀 [SPLASH] No valid token found, navigating to login");
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/sign-in',
+              (route) => false,
+            );
+          }
+          return;
+        }
+
         // Get LocalStorageService instance for debugging
         final localStorage = await LocalStorageService.getInstance();
         final isLoggedIn = await localStorage.getBool(
@@ -110,11 +128,11 @@ class _SplashPageState extends State<SplashPage>
           }
         } else if (mounted) {
           print(
-            "🚀 [SPLASH] Auto-login failed or not attempted, navigating to onboarding",
+            "🚀 [SPLASH] Auto-login failed or not attempted, navigating to login",
           );
           Navigator.pushNamedAndRemoveUntil(
             context,
-            '/onboarding',
+            '/sign-in',
             (route) => false,
           );
         }
@@ -123,7 +141,7 @@ class _SplashPageState extends State<SplashPage>
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            '/onboarding',
+            '/sign-in',
             (route) => false,
           );
         }

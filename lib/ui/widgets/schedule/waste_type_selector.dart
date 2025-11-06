@@ -29,6 +29,7 @@ class WasteTypeSelector extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: allTypes.map((typeData) {
+<<<<<<< HEAD
             // Safe handling with null coalescing and toString()
             final wasteTypeValue = typeData['value'];
             final wasteType = (wasteTypeValue != null)
@@ -43,6 +44,11 @@ class WasteTypeSelector extends StatelessWidget {
             final emojiValue = typeData['emoji'];
             final emoji = (emojiValue != null) ? emojiValue.toString() : '🗑️';
 
+=======
+            final wasteType = typeData['value'] as String;
+            final displayName = typeData['label'] as String;
+            final emoji = typeData['emoji'] as String;
+>>>>>>> 975463437929f47be2b3c0e694a0bc9c111eccf1
             final isSelected = selectedTypes.contains(wasteType);
 
             return _PillButton(

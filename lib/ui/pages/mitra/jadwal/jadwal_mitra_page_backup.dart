@@ -13,33 +13,35 @@ class JadwalMitraPage extends StatefulWidget {
   State<JadwalMitraPage> createState() => _JadwalMitraPageState();
 }
 
-class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProviderStateMixin {
+class _JadwalMitraPageState extends State<JadwalMitraPage>
+    with SingleTickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   String? _driverId;
   bool _isLoading = false;
-  String _selectedFilter = 'semua'; // Filter options: semua, pending, in_progress, completed
-  
+  String _selectedFilter =
+      'semua'; // Filter options: semua, pending, in_progress, completed
+
   // Tab controller untuk filter
   late TabController _tabController;
-  
+
   final ScheduleService _scheduleService = ScheduleService();
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabSelection);
-    
+
     // Initialize
     _initialize();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   void _handleTabSelection() {
     if (_tabController.indexIsChanging) {
       setState(() {
@@ -60,26 +62,26 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
       });
     }
   }
-  
+
   Future<void> _initialize() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     // Initialize date formatting for Indonesia
     await initializeDateFormatting('id_ID', null);
-    
+
     try {
       // Initialize schedule service
       await _scheduleService.initialize();
-      
+
       // Get driver ID
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
       if (userData != null) {
         _driverId = userData['id'] as String;
       }
-      
+
       // Load schedules
       await _loadSchedules();
     } catch (e) {
@@ -96,19 +98,19 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
       });
     }
   }
-  
+
   Future<void> _loadSchedules() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       if (_driverId != null) {
         // Di sini akan implementasi untuk mendapatkan jadwal berdasarkan ID driver dan tanggal
         // dari API atau sumber data lain
         // Untuk sementara, kita gunakan data dummy dan simulasi loading
         await Future.delayed(const Duration(seconds: 1));
-        
+
         // Dalam implementasi sebenarnya akan seperti:
         // final schedules = await _scheduleService.getSchedules(driverId: _driverId!, date: selectedDate);
         // setState(() {
@@ -173,12 +175,12 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
           ),
         ],
       ),
-      body: _isLoading 
+      body: _isLoading
           ? Center(child: CircularProgressIndicator(color: greenColor))
           : _buildBody(),
     );
   }
-  
+
   Widget _buildBody() {
     return Column(
       children: [
@@ -201,29 +203,32 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
             ],
           ),
         ),
-        
+
         // Jadwal Content
         Expanded(
           child: RefreshIndicator(
             color: greenColor,
             onRefresh: _loadSchedules,
             child: _getFilteredSchedules().isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  itemCount: _getFilteredSchedules().length,
-                  itemBuilder: (context, index) {
-                    // Mendapatkan data jadwal berdasarkan filter
-                    final scheduleData = _getFilteredSchedules()[index];
-                    return _buildScheduleCard(scheduleData);
-                  },
-                ),
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    itemCount: _getFilteredSchedules().length,
+                    itemBuilder: (context, index) {
+                      // Mendapatkan data jadwal berdasarkan filter
+                      final scheduleData = _getFilteredSchedules()[index];
+                      return _buildScheduleCard(scheduleData);
+                    },
+                  ),
           ),
         ),
       ],
     );
   }
-  
+
   // Widget untuk memilih tanggal
   Widget _buildDateSelector() {
     return GestureDetector(
@@ -279,7 +284,13 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  selectedDate.isAtSameMomentAs(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day))
+                  selectedDate.isAtSameMomentAs(
+                        DateTime(
+                          DateTime.now().year,
+                          DateTime.now().month,
+                          DateTime.now().day,
+                        ),
+                      )
                       ? 'Jadwal hari ini'
                       : 'Pilih tanggal lain',
                   style: whiteTextStyle.copyWith(
@@ -301,14 +312,20 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
       ),
     );
   }
-  
+
   // Widget ringkasan jadwal
   Widget _buildScheduleSummary() {
     // Hitung jumlah jadwal untuk setiap status
     final schedules = _getFilteredSchedules();
-    final int pendingCount = schedules.where((s) => s['status'] == 'pending').length;
-    final int inProgressCount = schedules.where((s) => s['status'] == 'in_progress').length;
-    final int completedCount = schedules.where((s) => s['status'] == 'completed').length;
+    final int pendingCount = schedules
+        .where((s) => s['status'] == 'pending')
+        .length;
+    final int inProgressCount = schedules
+        .where((s) => s['status'] == 'in_progress')
+        .length;
+    final int completedCount = schedules
+        .where((s) => s['status'] == 'completed')
+        .length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -326,25 +343,41 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildSummaryItem(Icons.pending_outlined, Colors.orange, 'Menunggu', pendingCount.toString()),
+          _buildSummaryItem(
+            Icons.pending_outlined,
+            Colors.orange,
+            'Menunggu',
+            pendingCount.toString(),
+          ),
           _buildDivider(),
-          _buildSummaryItem(Icons.directions_car_outlined, Colors.blue, 'Proses', inProgressCount.toString()),
+          _buildSummaryItem(
+            Icons.directions_car_outlined,
+            Colors.blue,
+            'Proses',
+            inProgressCount.toString(),
+          ),
           _buildDivider(),
-          _buildSummaryItem(Icons.check_circle_outline, greenColor, 'Selesai', completedCount.toString()),
+          _buildSummaryItem(
+            Icons.check_circle_outline,
+            greenColor,
+            'Selesai',
+            completedCount.toString(),
+          ),
         ],
       ),
     );
   }
-  
+
   Widget _buildDivider() {
-    return Container(
-      height: 40,
-      width: 1,
-      color: Colors.grey.withOpacity(0.2),
-    );
+    return Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.2));
   }
-  
-  Widget _buildSummaryItem(IconData icon, Color color, String title, String count) {
+
+  Widget _buildSummaryItem(
+    IconData icon,
+    Color color,
+    String title,
+    String count,
+  ) {
     return Column(
       children: [
         Container(
@@ -358,23 +391,17 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
         const SizedBox(height: 8),
         Text(
           count,
-          style: blackTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
         ),
         const SizedBox(height: 4),
         Text(
           title,
-          style: greyTextStyle.copyWith(
-            fontSize: 12,
-            fontWeight: medium,
-          ),
+          style: greyTextStyle.copyWith(fontSize: 12, fontWeight: medium),
         ),
       ],
     );
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -388,24 +415,19 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
           const SizedBox(height: 16),
           Text(
             'Tidak ada jadwal',
-            style: blackTextStyle.copyWith(
-              fontSize: 18,
-              fontWeight: semiBold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
           ),
           const SizedBox(height: 8),
           Text(
             'Belum ada jadwal pengambilan untuk kategori ini',
             textAlign: TextAlign.center,
-            style: greyTextStyle.copyWith(
-              fontSize: 14,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 14),
           ),
         ],
       ),
     );
   }
-  
+
   // Mendapatkan jadwal berdasarkan filter yang dipilih
   List<Map<String, dynamic>> _getFilteredSchedules() {
     // Ini akan diganti dengan data dari API nanti
@@ -471,14 +493,14 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
         'estimatedDistance': '3.9 km',
       },
     ];
-    
+
     if (_selectedFilter == 'semua') {
       return schedules;
     } else {
       return schedules.where((s) => s['status'] == _selectedFilter).toList();
     }
   }
-  
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -494,16 +516,14 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
               onSurface: blackColor,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: greenColor,
-              ),
+              style: TextButton.styleFrom(foregroundColor: greenColor),
             ),
           ),
           child: child!,
         );
       },
     );
-    
+
     if (pickedDate != null && pickedDate != selectedDate) {
       setState(() {
         selectedDate = pickedDate;
@@ -535,25 +555,25 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
         statusColor = const Color(0xFFB58D00);
         statusBgColor = const Color(0xFFFFF8E0);
     }
-    
+
     // Membuat tag untuk jenis sampah dan berat
     List<ScheduleTag> tags = [];
-    
+
     // Tag untuk jenis sampah (waste_type)
     if (schedule['waste_type'] != null) {
       tags.add(
         ScheduleTag(
           label: schedule['waste_type'],
-          backgroundColor: schedule['waste_type'] == 'Organik' 
+          backgroundColor: schedule['waste_type'] == 'Organik'
               ? const Color(0xFFE3F6DF) // Hijau muda untuk organik
               : const Color(0xFFFFECE3), // Oranye muda untuk anorganik
-          textColor: schedule['waste_type'] == 'Organik' 
+          textColor: schedule['waste_type'] == 'Organik'
               ? const Color(0xFF5CC488) // Hijau untuk organik
               : const Color(0xFFFF7A30), // Oranye untuk anorganik
         ),
       );
     }
-    
+
     // Tag untuk berat sampah (waste_weight)
     if (schedule['waste_weight'] != null) {
       tags.add(
@@ -564,7 +584,7 @@ class _JadwalMitraPageState extends State<JadwalMitraPage> with SingleTickerProv
         ),
       );
     }
-    
+
     return ScheduleCard(
       time: schedule['time'] ?? '',
       status: statusText,

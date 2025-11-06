@@ -1,8 +1,13 @@
 import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
+<<<<<<< HEAD
 import 'package:bank_sha/services/api_client.dart';
+=======
+import 'package:bank_sha/models/waste_item.dart';
+>>>>>>> 975463437929f47be2b3c0e694a0bc9c111eccf1
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
+import 'package:bank_sha/services/schedule_service_complete.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
@@ -15,6 +20,7 @@ class ScheduleService {
   final Uuid _uuid = const Uuid();
   late LocalStorageService _localStorage;
   final ScheduleApiService _remoteService = ScheduleApiService();
+  final ScheduleServiceComplete _apiService = ScheduleServiceComplete();
   bool _isInitialized = false;
 
   // Key for storing schedules in local storage
@@ -712,6 +718,243 @@ class ScheduleService {
         isPaid: i % 2 == 0,
         amount: (i + 1) * 10000.0,
       );
+    }
+  }
+
+  // NEW METHOD: Create schedule with multiple waste items
+  Future<ScheduleModel> createScheduleWithWasteItems({
+    required String date,
+    required String time,
+    required String address,
+    required double latitude,
+    required double longitude,
+    required List<dynamic> wasteItems, // WasteItem from event
+    String? notes,
+  }) async {
+    await _ensureInitialized();
+
+    // Convert List<dynamic> to List<WasteItem>
+    final List<WasteItem> convertedWasteItems = wasteItems.map((item) {
+      if (item is WasteItem) {
+        return item;
+      } else if (item is Map<String, dynamic>) {
+        return WasteItem(
+          wasteType:
+              item['category'] ?? item['wasteType'] ?? item['waste_type'] ?? '',
+          estimatedWeight:
+              (item['weight'] ??
+                      item['estimatedWeight'] ??
+                      item['estimated_weight'] ??
+                      0.0)
+                  .toDouble(),
+          unit: item['unit'] ?? 'kg',
+          notes: item['notes'],
+        );
+      } else {
+        throw Exception('Invalid waste item format');
+      }
+    }).toList();
+
+    // Convert date string (YYYY-MM-DD) to DateTime
+    final dateParts = date.split('-');
+    final scheduledDate = DateTime(
+      int.parse(dateParts[0]),
+      int.parse(dateParts[1]),
+      int.parse(dateParts[2]),
+    );
+
+    // Convert time string (HH:mm) to TimeOfDay
+    final timeParts = time.split(':');
+    final timeSlot = TimeOfDay(
+      hour: int.parse(timeParts[0]),
+      minute: int.parse(timeParts[1]),
+    );
+
+    // Create schedule model with new waste items
+    final schedule = ScheduleModel(
+      id: null,
+      userId: '', // Will be set by API/context
+      scheduledDate: scheduledDate,
+      timeSlot: timeSlot,
+      location: LatLng(latitude, longitude),
+      address: address,
+      notes: notes,
+      status: ScheduleStatus.pending,
+      frequency: ScheduleFrequency.once,
+      driverId: null,
+      createdAt: DateTime.now(),
+      wasteItems: convertedWasteItems,
+      isPaid: false,
+    );
+
+    final created = await createSchedule(schedule);
+    if (created == null) {
+      throw Exception('Gagal membuat jadwal baru');
+    }
+    return created;
+  }
+
+  // NEW METHOD: Update schedule with multiple waste items
+  Future<ScheduleModel> updateScheduleWithWasteItems({
+    required String scheduleId,
+    String? date,
+    String? time,
+    String? address,
+    double? latitude,
+    double? longitude,
+    List<dynamic>? wasteItems,
+    String? status,
+    String? notes,
+  }) async {
+    await _ensureInitialized();
+
+    // Get existing schedule
+    final schedules = await _loadLocalSchedules();
+    final index = schedules.indexWhere((s) => s.id == scheduleId);
+
+    if (index == -1) {
+      throw Exception('Jadwal tidak ditemukan');
+    }
+
+    final existingSchedule = schedules[index];
+
+    // Convert List<dynamic>? to List<WasteItem>?
+    List<WasteItem>? convertedWasteItems;
+    if (wasteItems != null) {
+      convertedWasteItems = wasteItems.map((item) {
+        if (item is WasteItem) {
+          return item;
+        } else if (item is Map<String, dynamic>) {
+          return WasteItem(
+            wasteType:
+                item['category'] ??
+                item['wasteType'] ??
+                item['waste_type'] ??
+                '',
+            estimatedWeight:
+                (item['weight'] ??
+                        item['estimatedWeight'] ??
+                        item['estimated_weight'] ??
+                        0.0)
+                    .toDouble(),
+            unit: item['unit'] ?? 'kg',
+            notes: item['notes'],
+          );
+        } else {
+          throw Exception('Invalid waste item format');
+        }
+      }).toList();
+    }
+
+    // Parse date if provided
+    DateTime? scheduledDate;
+    if (date != null) {
+      final dateParts = date.split('-');
+      scheduledDate = DateTime(
+        int.parse(dateParts[0]),
+        int.parse(dateParts[1]),
+        int.parse(dateParts[2]),
+      );
+    }
+
+    // Parse time if provided
+    TimeOfDay? timeSlot;
+    if (time != null) {
+      final timeParts = time.split(':');
+      timeSlot = TimeOfDay(
+        hour: int.parse(timeParts[0]),
+        minute: int.parse(timeParts[1]),
+      );
+    }
+
+    // Parse status if provided
+    ScheduleStatus? newStatus;
+    if (status != null) {
+      newStatus = ScheduleStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == status,
+        orElse: () => existingSchedule.status,
+      );
+    }
+
+    // Update schedule
+    final updatedSchedule = existingSchedule.copyWith(
+      scheduledDate: scheduledDate,
+      timeSlot: timeSlot,
+      address: address,
+      location: (latitude != null && longitude != null)
+          ? LatLng(latitude, longitude)
+          : null,
+      wasteItems: convertedWasteItems,
+      status: newStatus,
+      notes: notes,
+    );
+
+    final updated = await updateSchedule(updatedSchedule);
+    if (updated == null) {
+      throw Exception('Gagal mengupdate jadwal');
+    }
+    return updated;
+  }
+
+  // ============================================================================
+  // MITRA ACTIONS - Call backend API endpoints
+  // ============================================================================
+
+  /// Mitra accepts a schedule
+  Future<dynamic> acceptSchedule(String scheduleId) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.acceptSchedule(id);
+    } catch (e) {
+      debugPrint('Error accepting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra starts the pickup
+  Future<dynamic> startSchedule(String scheduleId) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.startSchedule(id);
+    } catch (e) {
+      debugPrint('Error starting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Mitra completes the pickup
+  Future<dynamic> completeSchedule({
+    required String scheduleId,
+    double? actualWeight,
+    String? notes,
+  }) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.completeSchedulePickup(
+        scheduleId: id,
+        actualWeight: actualWeight,
+        notes: notes,
+      );
+    } catch (e) {
+      debugPrint('Error completing schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Cancel schedule with reason
+  Future<dynamic> cancelScheduleWithReason({
+    required String scheduleId,
+    required String reason,
+  }) async {
+    try {
+      final id = int.parse(scheduleId);
+      return await _apiService.cancelScheduleWithReason(
+        scheduleId: id,
+        reason: reason,
+      );
+    } catch (e) {
+      debugPrint('Error cancelling schedule: $e');
+      rethrow;
     }
   }
 }
