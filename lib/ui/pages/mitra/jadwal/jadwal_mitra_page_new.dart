@@ -10,7 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 class JadwalMitraPageNew extends StatefulWidget {
-  const JadwalMitraPageNew({super.key});
+  const  JadwalMitraPageNew({super.key});
 
   @override
   State<JadwalMitraPageNew> createState() => _JadwalMitraPageNewState();

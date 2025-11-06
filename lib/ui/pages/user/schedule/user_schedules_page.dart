@@ -2,7 +2,7 @@ import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
+import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
@@ -171,7 +171,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       MaterialPageRoute(
         builder: (context) => BlocProvider.value(
           value: context.read<ScheduleBloc>(),
-          child: const AddSchedulePage(),
+          child: const AddSchedulePageNew(),
         ),
       ),
     );

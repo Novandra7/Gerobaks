@@ -1,0 +1,3 @@
+@echo off
+echo Menjalankan Flutter dengan konfigurasi yang benar untuk debug console...
+flutter run --no-enable-impeller --verbose --start-paused
