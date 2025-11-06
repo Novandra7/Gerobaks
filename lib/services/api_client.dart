@@ -44,14 +44,22 @@ class ApiClient {
   static String? _cachedBaseUrl;
 
   String get _baseUrl {
-    // Return cached value jika sudah ada
-    if (_cachedBaseUrl != null) {
-      return _cachedBaseUrl!;
+    // ALWAYS get fresh URL from AppConfig (no caching to prevent stale URLs)
+    final currentUrl = AppConfig.apiBaseUrl;
+    
+    // Update cache if changed
+    if (_cachedBaseUrl != currentUrl) {
+      print('🔄 API URL changed: $_cachedBaseUrl -> $currentUrl');
+      _cachedBaseUrl = currentUrl;
     }
+    
+    return currentUrl;
+  }
 
-    // Menggunakan AppConfig untuk mendapatkan baseUrl
-    _cachedBaseUrl = AppConfig.apiBaseUrl;
-    return _cachedBaseUrl!;
+  /// Clear cached base URL (useful when switching environments)
+  static void clearCache() {
+    _cachedBaseUrl = null;
+    print('🔄 ApiClient cache cleared');
   }
 
   /// Mendapatkan base URL yang sedang digunakan untuk API

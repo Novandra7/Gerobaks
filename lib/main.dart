@@ -59,6 +59,8 @@ import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/app_config.dart';
+import 'package:bank_sha/utils/production_force_reset.dart';
+import 'package:bank_sha/services/api_client.dart';
 
 // Fungsi untuk memeriksa dan membuat file .env jika tidak ada
 Future<void> ensureEnvFileExists() async {
@@ -67,6 +69,25 @@ Future<void> ensureEnvFileExists() async {
 
   // Load stored API URL from SharedPreferences if available
   await AppConfig.loadStoredApiUrl();
+
+  // 🚨 FORCE PRODUCTION MODE - Pastikan selalu gunakan production API
+  print('🔄 Checking API configuration...');
+  final isProduction = await ProductionForceReset.isProductionMode();
+  
+  if (!isProduction) {
+    print('⚠️ WARNING: Not in production mode! Forcing production...');
+    await ProductionForceReset.forceProductionMode();
+    ApiClient.clearCache(); // Clear API client cache
+  } else {
+    print('✅ Already in production mode');
+  }
+
+  // Verify final config
+  final configInfo = await ProductionForceReset.getConfigInfo();
+  print('📋 API Configuration:');
+  print('   Current URL: ${configInfo['current_url']}');
+  print('   Is Production: ${configInfo['is_production']}');
+  print('   Is Local: ${configInfo['is_local']}');
 
   print('✓ Konfigurasi aplikasi berhasil diinisialisasi');
   print('✓ API Base URL: ${AppConfig.apiBaseUrl}');
