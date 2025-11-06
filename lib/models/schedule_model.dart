@@ -157,29 +157,57 @@ class ScheduleModel {
   }
 
   factory ScheduleModel.fromApi(ScheduleApiModel api) {
-    final scheduled = api.scheduledAt ?? DateTime.now();
+    final scheduled = api.scheduledAt ?? api.createdAt ?? DateTime.now();
     final time = TimeOfDay(hour: scheduled.hour, minute: scheduled.minute);
     final statusString = api.status ?? 'pending';
+    final lat = api.pickupLatitude ?? api.latitude ?? 0;
+    final lng = api.pickupLongitude ?? api.longitude ?? 0;
+    final address = (api.pickupAddress != null && api.pickupAddress!.isNotEmpty)
+        ? api.pickupAddress!
+        : (api.description != null && api.description!.isNotEmpty)
+            ? api.description!
+            : 'Lokasi tidak tersedia';
+
+    final noteText = (api.notes != null && api.notes!.isNotEmpty)
+        ? api.notes
+        : api.description;
+
+    final wasteItems = <WasteItem>[];
+    for (final waste in api.additionalWastes) {
+      final item = WasteItem.fromJson(waste);
+      if (item.wasteType.isNotEmpty) {
+        wasteItems.add(item);
+      }
+    }
+    final computedWeight = wasteItems.fold<double>(
+      0,
+      (sum, item) => sum + item.estimatedWeight,
+    );
+    final totalWeight = computedWeight > 0
+        ? computedWeight
+        : (api.estimatedWeight ?? 0.0);
 
     return ScheduleModel(
       id: api.id.toString(),
-      userId: api.assignedTo?.toString() ?? 'unknown',
+      userId: (api.userId ?? api.assignedTo)?.toString() ?? 'unknown',
       scheduledDate: scheduled,
       timeSlot: time,
-      location: LatLng(api.latitude ?? 0, api.longitude ?? 0),
-      address: api.description ?? 'Lokasi tidak tersedia',
-      notes: api.description,
+      location: LatLng(lat, lng),
+      address: address,
+      notes: noteText,
       status: _parseStatus(statusString),
-      frequency: ScheduleFrequency.once,
-      driverId: api.assignedTo?.toString(),
-      createdAt: api.createdAt ?? DateTime.now(),
-      completedAt: statusString == 'completed' ? api.updatedAt : null,
-      wasteType: 'Campuran',
-      estimatedWeight: null,
-      isPaid: false,
-      amount: null,
-      contactName: api.assignedUser?.name,
-      contactPhone: api.assignedUser?.phone,
+      frequency: _parseFrequency(api.frequency ?? 'once'),
+      driverId: (api.mitraId ?? api.assignedTo)?.toString(),
+      createdAt: api.createdAt ?? scheduled,
+      completedAt: statusString == 'completed' ? (api.updatedAt ?? api.createdAt) : null,
+      wasteType: api.wasteType ?? (wasteItems.isNotEmpty ? wasteItems.first.wasteType : 'Campuran'),
+      estimatedWeight: api.estimatedWeight ?? (wasteItems.isNotEmpty ? totalWeight : null),
+      wasteItems: wasteItems,
+      totalEstimatedWeight: totalWeight,
+      isPaid: api.isPaid ?? false,
+      amount: api.amount ?? api.price,
+      contactName: api.contactName ?? api.userName ?? api.assignedUser?.name,
+      contactPhone: api.contactPhone ?? api.assignedUser?.phone,
     );
   }
 
@@ -244,8 +272,15 @@ class ScheduleModel {
 
   // Helper for parsing frequency from string
   static ScheduleFrequency _parseFrequency(String frequency) {
+    final normalized = frequency.replaceAll(RegExp(r'[\s_-]+'), '').toLowerCase();
     return ScheduleFrequency.values.firstWhere(
-      (element) => element.toString().split('.').last == frequency,
+      (element) {
+        final value = element.toString().split('.').last;
+        final normalizedValue = value
+            .replaceAll(RegExp(r'[\s_-]+'), '')
+            .toLowerCase();
+        return normalizedValue == normalized;
+      },
       orElse: () => ScheduleFrequency.once,
     );
   }

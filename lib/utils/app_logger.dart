@@ -8,7 +8,7 @@ class AppLogger {
       lineLength: 80,
       colors: true,
       printEmojis: true,
-      printTime: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
     level: Level.info, // Set level ke info untuk mengurangi log debug
   );

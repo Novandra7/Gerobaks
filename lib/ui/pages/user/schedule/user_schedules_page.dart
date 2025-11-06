@@ -171,11 +171,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       MaterialPageRoute(
         builder: (context) => BlocProvider.value(
           value: context.read<ScheduleBloc>(),
-<<<<<<< HEAD
-          child: const AddSchedulePage(),
-=======
           child: const AddSchedulePageNew(),
->>>>>>> 975463437929f47be2b3c0e694a0bc9c111eccf1
         ),
       ),
     );

@@ -1,10 +1,7 @@
 import 'dart:convert';
 import 'package:bank_sha/models/schedule_model.dart';
-<<<<<<< HEAD
-import 'package:bank_sha/services/api_client.dart';
-=======
 import 'package:bank_sha/models/waste_item.dart';
->>>>>>> 975463437929f47be2b3c0e694a0bc9c111eccf1
+import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/services/schedule_service_complete.dart';

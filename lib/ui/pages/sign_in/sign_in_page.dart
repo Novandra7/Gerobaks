@@ -9,9 +9,8 @@ import 'package:bank_sha/utils/app_config.dart';
 import 'package:bank_sha/utils/api_routes.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/utils/app_logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:bank_sha/blocs/blocs.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -65,27 +64,29 @@ class _SignInPageState extends State<SignInPage> {
       final token = await authService.getToken();
       final isLoggedIn = token != null && token.isNotEmpty;
 
-      if (isLoggedIn && mounted) {
+      if (isLoggedIn) {
         try {
           // Get user data from API
           final userData = await authService.me();
-          print("Me API response: $userData");
-          print("Me API response keys: ${userData.keys.toList()}");
+          if (!mounted) return;
+
+          AppLogger.auth('Me API response: $userData');
+          AppLogger.auth('Me API response keys: ${userData.keys.toList()}');
 
           // For backward compatibility
           final localStorage = await LocalStorageService.getInstance();
 
           // Pastikan role tersimpan dengan benar
           if (!userData.containsKey('role') || userData['role'] == null) {
-            print("WARNING: Role not found or null, adding default role");
+            AppLogger.warning('Role not found or null, adding default role');
             userData['role'] = 'end_user';
           }
 
           // Memastikan role valid
           String role = userData['role'];
           if (role != 'end_user' && role != 'mitra') {
-            print(
-              "WARNING: Invalid role '${userData['role']}', correcting to 'end_user'",
+            AppLogger.warning(
+              "Invalid role '${userData['role']}', correcting to 'end_user'",
             );
             userData['role'] = 'end_user';
             role = 'end_user';
@@ -93,33 +94,35 @@ class _SignInPageState extends State<SignInPage> {
 
           // Simpan data user dengan role yang benar
           await localStorage.saveUserData(userData);
-          print("User data saved with role: ${userData['role']}");
+          AppLogger.auth('User data saved with role: ${userData['role']}');
 
           // Double-check user role setelah disimpan
           final savedRole = await localStorage.getUserRole();
-          print("Verified role from localStorage after save: $savedRole");
+          AppLogger.auth('Verified role from localStorage after save: $savedRole');
 
           if (savedRole != role) {
-            print(
-              "WARNING: Role mismatch! API role: $role, Saved role: $savedRole",
+            AppLogger.warning(
+              "Role mismatch! API role: $role, Saved role: $savedRole",
             );
             // Force resave with correct role
             userData['role'] = role;
             await localStorage.saveUserData(userData);
-            print("Re-saved user data to fix role mismatch");
+            AppLogger.info('Re-saved user data to fix role mismatch');
           }
 
           // Navigate based on role
           if (role == 'mitra') {
-            print("✅ Auto-login: Navigating to MITRA dashboard");
+            if (!mounted) return;
+            AppLogger.navigation('Auto-login: Navigating to MITRA dashboard');
             Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
           } else {
             // Default to end_user dashboard
-            print("✅ Auto-login: Navigating to END USER dashboard");
+            if (!mounted) return;
+            AppLogger.navigation('Auto-login: Navigating to END USER dashboard');
             Navigator.pushReplacementNamed(context, '/home');
           }
         } catch (e) {
-          print("Error getting user data: $e");
+          AppLogger.error('Error getting user data', e);
           // Token might be invalid, clear it
           await authService.logout();
         }
@@ -129,7 +132,7 @@ class _SignInPageState extends State<SignInPage> {
         await _userService!.init();
       }
     } catch (e) {
-      print("Error initializing services: $e");
+      AppLogger.error('Error initializing services', e);
     }
   }
 
@@ -243,8 +246,10 @@ class _SignInPageState extends State<SignInPage> {
       // Create API service instance
       final authService = AuthApiService();
 
-      print("🔐 Attempting login via API: ${_emailController.text}");
-      print("🔐 API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}");
+      AppLogger.auth('Attempting login via API: ${_emailController.text}');
+      AppLogger.auth(
+        'API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}',
+      );
 
       // Attempt login using the API service
       final userData = await authService.login(
@@ -252,40 +257,40 @@ class _SignInPageState extends State<SignInPage> {
         password: _passwordController.text,
       );
 
-      print(
-        "🔓 Login successful via API for: ${userData['name']} (${userData['email']}) with role: ${userData['role']}",
+      AppLogger.auth(
+        "Login successful via API for: ${userData['name']} (${userData['email']}) with role: ${userData['role']}",
       );
 
       // For backward compatibility - update local storage
       final localStorage = await LocalStorageService.getInstance();
 
       // Debug print full user data untuk membantu debugging
-      print("Raw userData from API login response: $userData");
-      print("userData keys: ${userData.keys.toList()}");
+      AppLogger.auth('Raw userData from API login response: $userData');
+      AppLogger.auth('userData keys: ${userData.keys.toList()}');
 
       // Pastikan role tersimpan dengan benar
       if (!userData.containsKey('role')) {
-        print(
-          "WARNING: Role not found in user data from API, adding default role",
+        AppLogger.warning(
+          'Role not found in user data from API, adding default role',
         );
         userData['role'] = 'end_user';
       }
 
       // Print role untuk debugging
-      print("User role before saving: ${userData['role']}");
+      AppLogger.auth('User role before saving: ${userData['role']}');
 
       // Pastikan semua field yang diperlukan ada
       if (!userData.containsKey('name')) {
-        print("WARNING: Name not found in user data");
+        AppLogger.warning('Name not found in user data');
       }
 
       if (!userData.containsKey('email')) {
-        print("WARNING: Email not found in user data");
+        AppLogger.warning('Email not found in user data');
       }
 
       // Simpan data user dengan role yang benar untuk backward compatibility
       await localStorage.saveUserData(userData);
-      print("User data saved with role: ${userData['role']}");
+      AppLogger.auth('User data saved with role: ${userData['role']}');
 
       // Set flag login = true for backward compatibility
       await localStorage.saveBool(localStorage.getLoginKey(), true);
@@ -295,7 +300,7 @@ class _SignInPageState extends State<SignInPage> {
         _emailController.text,
         _passwordController.text,
       );
-      print("Credentials saved for future auto-login");
+      AppLogger.info('Credentials saved for future auto-login');
 
       // Menampilkan notifikasi login berhasil
       await NotificationService().showNotification(
@@ -304,90 +309,97 @@ class _SignInPageState extends State<SignInPage> {
         body: 'Selamat datang di Gerobaks, ${userData['name']}!',
       );
 
+      if (!mounted) return;
+
       // Menampilkan toast login berhasil
-      if (mounted) {
-        String message = 'Login berhasil! ';
-        if (userData['role'] == 'end_user') {
-          message += userData['points'] != null
-              ? 'Poin Anda: ${userData['points']}'
-              : 'Selamat datang!';
-        } else {
-          message += 'Selamat bekerja, Mitra!';
-        }
+      String message = 'Login berhasil! ';
+      if (userData['role'] == 'end_user') {
+        message += userData['points'] != null
+            ? 'Poin Anda: ${userData['points']}'
+            : 'Selamat datang!';
+      } else {
+        message += 'Selamat bekerja, Mitra!';
+      }
 
-        ToastHelper.showToast(
-          context: context,
-          message: message,
-          isSuccess: true,
+      ToastHelper.showToast(
+        context: context,
+        message: message,
+        isSuccess: true,
+      );
+
+      // Navigasi berdasarkan role dengan validasi yang lebih baik
+      String userRole = userData['role'] ?? 'end_user';
+      AppLogger.navigation('User role for navigation: $userRole');
+
+      // Validasi dan normalisasi role
+      if (!['end_user', 'mitra', 'admin'].contains(userRole)) {
+        AppLogger.warning(
+          'Invalid role detected: $userRole, defaulting to end_user',
         );
+        userRole = 'end_user';
+        userData['role'] = userRole;
+        await localStorage.saveUserData(userData);
+      }
 
-        // Navigasi berdasarkan role dengan validasi yang lebih baik
-        String userRole = userData['role'] ?? 'end_user';
-        print("🚀 User role for navigation: $userRole");
+      if (!mounted) return;
 
-        // Validasi dan normalisasi role
-        if (!['end_user', 'mitra', 'admin'].contains(userRole)) {
-          print("⚠️ Invalid role detected: $userRole, defaulting to end_user");
-          userRole = 'end_user';
-          userData['role'] = userRole;
-          await localStorage.saveUserData(userData);
-        }
-
-        // Navigate berdasarkan role
-        switch (userRole) {
-          case 'mitra':
-            print("✅ Navigating to MITRA dashboard");
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/mitra-dashboard-new',
-              (route) => false,
-            );
-            break;
-          case 'admin':
-            print("✅ Navigating to ADMIN dashboard");
-            // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/mitra-dashboard-new',
-              (route) => false,
-            );
-            break;
-          case 'end_user':
-          default:
-            print("✅ Navigating to END USER home");
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/home',
-              (route) => false,
-            );
-            break;
-        }
+      // Navigate berdasarkan role
+      switch (userRole) {
+        case 'mitra':
+          AppLogger.navigation('Navigating to MITRA dashboard');
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/mitra-dashboard-new',
+            (route) => false,
+          );
+          break;
+        case 'admin':
+          AppLogger.navigation('Navigating to ADMIN dashboard');
+          // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/mitra-dashboard-new',
+            (route) => false,
+          );
+          break;
+        case 'end_user':
+        default:
+          AppLogger.navigation('Navigating to END USER home');
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home',
+            (route) => false,
+          );
+          break;
       }
     } catch (e) {
-      print("Login failed for: ${_emailController.text} - Error: $e");
+      AppLogger.error(
+        'Login failed for: ${_emailController.text}',
+        e,
+      );
 
-      if (mounted) {
-        // More user-friendly error message
-        String errorMessage = 'Email atau password salah';
+      if (!mounted) return;
 
-        if (e.toString().contains('NotInitializedError')) {
-          errorMessage = 'Koneksi server gagal. Silakan coba lagi.';
-        } else if (e.toString().contains('Connection refused')) {
-          errorMessage =
-              'Server tidak dapat dijangkau. Pastikan server berjalan.';
-        } else if (e.toString().contains('Http status error [404]')) {
-          errorMessage =
-              'Endpoint API tidak ditemukan. Periksa konfigurasi API.';
-        } else if (e.toString().contains('TimeoutException')) {
-          errorMessage = 'Koneksi ke server timeout. Periksa jaringan Anda.';
-        }
+      // More user-friendly error message
+      String errorMessage = 'Email atau password salah';
 
-        ToastHelper.showToast(
-          context: context,
-          message: errorMessage,
-          isSuccess: false,
-        );
+      if (e.toString().contains('NotInitializedError')) {
+        errorMessage = 'Koneksi server gagal. Silakan coba lagi.';
+      } else if (e.toString().contains('Connection refused')) {
+        errorMessage =
+            'Server tidak dapat dijangkau. Pastikan server berjalan.';
+      } else if (e.toString().contains('Http status error [404]')) {
+        errorMessage =
+            'Endpoint API tidak ditemukan. Periksa konfigurasi API.';
+      } else if (e.toString().contains('TimeoutException')) {
+        errorMessage = 'Koneksi ke server timeout. Periksa jaringan Anda.';
       }
+
+      ToastHelper.showToast(
+        context: context,
+        message: errorMessage,
+        isSuccess: false,
+      );
     } finally {
       if (mounted) {
         setState(() {

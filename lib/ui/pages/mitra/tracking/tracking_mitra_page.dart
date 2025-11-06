@@ -92,7 +92,8 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
 
           // Center map on current location if tracking is active
           if (_isTracking) {
-            _mapController.move(_currentLocation, _mapController.zoom);
+            final currentZoom = _mapController.camera.zoom;
+            _mapController.move(_currentLocation, currentZoom);
           }
         }
       });
@@ -259,13 +260,13 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                   child: FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      center: _currentLocation.latitude != 0
+                      initialCenter: _currentLocation.latitude != 0
                           ? _currentLocation
                           : const LatLng(
                               -6.2088,
                               106.8456,
                             ), // Default to Jakarta
-                      zoom: 15.0,
+                      initialZoom: 15.0,
                     ),
                     children: [
                       TileLayer(
@@ -282,12 +283,10 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                               width: 40,
                               height: 40,
                               point: _currentLocation,
-                              builder: (ctx) => Container(
-                                child: const Icon(
-                                  Icons.location_on,
-                                  color: Colors.blue,
-                                  size: 40,
-                                ),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.blue,
+                                size: 40,
                               ),
                             ),
 
@@ -297,12 +296,10 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                               width: 30,
                               height: 30,
                               point: tracking.location,
-                              builder: (ctx) => Container(
-                                child: Icon(
-                                  Icons.location_history,
-                                  color: Colors.red.withOpacity(0.7),
-                                  size: 30,
-                                ),
+                              child: Icon(
+                                Icons.location_history,
+                                color: Colors.red.withOpacity(0.7),
+                                size: 30,
                               ),
                             ),
                           ),

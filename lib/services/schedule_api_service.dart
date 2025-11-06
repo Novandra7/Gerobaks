@@ -10,13 +10,56 @@ class ScheduleApiService {
 
   final ApiClient _api = ApiClient();
 
+  Map<String, dynamic> _ensureMap(dynamic value, String context) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.map((key, dynamic val) => MapEntry(key.toString(), val));
+    }
+    throw FormatException('$context expected Map but received ${value.runtimeType}');
+  }
+
+  List<Map<String, dynamic>> _ensureListOfMap(dynamic value, String context) {
+    if (value == null) {
+      return const [];
+    }
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((item) => item.map((key, dynamic val) => MapEntry(key.toString(), val)))
+          .toList(growable: false);
+    }
+    throw FormatException('$context expected List but received ${value.runtimeType}');
+  }
+
+  Map<String, dynamic> _extractDataMap(dynamic payload, String context) {
+    final root = _ensureMap(payload, context);
+    if (root.containsKey('data')) {
+      final data = root['data'];
+      if (data == null) {
+        return <String, dynamic>{};
+      }
+      return _ensureMap(data, '$context.data');
+    }
+    return root;
+  }
+
+  Map<String, dynamic> _cleanPayload(Map<String, dynamic> payload) {
+    final cleaned = <String, dynamic>{};
+    payload.forEach((key, value) {
+      if (value != null) {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  }
+
   // Fetch a schedule by ID from backend and return the raw JSON map
   Future<ScheduleApiModel> getScheduleById(int id) async {
     final json = await _api.getJson(ApiRoutes.schedule(id));
-    if (json is Map<String, dynamic>) {
-      return ScheduleApiModel.fromJson(json);
-    }
-    throw HttpException('Invalid schedule response for id=$id');
+    final data = _extractDataMap(json, 'schedule detail');
+    return ScheduleApiModel.fromJson(data);
   }
 
   Future<SchedulePageResult> listSchedules({
@@ -34,91 +77,52 @@ class ScheduleApiService {
     };
 
     final json = await _api.getJson(ApiRoutes.schedules, query: query);
-    if (json is! Map<String, dynamic>) {
-      throw HttpException('Invalid schedules response: ${json.runtimeType}');
-    }
+    final root = _ensureMap(json, 'schedule list response');
+    final data = _extractDataMap(root, 'schedule list');
 
-    final data = json['data'];
-    final items = (data is List)
-        ? data
-              .whereType<Map<String, dynamic>>()
-              .map(ScheduleApiModel.fromJson)
-              .toList()
-        : <ScheduleApiModel>[];
+    final itemsRaw = _ensureListOfMap(data['items'], 'schedule list items');
+    final items = itemsRaw.map(ScheduleApiModel.fromJson).toList(growable: false);
+
+    final meta = data['meta'] is Map
+        ? data['meta'].map((key, dynamic val) => MapEntry(key.toString(), val))
+        : <String, dynamic>{};
 
     return SchedulePageResult(
       items: items,
-      currentPage: _asInt(json['current_page']) ?? page,
-      lastPage: _asInt(json['last_page']),
-      perPage: _asInt(json['per_page']) ?? perPage,
-      total: _asInt(json['total']),
+      currentPage: _asInt(meta['current_page']) ?? page,
+      lastPage: _asInt(meta['last_page']),
+      perPage: _asInt(meta['per_page']) ?? perPage,
+      total: _asInt(meta['total']),
+      hasMore: meta['has_more'] == true,
+      meta: meta,
+      message: root['message']?.toString(),
     );
   }
 
-  Future<ScheduleApiModel> createSchedule({
-    required String title,
-    String? description,
-    required double latitude,
-    required double longitude,
-    String? status,
-    int? assignedTo,
-    DateTime? scheduledAt,
-  }) async {
-    final body = <String, dynamic>{
-      'title': title,
-      'latitude': latitude,
-      'longitude': longitude,
-      if (description != null && description.isNotEmpty)
-        'description': description,
-      if (status != null && status.isNotEmpty) 'status': status,
-      if (assignedTo != null) 'assigned_to': assignedTo,
-      if (scheduledAt != null) 'scheduled_at': scheduledAt.toIso8601String(),
-    };
-
-    final json = await _api.postJson(ApiRoutes.schedules, body);
-    if (json is Map<String, dynamic>) {
-      return ScheduleApiModel.fromJson(json);
-    }
-    throw HttpException(
-      'Invalid schedule create response: ${json.runtimeType}',
+  Future<ScheduleApiModel> createSchedule(Map<String, dynamic> payload) async {
+    final json = await _api.postJson(
+      ApiRoutes.schedules,
+      _cleanPayload(payload),
     );
+    final data = _extractDataMap(json, 'create schedule');
+    return ScheduleApiModel.fromJson(data);
   }
 
-  Future<ScheduleApiModel> updateSchedule(
-    int id, {
-    String? title,
-    String? description,
-    double? latitude,
-    double? longitude,
-    String? status,
-    int? assignedTo,
-    DateTime? scheduledAt,
-  }) async {
-    final body = <String, dynamic>{
-      if (title != null) 'title': title,
-      if (description != null) 'description': description,
-      if (latitude != null) 'latitude': latitude,
-      if (longitude != null) 'longitude': longitude,
-      if (status != null) 'status': status,
-      if (assignedTo != null) 'assigned_to': assignedTo,
-      if (scheduledAt != null) 'scheduled_at': scheduledAt.toIso8601String(),
-    };
-
-    if (body.isEmpty) {
+  Future<ScheduleApiModel> updateSchedule(int id, Map<String, dynamic> payload) async {
+    if (payload.isEmpty) {
       throw ArgumentError('updateSchedule requires at least one field');
     }
 
-    final json = await _api.patchJson(ApiRoutes.schedule(id), body);
-    if (json is Map<String, dynamic>) {
-      return ScheduleApiModel.fromJson(json);
-    }
-    throw HttpException(
-      'Invalid schedule update response: ${json.runtimeType}',
+    final json = await _api.patchJson(
+      ApiRoutes.schedule(id),
+      _cleanPayload(payload),
     );
+    final data = _extractDataMap(json, 'update schedule');
+    return ScheduleApiModel.fromJson(data);
   }
 
   Future<ScheduleApiModel> updateScheduleStatus(int id, String status) {
-    return updateSchedule(id, status: status);
+    return updateSchedule(id, {'status': status});
   }
 
   /// Create schedule using mobile-specific endpoint (/api/schedules/mobile)
@@ -159,41 +163,24 @@ class ScheduleApiService {
     }
 
     final json = await _api.postJson(ApiRoutes.schedulesMobile, body);
-    if (json is Map<String, dynamic>) {
-      return ScheduleApiModel.fromJson(json);
-    }
-    throw HttpException(
-      'Invalid schedule create (mobile) response: ${json.runtimeType}',
-    );
+    final data = _extractDataMap(json, 'create schedule (mobile)');
+    return ScheduleApiModel.fromJson(data);
   }
 
   /// Convenience method to fetch schedules for a given user id via query
   Future<List<ScheduleApiModel>> getUserSchedules(String userId) async {
-    final json = await _api.getJson(
-      ApiRoutes.schedules,
-      query: {'user_id': userId},
+    final result = await listSchedules(
+      page: 1,
+      perPage: 200,
+      status: null,
+      assignedTo: null,
     );
-    if (json is! Map<String, dynamic>) {
-      throw HttpException(
-        'Invalid schedules response for user: ${json.runtimeType}',
-      );
-    }
 
-    final data = json['data'];
-    final items = (data is List)
-        ? data
-              .whereType<Map<String, dynamic>>()
-              .map(ScheduleApiModel.fromJson)
-              .toList()
-        : <ScheduleApiModel>[];
-    return items;
+    return result.items
+        .where((schedule) => schedule.userId?.toString() == userId)
+        .toList(growable: false);
   }
 
-  String _formatToBackend(DateTime dt) {
-    // Format as YYYY-MM-DD HH:MM:SS to match backend expectations
-    final fmt = DateFormat('yyyy-MM-dd HH:mm:ss');
-    return fmt.format(dt);
-  }
 }
 
 class SchedulePageResult {
@@ -203,6 +190,9 @@ class SchedulePageResult {
     this.lastPage,
     this.perPage,
     this.total,
+    this.hasMore,
+    this.meta = const {},
+    this.message,
   });
 
   final List<ScheduleApiModel> items;
@@ -210,6 +200,9 @@ class SchedulePageResult {
   final int? lastPage;
   final int? perPage;
   final int? total;
+  final bool? hasMore;
+  final Map<String, dynamic> meta;
+  final String? message;
 }
 
 int? _asInt(dynamic value) {
