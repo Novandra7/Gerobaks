@@ -98,7 +98,9 @@ class _SignInPageState extends State<SignInPage> {
 
           // Double-check user role setelah disimpan
           final savedRole = await localStorage.getUserRole();
-          AppLogger.auth('Verified role from localStorage after save: $savedRole');
+          AppLogger.auth(
+            'Verified role from localStorage after save: $savedRole',
+          );
 
           if (savedRole != role) {
             AppLogger.warning(
@@ -118,7 +120,9 @@ class _SignInPageState extends State<SignInPage> {
           } else {
             // Default to end_user dashboard
             if (!mounted) return;
-            AppLogger.navigation('Auto-login: Navigating to END USER dashboard');
+            AppLogger.navigation(
+              'Auto-login: Navigating to END USER dashboard',
+            );
             Navigator.pushReplacementNamed(context, '/home');
           }
         } catch (e) {
@@ -247,9 +251,7 @@ class _SignInPageState extends State<SignInPage> {
       final authService = AuthApiService();
 
       AppLogger.auth('Attempting login via API: ${_emailController.text}');
-      AppLogger.auth(
-        'API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}',
-      );
+      AppLogger.auth('API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}');
 
       // Attempt login using the API service
       final userData = await authService.login(
@@ -365,18 +367,11 @@ class _SignInPageState extends State<SignInPage> {
         case 'end_user':
         default:
           AppLogger.navigation('Navigating to END USER home');
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            '/home',
-            (route) => false,
-          );
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
           break;
       }
     } catch (e) {
-      AppLogger.error(
-        'Login failed for: ${_emailController.text}',
-        e,
-      );
+      AppLogger.error('Login failed for: ${_emailController.text}', e);
 
       if (!mounted) return;
 
@@ -389,8 +384,7 @@ class _SignInPageState extends State<SignInPage> {
         errorMessage =
             'Server tidak dapat dijangkau. Pastikan server berjalan.';
       } else if (e.toString().contains('Http status error [404]')) {
-        errorMessage =
-            'Endpoint API tidak ditemukan. Periksa konfigurasi API.';
+        errorMessage = 'Endpoint API tidak ditemukan. Periksa konfigurasi API.';
       } else if (e.toString().contains('TimeoutException')) {
         errorMessage = 'Koneksi ke server timeout. Periksa jaringan Anda.';
       }

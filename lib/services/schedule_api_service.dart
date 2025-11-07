@@ -17,7 +17,9 @@ class ScheduleApiService {
     if (value is Map) {
       return value.map((key, dynamic val) => MapEntry(key.toString(), val));
     }
-    throw FormatException('$context expected Map but received ${value.runtimeType}');
+    throw FormatException(
+      '$context expected Map but received ${value.runtimeType}',
+    );
   }
 
   List<Map<String, dynamic>> _ensureListOfMap(dynamic value, String context) {
@@ -27,10 +29,15 @@ class ScheduleApiService {
     if (value is List) {
       return value
           .whereType<Map>()
-          .map((item) => item.map((key, dynamic val) => MapEntry(key.toString(), val)))
+          .map(
+            (item) =>
+                item.map((key, dynamic val) => MapEntry(key.toString(), val)),
+          )
           .toList(growable: false);
     }
-    throw FormatException('$context expected List but received ${value.runtimeType}');
+    throw FormatException(
+      '$context expected List but received ${value.runtimeType}',
+    );
   }
 
   Map<String, dynamic> _extractDataMap(dynamic payload, String context) {
@@ -81,7 +88,9 @@ class ScheduleApiService {
     final data = _extractDataMap(root, 'schedule list');
 
     final itemsRaw = _ensureListOfMap(data['items'], 'schedule list items');
-    final items = itemsRaw.map(ScheduleApiModel.fromJson).toList(growable: false);
+    final items = itemsRaw
+        .map(ScheduleApiModel.fromJson)
+        .toList(growable: false);
 
     final meta = data['meta'] is Map
         ? data['meta'].map((key, dynamic val) => MapEntry(key.toString(), val))
@@ -108,7 +117,10 @@ class ScheduleApiService {
     return ScheduleApiModel.fromJson(data);
   }
 
-  Future<ScheduleApiModel> updateSchedule(int id, Map<String, dynamic> payload) async {
+  Future<ScheduleApiModel> updateSchedule(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
     if (payload.isEmpty) {
       throw ArgumentError('updateSchedule requires at least one field');
     }
@@ -180,7 +192,6 @@ class ScheduleApiService {
         .where((schedule) => schedule.userId?.toString() == userId)
         .toList(growable: false);
   }
-
 }
 
 class SchedulePageResult {

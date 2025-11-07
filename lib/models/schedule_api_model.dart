@@ -6,6 +6,8 @@ class ScheduleApiModel {
     required this.title,
     this.description,
     this.notes,
+    this.completionNotes,
+    this.cancellationReason,
     this.latitude,
     this.longitude,
     this.pickupLatitude,
@@ -16,6 +18,13 @@ class ScheduleApiModel {
     this.scheduledAt,
     this.createdAt,
     this.updatedAt,
+    this.completedAt,
+    this.cancelledAt,
+    this.confirmedAt,
+    this.startedAt,
+    this.assignedAt,
+    this.acceptedAt,
+    this.rejectedAt,
     this.trackingsCount,
     this.assignedUser,
     this.userId,
@@ -28,6 +37,7 @@ class ScheduleApiModel {
     this.frequency,
     this.wasteType,
     this.estimatedWeight,
+    this.actualDuration,
     this.estimatedDuration,
     this.contactName,
     this.contactPhone,
@@ -46,6 +56,8 @@ class ScheduleApiModel {
       title: (json['title'] ?? 'Jadwal').toString(),
       description: json['description']?.toString(),
       notes: json['notes']?.toString(),
+    completionNotes: json['completion_notes']?.toString(),
+    cancellationReason: json['cancellation_reason']?.toString(),
       latitude: _toDouble(json['latitude']),
       longitude: _toDouble(json['longitude']),
       pickupLatitude: _toDouble(json['pickup_latitude']),
@@ -58,6 +70,13 @@ class ScheduleApiModel {
       scheduledAt: _parseDate(json['scheduled_at']),
       createdAt: _parseDate(json['created_at']),
       updatedAt: _parseDate(json['updated_at']),
+    completedAt: _parseDate(json['completed_at']),
+    cancelledAt: _parseDate(json['cancelled_at']),
+    confirmedAt: _parseDate(json['confirmed_at']),
+    startedAt: _parseDate(json['started_at']),
+    assignedAt: _parseDate(json['assigned_at']),
+    acceptedAt: _parseDate(json['accepted_at']),
+    rejectedAt: _parseDate(json['rejected_at']),
       trackingsCount: json['trackings_count'] is int
           ? json['trackings_count'] as int
           : int.tryParse(json['trackings_count']?.toString() ?? ''),
@@ -78,6 +97,7 @@ class ScheduleApiModel {
       frequency: json['frequency']?.toString(),
       wasteType: json['waste_type']?.toString(),
       estimatedWeight: _toDouble(json['estimated_weight']),
+    actualDuration: _toInt(json['actual_duration']),
       estimatedDuration: json['estimated_duration'] == null
           ? null
           : int.tryParse(json['estimated_duration'].toString()),
@@ -86,9 +106,9 @@ class ScheduleApiModel {
       isPaid: _toBool(json['is_paid']),
       amount: _toDouble(json['amount']),
       additionalWastes: additionalWastesRaw is List
-          ? additionalWastesRaw
-              .whereType<Map<String, dynamic>>()
-              .toList(growable: false)
+          ? additionalWastesRaw.whereType<Map<String, dynamic>>().toList(
+              growable: false,
+            )
           : const [],
     );
   }
@@ -97,6 +117,8 @@ class ScheduleApiModel {
   final String title;
   final String? description;
   final String? notes;
+  final String? completionNotes;
+  final String? cancellationReason;
   final double? latitude;
   final double? longitude;
   final double? pickupLatitude;
@@ -107,6 +129,13 @@ class ScheduleApiModel {
   final DateTime? scheduledAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? completedAt;
+  final DateTime? cancelledAt;
+  final DateTime? confirmedAt;
+  final DateTime? startedAt;
+  final DateTime? assignedAt;
+  final DateTime? acceptedAt;
+  final DateTime? rejectedAt;
   final int? trackingsCount;
   final ScheduleAssignedUser? assignedUser;
   final int? userId;
@@ -119,6 +148,7 @@ class ScheduleApiModel {
   final String? frequency;
   final String? wasteType;
   final double? estimatedWeight;
+  final int? actualDuration;
   final int? estimatedDuration;
   final String? contactName;
   final String? contactPhone;
@@ -147,6 +177,12 @@ class ScheduleApiModel {
     if (value == null) return null;
     if (value is DateTime) return value;
     return DateTime.tryParse(value.toString());
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
   }
 
   static bool? _toBool(dynamic value) {

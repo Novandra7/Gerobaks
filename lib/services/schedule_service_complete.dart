@@ -12,22 +12,16 @@ class ScheduleServiceComplete {
 
   /// Mitra menerima jadwal (ubah status menjadi confirmed)
   Future<dynamic> acceptSchedule(int scheduleId) {
-    return _api.patchJson(
-      ApiRoutes.schedule(scheduleId),
-      {
-        'status': 'confirmed',
-      },
-    );
+    return _api.patchJson(ApiRoutes.schedule(scheduleId), {
+      'status': 'confirmed',
+    });
   }
 
   /// Mitra memulai penjemputan (ubah status menjadi in_progress)
   Future<dynamic> startSchedule(int scheduleId) {
-    return _api.patchJson(
-      ApiRoutes.schedule(scheduleId),
-      {
-        'status': 'in_progress',
-      },
-    );
+    return _api.patchJson(ApiRoutes.schedule(scheduleId), {
+      'status': 'in_progress',
+    });
   }
 
   /// Mitra menyelesaikan jadwal
@@ -52,10 +46,7 @@ class ScheduleServiceComplete {
       if (segments.isNotEmpty) 'completion_notes': segments.join(' - '),
     };
 
-    return _api.postJson(
-      ApiRoutes.scheduleComplete(scheduleId),
-      body,
-    );
+    return _api.postJson(ApiRoutes.scheduleComplete(scheduleId), body);
   }
 
   /// Mitra membatalkan jadwal dengan alasan
@@ -63,11 +54,8 @@ class ScheduleServiceComplete {
     required int scheduleId,
     required String reason,
   }) {
-    return _api.postJson(
-      ApiRoutes.scheduleCancel(scheduleId),
-      {
-        'cancellation_reason': reason,
-      },
-    );
+    return _api.postJson(ApiRoutes.scheduleCancel(scheduleId), {
+      'cancellation_reason': reason,
+    });
   }
 }

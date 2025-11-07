@@ -8,6 +8,7 @@ import 'package:bank_sha/services/schedule_service_complete.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 
 class ScheduleService {
   static final ScheduleService _instance = ScheduleService._internal();
@@ -206,17 +207,13 @@ class ScheduleService {
 
       // Fallback: try the legacy createSchedule endpoint
       try {
-        final apiModel = await _remoteService.createSchedule(
-          title: _deriveTitle(schedule),
-          description: schedule.address,
-          latitude: schedule.location.latitude,
-          longitude: schedule.location.longitude,
-          status: _statusToApi(schedule.status),
-          assignedTo: schedule.driverId != null
-              ? int.tryParse(schedule.driverId!)
-              : null,
-          scheduledAt: scheduledAt,
+        final payload = _buildBackendSchedulePayload(
+          schedule,
+          scheduledAt,
+          includeAdditionalWastes: true,
         );
+
+        final apiModel = await _remoteService.createSchedule(payload);
 
         final remoteSchedule = _mergeRemoteWithLocal(
           ScheduleModel.fromApi(apiModel),
@@ -328,15 +325,12 @@ class ScheduleService {
         );
         final apiModel = await _remoteService.updateSchedule(
           remoteId,
-          title: _deriveTitle(updatedSchedule),
-          description: updatedSchedule.address,
-          latitude: updatedSchedule.location.latitude,
-          longitude: updatedSchedule.location.longitude,
-          status: _statusToApi(updatedSchedule.status),
-          assignedTo: updatedSchedule.driverId != null
-              ? int.tryParse(updatedSchedule.driverId!)
-              : null,
-          scheduledAt: scheduledAt,
+          _buildBackendSchedulePayload(
+            updatedSchedule,
+            scheduledAt,
+            includeUserId: false,
+            includeAdditionalWastes: false,
+          ),
         );
 
         final remoteModel = _mergeRemoteWithLocal(
@@ -443,9 +437,13 @@ class ScheduleService {
     final remoteId = int.tryParse(scheduleId);
     if (remoteId != null) {
       try {
+        final payload = <String, dynamic>{
+          'mitra_id': int.tryParse(driverId),
+        }..removeWhere((key, value) => value == null);
+
         final apiModel = await _remoteService.updateSchedule(
           remoteId,
-          assignedTo: int.tryParse(driverId),
+          payload,
         );
         final remoteModel = _mergeRemoteWithLocal(
           ScheduleModel.fromApi(apiModel),
