@@ -65,15 +65,15 @@ class ScheduleModel {
     this.driverId,
     required this.createdAt,
     this.completedAt,
-  this.cancelledAt,
-  this.confirmedAt,
-  this.startedAt,
-  this.assignedAt,
-  this.acceptedAt,
-  this.rejectedAt,
-  this.completionNotes,
-  this.cancellationReason,
-  this.actualDuration,
+    this.cancelledAt,
+    this.confirmedAt,
+    this.startedAt,
+    this.assignedAt,
+    this.acceptedAt,
+    this.rejectedAt,
+    this.completionNotes,
+    this.cancellationReason,
+    this.actualDuration,
     this.wasteType,
     this.estimatedWeight,
     this.wasteItems = const [],
@@ -108,15 +108,15 @@ class ScheduleModel {
       'driverId': driverId,
       'createdAt': createdAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
-  'cancelledAt': cancelledAt?.toIso8601String(),
-  'confirmedAt': confirmedAt?.toIso8601String(),
-  'startedAt': startedAt?.toIso8601String(),
-  'assignedAt': assignedAt?.toIso8601String(),
-  'acceptedAt': acceptedAt?.toIso8601String(),
-  'rejectedAt': rejectedAt?.toIso8601String(),
-  'completionNotes': completionNotes,
-  'cancellationReason': cancellationReason,
-  'actualDuration': actualDuration,
+      'cancelledAt': cancelledAt?.toIso8601String(),
+      'confirmedAt': confirmedAt?.toIso8601String(),
+      'startedAt': startedAt?.toIso8601String(),
+      'assignedAt': assignedAt?.toIso8601String(),
+      'acceptedAt': acceptedAt?.toIso8601String(),
+      'rejectedAt': rejectedAt?.toIso8601String(),
+      'completionNotes': completionNotes,
+      'cancellationReason': cancellationReason,
+      'actualDuration': actualDuration,
       'wasteType': wasteType,
       'estimatedWeight': estimatedWeight,
       'wasteItems': wasteItems.map((item) => item.toJson()).toList(),
@@ -171,27 +171,27 @@ class ScheduleModel {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
           : null,
-    cancelledAt: json['cancelledAt'] != null
-      ? DateTime.parse(json['cancelledAt'] as String)
-      : null,
-    confirmedAt: json['confirmedAt'] != null
-      ? DateTime.parse(json['confirmedAt'] as String)
-      : null,
-    startedAt: json['startedAt'] != null
-      ? DateTime.parse(json['startedAt'] as String)
-      : null,
-    assignedAt: json['assignedAt'] != null
-      ? DateTime.parse(json['assignedAt'] as String)
-      : null,
-    acceptedAt: json['acceptedAt'] != null
-      ? DateTime.parse(json['acceptedAt'] as String)
-      : null,
-    rejectedAt: json['rejectedAt'] != null
-      ? DateTime.parse(json['rejectedAt'] as String)
-      : null,
-    completionNotes: json['completionNotes'] as String?,
-    cancellationReason: json['cancellationReason'] as String?,
-    actualDuration: json['actualDuration'] as int?,
+      cancelledAt: json['cancelledAt'] != null
+          ? DateTime.parse(json['cancelledAt'] as String)
+          : null,
+      confirmedAt: json['confirmedAt'] != null
+          ? DateTime.parse(json['confirmedAt'] as String)
+          : null,
+      startedAt: json['startedAt'] != null
+          ? DateTime.parse(json['startedAt'] as String)
+          : null,
+      assignedAt: json['assignedAt'] != null
+          ? DateTime.parse(json['assignedAt'] as String)
+          : null,
+      acceptedAt: json['acceptedAt'] != null
+          ? DateTime.parse(json['acceptedAt'] as String)
+          : null,
+      rejectedAt: json['rejectedAt'] != null
+          ? DateTime.parse(json['rejectedAt'] as String)
+          : null,
+      completionNotes: json['completionNotes'] as String?,
+      cancellationReason: json['cancellationReason'] as String?,
+      actualDuration: json['actualDuration'] as int?,
       wasteType: json['wasteType'] as String?,
       estimatedWeight: json['estimatedWeight'] as double?,
       wasteItems: wasteItems,
@@ -249,18 +249,19 @@ class ScheduleModel {
       driverId: (api.mitraId ?? api.assignedTo)?.toString(),
       createdAt: api.createdAt ?? scheduled,
       completedAt: statusString == 'completed'
-      ? (api.completedAt ?? api.updatedAt ?? api.createdAt)
-      : api.completedAt,
-    cancelledAt: api.cancelledAt,
-    confirmedAt: api.confirmedAt,
-    startedAt: api.startedAt,
-    assignedAt: api.assignedAt,
-    acceptedAt: api.acceptedAt,
-    rejectedAt: api.rejectedAt,
-    completionNotes:
-      api.completionNotes ?? (statusString == 'completed' ? api.notes : null),
-    cancellationReason: api.cancellationReason,
-    actualDuration: api.actualDuration,
+          ? (api.completedAt ?? api.updatedAt ?? api.createdAt)
+          : api.completedAt,
+      cancelledAt: api.cancelledAt,
+      confirmedAt: api.confirmedAt,
+      startedAt: api.startedAt,
+      assignedAt: api.assignedAt,
+      acceptedAt: api.acceptedAt,
+      rejectedAt: api.rejectedAt,
+      completionNotes:
+          api.completionNotes ??
+          (statusString == 'completed' ? api.notes : null),
+      cancellationReason: api.cancellationReason,
+      actualDuration: api.actualDuration,
       wasteType:
           api.wasteType ??
           (wasteItems.isNotEmpty ? wasteItems.first.wasteType : 'Campuran'),
@@ -320,15 +321,15 @@ class ScheduleModel {
       driverId: driverId ?? this.driverId,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
-  cancelledAt: cancelledAt ?? this.cancelledAt,
-  confirmedAt: confirmedAt ?? this.confirmedAt,
-  startedAt: startedAt ?? this.startedAt,
-  assignedAt: assignedAt ?? this.assignedAt,
-  acceptedAt: acceptedAt ?? this.acceptedAt,
-  rejectedAt: rejectedAt ?? this.rejectedAt,
-  completionNotes: completionNotes ?? this.completionNotes,
-  cancellationReason: cancellationReason ?? this.cancellationReason,
-  actualDuration: actualDuration ?? this.actualDuration,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      startedAt: startedAt ?? this.startedAt,
+      assignedAt: assignedAt ?? this.assignedAt,
+      acceptedAt: acceptedAt ?? this.acceptedAt,
+      rejectedAt: rejectedAt ?? this.rejectedAt,
+      completionNotes: completionNotes ?? this.completionNotes,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      actualDuration: actualDuration ?? this.actualDuration,
       wasteType: wasteType ?? this.wasteType,
       estimatedWeight: estimatedWeight ?? this.estimatedWeight,
       wasteItems: wasteItems ?? this.wasteItems,

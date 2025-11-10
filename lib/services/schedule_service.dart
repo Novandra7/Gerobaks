@@ -670,6 +670,8 @@ class ScheduleService {
     switch (status) {
       case ScheduleStatus.pending:
         return 'pending';
+      case ScheduleStatus.confirmed:
+        return 'confirmed';
       case ScheduleStatus.inProgress:
         return 'in_progress';
       case ScheduleStatus.completed:
@@ -679,6 +681,63 @@ class ScheduleService {
       case ScheduleStatus.missed:
         return 'missed';
     }
+  }
+
+  Map<String, dynamic> _buildBackendSchedulePayload(
+    ScheduleModel schedule,
+    DateTime scheduledAt, {
+    bool includeUserId = true,
+    bool includeAdditionalWastes = false,
+  }) {
+    final fmt = DateFormat('yyyy-MM-dd HH:mm:ss');
+
+    final payload = <String, dynamic>{
+      'service_type': _mapServiceType(schedule.wasteType),
+      'pickup_address': schedule.address,
+      'pickup_latitude': schedule.location.latitude,
+      'pickup_longitude': schedule.location.longitude,
+      'scheduled_at': fmt.format(scheduledAt),
+      if (schedule.notes != null && schedule.notes!.isNotEmpty)
+        'notes': schedule.notes,
+      'status': _statusToApi(schedule.status),
+      'frequency': schedule.frequency.toString().split('.').last,
+      if (schedule.contactName != null) 'contact_name': schedule.contactName,
+      if (schedule.contactPhone != null) 'contact_phone': schedule.contactPhone,
+      if (schedule.estimatedWeight != null)
+        'estimated_weight': schedule.estimatedWeight,
+      if (schedule.amount != null) 'amount': schedule.amount,
+      'is_paid': schedule.isPaid,
+    };
+
+    if (includeUserId && schedule.userId.isNotEmpty) {
+      final maybe = int.tryParse(schedule.userId);
+      if (maybe != null) payload['user_id'] = maybe;
+    }
+
+    if (schedule.driverId != null) {
+      final mitra = int.tryParse(schedule.driverId!);
+      if (mitra != null) payload['mitra_id'] = mitra;
+    }
+
+    // Legacy fields to avoid DB NOT NULL exceptions
+    payload['title'] = _deriveTitle(schedule);
+    payload['description'] = schedule.address;
+    payload['latitude'] = schedule.location.latitude;
+    payload['longitude'] = schedule.location.longitude;
+
+    if (includeAdditionalWastes && schedule.wasteItems.isNotEmpty) {
+      payload['additional_wastes'] = schedule.wasteItems
+          .map((w) => {
+                'waste_type': w.wasteType,
+                'estimated_weight': w.estimatedWeight,
+                if (w.notes != null) 'notes': w.notes,
+              })
+          .toList(growable: false);
+    }
+
+    // Remove nulls
+    payload.removeWhere((k, v) => v == null);
+    return payload;
   }
 
   // Set up notifications for a schedule
