@@ -78,7 +78,7 @@ class ScheduleApiService {
     final query = <String, dynamic>{
       'page': page,
       'per_page': perPage,
-      if (assignedTo != null) 'assigned_to': assignedTo,
+      if (assignedTo != null) 'mitra_id': assignedTo,
       if (status != null && status.isNotEmpty && status != 'semua')
         'status': status,
     };

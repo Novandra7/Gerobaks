@@ -437,14 +437,10 @@ class ScheduleService {
     final remoteId = int.tryParse(scheduleId);
     if (remoteId != null) {
       try {
-        final payload = <String, dynamic>{
-          'mitra_id': int.tryParse(driverId),
-        }..removeWhere((key, value) => value == null);
+        final payload = <String, dynamic>{'mitra_id': int.tryParse(driverId)}
+          ..removeWhere((key, value) => value == null);
 
-        final apiModel = await _remoteService.updateSchedule(
-          remoteId,
-          payload,
-        );
+        final apiModel = await _remoteService.updateSchedule(remoteId, payload);
         final remoteModel = _mergeRemoteWithLocal(
           ScheduleModel.fromApi(apiModel),
           updatedSchedule,
@@ -727,11 +723,13 @@ class ScheduleService {
 
     if (includeAdditionalWastes && schedule.wasteItems.isNotEmpty) {
       payload['additional_wastes'] = schedule.wasteItems
-          .map((w) => {
-                'waste_type': w.wasteType,
-                'estimated_weight': w.estimatedWeight,
-                if (w.notes != null) 'notes': w.notes,
-              })
+          .map(
+            (w) => {
+              'waste_type': w.wasteType,
+              'estimated_weight': w.estimatedWeight,
+              if (w.notes != null) 'notes': w.notes,
+            },
+          )
           .toList(growable: false);
     }
 
