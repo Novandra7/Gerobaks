@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
-import 'package:bank_sha/utils/responsive_helper.dart';
-import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
-import 'package:bank_sha/ui/pages/mitra/profile/widgets/enhanced_profile_header.dart';
+import 'package:bank_sha/blocs/auth/auth_bloc.dart';
+import 'package:bank_sha/blocs/auth/auth_event.dart';
+import 'package:bank_sha/blocs/auth/auth_state.dart';
 
 class ProfileMitraPage extends StatefulWidget {
   const ProfileMitraPage({super.key});
@@ -14,36 +14,19 @@ class ProfileMitraPage extends StatefulWidget {
 }
 
 class _ProfileMitraPageState extends State<ProfileMitraPage> {
-  late final LocalStorageService _localStorageService;
-  
-  // Define missing colors
-  final Color orangeColor = const Color(0xFFFF8A00);
-  final Color orangeui = const Color(0xFFFFF5E5);
-  final Color redColor = const Color(0xFFFF0000);
-  final Color blueui = const Color(0xFFE5F5FF);
-  final Color purpleui = const Color(0xFFF0E5FF);
-  
-  // Golden ratio constant (1:1.618)
-  final double phi = 1.618;
-  
   @override
   void initState() {
     super.initState();
-    _initLocalStorage();
   }
-  
-  Future<void> _initLocalStorage() async {
-    _localStorageService = await LocalStorageService.getInstance();
-  }
-  
+
   // Dummy data - in real app, this would come from API or provider
   final Map<String, dynamic> _userData = {
-    'name': 'Ahmad Sahroni',
-    'email': 'ahmad.sahroni@gmail.com',
-    'id': 'MITRA-12345',
+    'name': 'Ahmad Kurniawan',
+    'email': 'driver.jakarta@gerobaks.com',
+    'id': 'DRV-JKT-001',
     'role': 'Mitra Premium',
-    'phone': '+62 812 3456 7890',
-    'address': 'Jl. Raya Ciputat No. 123, Tangerang Selatan',
+    'phone': '+62 813 4567 8901',
+    'address': 'Jakarta Pusat',
     'points': '2,500',
     'transactions': '56',
     'rating': '4.8',
@@ -51,938 +34,827 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Apply golden ratio for better visual harmony
-    final double basePadding = 16.0;
-    final double sectionSpacing = basePadding * phi; // Use golden ratio
-    
-    return Scaffold(
-      body: DashboardBackground(
-        child: SafeArea(
-          child: ListView(
-            padding: EdgeInsets.zero,
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.status == AuthStatus.loading) {
+          // Show loading indicator
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) =>
+                const Center(child: CircularProgressIndicator()),
+          );
+        } else if (state.status == AuthStatus.unauthenticated) {
+          // Close any open dialogs
+          Navigator.of(context).popUntil((route) => route.isFirst);
+
+          // Show success message before navigating
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Logout berhasil',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate to login page with replacement to prevent back navigation
+          Future.delayed(const Duration(milliseconds: 500), () {
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
+          });
+        } else {
+          // Close loading dialog if it exists
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
+            title: Text(
+              'Profile',
+              style: blackTextStyle.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            centerTitle: false,
+          ),
+          body: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            children: [
-              // Header with enhanced UX
-              EnhancedProfileHeader(
-                name: _userData['name'],
-                email: _userData['email'],
-                role: _userData['role'],
-                id: _userData['id'],
-                isVerified: true,
-                statusText: 'Online',
-                notificationCount: 3,
-                onNotificationPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Anda memiliki 3 notifikasi baru'),
-                      backgroundColor: greenColor,
-                    ),
-                  );
-                },
-                onEditPressed: () {
-                  // Navigate to edit profile page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Edit profil akan segera hadir!'),
-                      backgroundColor: greenColor,
-                    ),
-                  );
-                },
-              ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing)),
-              
-              // Stats Section with cards in modern horizontal layout
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsiveSpacing(context, basePadding),
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Statistik Anda',
-                      style: blackTextStyle.copyWith(
-                        fontSize: 16,
-                        fontWeight: semiBold,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Container(
-                      height: 100, // Increased height to match new card height
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        physics: BouncingScrollPhysics(),
-                        children: [
-                          _buildStatCard(
-                            context: context,
-                            title: 'Poin Reward',
-                            value: _userData['points'],
-                            subtitle: 'Tukarkan sekarang',
-                            icon: Icons.star_rounded,
-                            backgroundColor: greenui,
-                            iconColor: greenColor,
-                            trendValue: '+5.2%',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Anda memiliki ${_userData['points']} poin yang bisa ditukarkan!'),
-                                  backgroundColor: greenColor,
-                                ),
-                              );
-                            },
-                          ),
-                          SizedBox(width: 14), // Increased spacing between cards
-                          _buildStatCard(
-                            context: context,
-                            title: 'Transaksi',
-                            value: _userData['transactions'],
-                            subtitle: 'Bulan ini',
-                            icon: Icons.receipt_long_rounded,
-                            backgroundColor: blueui,
-                            iconColor: blueColor,
-                            trendValue: '+12.7%',
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Anda memiliki ${_userData['transactions']} transaksi bulan ini'),
-                                  backgroundColor: blueColor,
-                                ),
-                              );
-                            },
-                          ),
-                          SizedBox(width: 14), // Increased spacing between cards
-                          _buildStatCard(
-                            context: context,
-                            title: 'Rating',
-                            value: _userData['rating'],
-                            subtitle: 'Dari 120 ulasan',
-                            icon: Icons.thumb_up_alt_rounded,
-                            backgroundColor: orangeui,
-                            iconColor: orangeColor,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Rating Anda ${_userData['rating']} dari 5.0'),
-                                  backgroundColor: orangeColor,
-                                ),
-                              );
-                            },
-                          ),
+              ),
+              child: Column(
+                children: [
+                  // Modern Profile Header Card
+                  Container(
+                    margin: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          greenColor,
+                          greenColor.withOpacity(0.8),
+                          const Color(0xFF059669),
                         ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing * 1.2)), // Increased spacing
-              
-              // Quick Actions Section with modern grid layout
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsiveSpacing(context, basePadding),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Aksi Cepat',
-                      style: blackTextStyle.copyWith(
-                        fontSize: 16,
-                        fontWeight: semiBold,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    GridView.count(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 10, // Increased spacing
-                      mainAxisSpacing: 16, // Increased spacing
-                      childAspectRatio: 0.75, // Adjusted for taller items
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      children: [
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.history_rounded,
-                          label: 'Riwayat',
-                          backgroundColor: blueui,
-                          iconColor: blueColor,
-                          hasNotification: true,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Riwayat transaksi Anda'),
-                                backgroundColor: blueColor,
-                              ),
-                            );
-                          },
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: greenColor.withOpacity(0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.account_balance_wallet_rounded,
-                          label: 'Saldo',
-                          backgroundColor: greenui,
-                          iconColor: greenColor,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Saldo Anda: Rp 2.450.000'),
-                                backgroundColor: greenColor,
-                              ),
-                            );
-                          },
-                        ),
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.card_giftcard_rounded,
-                          label: 'Rewards',
-                          backgroundColor: purpleui,
-                          iconColor: purpleColor,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Anda memiliki 3 hadiah yang bisa diambil!'),
-                                backgroundColor: purpleColor,
-                              ),
-                            );
-                          },
-                        ),
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.help_outline_rounded,
-                          label: 'Bantuan',
-                          backgroundColor: orangeui,
-                          iconColor: orangeColor,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Pusat bantuan Gerobaks'),
-                                backgroundColor: orangeColor,
-                              ),
-                            );
-                          },
-                        ),
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.location_on_rounded,
-                          label: 'Lokasi',
-                          backgroundColor: blueui,
-                          iconColor: blueColor,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Lokasi pengambilan'),
-                                backgroundColor: blueColor,
-                              ),
-                            );
-                          },
-                        ),
-                        _buildQuickActionItem(
-                          context: context,
-                          icon: Icons.schedule_rounded,
-                          label: 'Jadwal',
-                          backgroundColor: greenui,
-                          iconColor: greenColor,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Jadwal pengambilan'),
-                                backgroundColor: greenColor,
-                              ),
-                            );
-                          },
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.1),
+                          blurRadius: 1,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing)),
-              
-              // Personal Information Section - Modern card layout
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsiveSpacing(context, basePadding),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        Text(
-                          'Informasi Pribadi',
-                          style: blackTextStyle.copyWith(
-                            fontSize: 18,
-                            fontWeight: semiBold,
-                          ),
+                        Row(
+                          children: [
+                            // Modern Profile Avatar dengan glassmorphism effect
+                            Container(
+                              width: 90,
+                              height: 90,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.2),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    _userData['name'][0].toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.w800,
+                                      color: greenColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+
+                            // Profile Info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _userData['name'],
+                                    style: whiteTextStyle.copyWith(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'ID: ${_userData['id']}',
+                                      style: whiteTextStyle.copyWith(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: greenColor,
-                          size: 20,
+
+                        const SizedBox(height: 20),
+
+                        // Quick Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickActionButton(
+                                'Edit Profile',
+                                Icons.edit_rounded,
+                                () => _showSnackbar('Edit Profile', greenColor),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildQuickActionButton(
+                                'Settings',
+                                Icons.settings_rounded,
+                                () => _showSnackbar('Settings', greenColor),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildProfileInfoItem(
-                            icon: Icons.phone_android_rounded,
-                            title: 'Nomor Telepon',
-                            value: _userData['phone'],
-                            badgeText: 'Terverifikasi',
-                            badgeColor: greenColor,
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Edit nomor telepon'),
-                                  backgroundColor: greenColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildProfileInfoItem(
-                            icon: Icons.location_on_rounded,
-                            title: 'Alamat',
-                            value: _userData['address'],
-                            iconColor: orangeColor,
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Edit alamat'),
-                                  backgroundColor: orangeColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildProfileInfoItem(
-                            icon: Icons.email_outlined,
-                            title: 'Email',
-                            value: _userData['email'],
-                            iconColor: blueColor,
-                            badgeText: 'Terverifikasi',
-                            badgeColor: blueColor,
-                            showBorder: false,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Edit email'),
-                                  backgroundColor: blueColor,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing)),
-              
-              // Settings Section - Modern card layout
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsiveSpacing(context, basePadding),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pengaturan & Informasi',
-                          style: blackTextStyle.copyWith(
-                            fontSize: 18,
-                            fontWeight: semiBold,
-                          ),
-                        ),
-                        Icon(
-                          Icons.settings_outlined,
-                          color: greenColor,
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _buildSettingsItem(
-                            icon: Icons.person_outline_rounded,
-                            title: 'Edit Profil',
-                            subtitle: 'Perbarui informasi',
-                            iconColor: greenColor,
-                            showBadge: true,
-                            badgeText: 'Baru',
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Halaman edit profil akan segera hadir!'),
-                                  backgroundColor: greenColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildSettingsItem(
-                            icon: Icons.notifications_none_rounded,
-                            title: 'Notifikasi',
-                            subtitle: 'Preferensi notifikasi',
-                            iconColor: orangeColor,
-                            showBadge: true,
-                            badgeText: '3',
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Pengaturan notifikasi'),
-                                  backgroundColor: orangeColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildSettingsItem(
-                            icon: Icons.lock_outline_rounded,
-                            title: 'Keamanan',
-                            subtitle: 'Keamanan akun',
-                            iconColor: redColor,
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Pengaturan keamanan'),
-                                  backgroundColor: redColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildSettingsItem(
-                            icon: Icons.language_rounded,
-                            title: 'Bahasa',
-                            subtitle: 'Bahasa aplikasi',
-                            iconColor: blueColor,
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Pengaturan bahasa'),
-                                  backgroundColor: blueColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildSettingsItem(
-                            icon: Icons.info_outline_rounded,
-                            title: 'Tentang',
-                            subtitle: 'Informasi aplikasi',
-                            iconColor: greenColor,
-                            showBorder: true,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Tentang Gerobaks'),
-                                  backgroundColor: greenColor,
-                                ),
-                              );
-                            },
-                          ),
-                          _buildSettingsItem(
-                            icon: Icons.headset_mic_outlined,
-                            title: 'Bantuan',
-                            subtitle: 'Hubungi kami',
-                            iconColor: orangeColor,
-                            showBadge: true, 
-                            badgeText: 'Baru',
-                            showBorder: false,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Kontak Gerobaks'),
-                                  backgroundColor: orangeColor,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing * 1.15)),
-              
-              // Modern Logout Button
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveHelper.getResponsiveSpacing(context, basePadding),
-                  vertical: ResponsiveHelper.getResponsiveSpacing(context, basePadding / phi),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [redColor.withOpacity(0.9), redColor],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: redColor.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        await _localStorageService.fullLogout();
-                        if (!mounted) return;
-                        
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SignInPage()), 
-                          (route) => false,
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.logout_rounded,
-                            color: Colors.white,
-                            size: 20,
+
+                  const SizedBox(height: 24),
+
+                  // Modern Stats Cards - Responsive Design
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildResponsiveStatCard(
+                            'Poin',
+                            _userData['points'],
+                            Icons.stars_rounded,
+                            const Color(0xFF10B981),
+                            const Color(0xFFD1FAE5),
                           ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Keluar dari Akun',
-                            style: whiteTextStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: semiBold,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildResponsiveStatCard(
+                            'Transaksi',
+                            _userData['transactions'],
+                            Icons.receipt_long_rounded,
+                            const Color(0xFF3B82F6),
+                            const Color(0xFFDBEAFE),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildResponsiveStatCard(
+                            'Rating',
+                            _userData['rating'],
+                            Icons.star_rounded,
+                            const Color(0xFFF59E0B),
+                            const Color(0xFFFEF3C7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Modern Menu Grid
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Menu Utama',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        GridView.count(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.3, // Adjusted for better fit
+                          children: [
+                            _buildModernMenuCard(
+                              'Edit Profile',
+                              'Kelola info pribadi',
+                              Icons.person_rounded,
+                              const Color(0xFF3B82F6),
+                              const Color(0xFFDBEAFE),
+                              () => _showSnackbar(
+                                'Edit Profile',
+                                const Color(0xFF3B82F6),
+                              ),
+                            ),
+                            _buildModernMenuCard(
+                              'Riwayat',
+                              'Transaksi & aktivitas',
+                              Icons.history_rounded,
+                              const Color(0xFF10B981),
+                              const Color(0xFFD1FAE5),
+                              () => _showSnackbar(
+                                'Riwayat',
+                                const Color(0xFF10B981),
+                              ),
+                            ),
+                            _buildModernMenuCard(
+                              'Notifikasi',
+                              'Pengaturan alert',
+                              Icons.notifications_rounded,
+                              const Color(0xFFF59E0B),
+                              const Color(0xFFFEF3C7),
+                              () => _showSnackbar(
+                                'Notifikasi',
+                                const Color(0xFFF59E0B),
+                              ),
+                            ),
+                            _buildModernMenuCard(
+                              'Keamanan',
+                              'Password & privasi',
+                              Icons.security_rounded,
+                              const Color(0xFFEF4444),
+                              const Color(0xFFFECACB),
+                              () => _showSnackbar(
+                                'Keamanan',
+                                const Color(0xFFEF4444),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Modern Information Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: blueColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.info_outline_rounded,
+                                  color: blueColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Informasi Akun',
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          _buildModernInfoItem(
+                            'Email Address',
+                            _userData['email'],
+                            Icons.email_rounded,
+                            const Color(0xFF3B82F6),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildModernInfoItem(
+                            'Nomor Telepon',
+                            _userData['phone'],
+                            Icons.phone_rounded,
+                            const Color(0xFF10B981),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildModernInfoItem(
+                            'Area Kerja',
+                            _userData['address'],
+                            Icons.location_on_rounded,
+                            const Color(0xFFF59E0B),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildModernInfoItem(
+                            'Employee ID',
+                            _userData['id'],
+                            Icons.badge_rounded,
+                            const Color(0xFF8B5CF6),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Modern Logout Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFEF4444),
+                            const Color(0xFFDC2626),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFEF4444).withOpacity(0.3),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showLogoutDialog(),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(18),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Icons.logout_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Keluar dari Akun',
+                                  style: whiteTextStyle.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
+
+                  const SizedBox(height: 40),
+                ],
               ),
-              
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, sectionSpacing)),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
-  
-  // Helper method to build stat card - redesigned with better proportions
-  Widget _buildStatCard({
-    required BuildContext context,
-    required String title,
-    required String value,
-    required String subtitle,
-    required IconData icon,
-    required Color backgroundColor,
-    Color? iconColor,
-    String? trendValue,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 170, // Wider card
-        height: 100, // Taller card for better proportions
-        padding: EdgeInsets.all(14), // More padding for elegance
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Top row with icon and trend
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+  // Helper method untuk quick action button
+  Widget _buildQuickActionButton(
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor ?? greenColor,
-                    size: 18,
+                Icon(icon, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: whiteTextStyle.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (trendValue != null)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      trendValue,
-                      style: blackTextStyle.copyWith(
-                        fontSize: 11,
-                        fontWeight: medium,
-                        color: greenColor,
-                      ),
-                    ),
-                  ),
               ],
             ),
-            
-            // Title
-            Text(
-              title,
-              style: blackTextStyle.copyWith(
-                fontSize: 12,
-                fontWeight: medium,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            // Value in larger font
-            Text(
-              value,
-              style: blackTextStyle.copyWith(
-                fontSize: 20,
-                fontWeight: semiBold,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            // Subtitle
-            Text(
-              subtitle,
-              style: greyTextStyle.copyWith(
-                fontSize: 11,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-  
-  // Helper method to build quick action item - adjusted to balance with stat cards
-  Widget _buildQuickActionItem({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color backgroundColor,
-    required Color iconColor,
-    bool hasNotification = false,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+
+  // Helper method untuk responsive stat card - No Overflow
+  Widget _buildResponsiveStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+    Color backgroundColor,
+  ) {
+    return Container(
+      height: 80, // Fixed height to prevent overflow
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 52, // Larger size for better proportion
-                height: 52, // Larger size for better proportion
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    value,
+                    style: blackTextStyle.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 26, // Larger icon
-                ),
-              ),
-              if (hasNotification)
-                Positioned(
-                  top: -3,
-                  right: -3,
-                  child: Container(
-                    width: 12, // Slightly larger badge
-                    height: 12, // Slightly larger badge
-                    decoration: BoxDecoration(
-                      color: redColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 1.5,
-                      ),
-                    ),
+                    maxLines: 1,
                   ),
                 ),
-            ],
-          ),
-          SizedBox(height: 8), // More spacing
-          Text(
-            label,
-            style: blackTextStyle.copyWith(
-              fontSize: 12, // Slightly larger text
-              fontWeight: medium,
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: greyTextStyle.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
-  
-  // Helper method to build profile info item - improved styling
-  Widget _buildProfileInfoItem({
-    required IconData icon,
-    required String title,
-    required String value,
-    Color? iconColor,
-    String? badgeText,
-    Color? badgeColor,
-    bool showBorder = true,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: showBorder ? null : BorderRadius.vertical(bottom: Radius.circular(16)),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18), // More vertical padding
-        decoration: BoxDecoration(
-          border: showBorder ? Border(
-            bottom: BorderSide(
-              color: Colors.grey.withOpacity(0.1),
-              width: 1,
-            ),
-          ) : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40, // Slightly larger
-              height: 40, // Slightly larger
-              decoration: BoxDecoration(
-                color: (iconColor ?? greenColor).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+
+  // Helper method untuk modern menu card
+  Widget _buildModernMenuCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color iconColor,
+    Color backgroundColor,
+    VoidCallback onTap,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16), // Reduced padding
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Prevent overflow
+              children: [
+                Container(
+                  width: 36, // Slightly smaller icon container
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: iconColor ?? greenColor,
-                size: 22, // Slightly larger
-              ),
-            ),
-            SizedBox(width: 14), // More spacing
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+                  child: Icon(
+                    icon,
+                    color: iconColor,
+                    size: 18, // Slightly smaller icon
+                  ),
+                ),
+                const Spacer(),
+                Flexible(
+                  // Added Flexible to prevent overflow
+                  child: Text(
                     title,
                     style: blackTextStyle.copyWith(
-                      fontSize: 15, // Larger font
-                      fontWeight: medium,
+                      fontSize: 14, // Reduced font size
+                      fontWeight: FontWeight.w700,
                     ),
+                    maxLines: 1, // Prevent text wrapping
+                    overflow: TextOverflow.ellipsis, // Handle overflow
                   ),
-                  SizedBox(height: 3), // Slightly more spacing
-                  Text(
-                    value,
+                ),
+                const SizedBox(height: 3), // Reduced spacing
+                Flexible(
+                  // Added Flexible to prevent overflow
+                  child: Text(
+                    subtitle,
                     style: greyTextStyle.copyWith(
-                      fontSize: 13,
+                      fontSize: 11, // Reduced font size
+                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (badgeText != null) ...[
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), // More padding
-                decoration: BoxDecoration(
-                  color: (badgeColor ?? greenColor).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10), // More rounded
-                ),
-                child: Text(
-                  badgeText,
-                  style: blackTextStyle.copyWith(
-                    fontSize: 12, // Slightly larger font
-                    fontWeight: medium,
-                    color: badgeColor ?? greenColor,
+                    maxLines: 2, // Allow max 2 lines
+                    overflow: TextOverflow.ellipsis, // Handle overflow
                   ),
                 ),
-              ),
-              SizedBox(width: 10), // More spacing
-            ],
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16, // Slightly larger
-              color: Colors.grey,
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-  
-  // Helper method to build settings item
-  Widget _buildSettingsItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    Color? iconColor,
-    bool showBadge = false,
-    String? badgeText,
-    bool showBorder = true,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: showBorder ? null : BorderRadius.vertical(bottom: Radius.circular(16)),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 18), // More vertical padding
-        decoration: BoxDecoration(
-          border: showBorder ? Border(
-            bottom: BorderSide(
-              color: Colors.grey.withOpacity(0.1),
-              width: 1,
+
+  // Helper method untuk modern info item
+  Widget _buildModernInfoItem(
+    String label,
+    String value,
+    IconData icon,
+    Color iconColor,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ) : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44, // Slightly larger
-              height: 44, // Slightly larger
-              decoration: BoxDecoration(
-                color: (iconColor ?? greenColor).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12), // More rounded
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: greyTextStyle.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: iconColor ?? greenColor,
-                size: 24, // Slightly larger
-              ),
-            ),
-            SizedBox(width: 14), // More spacing
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: blackTextStyle.copyWith(
-                      fontSize: 15,
-                      fontWeight: semiBold,
-                    ),
-                  ),
-                  SizedBox(height: 3), // Slightly more spacing
-                  Text(
-                    subtitle,
-                    style: greyTextStyle.copyWith(
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (showBadge) ...[
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5), // More padding
-                decoration: BoxDecoration(
-                  color: (iconColor ?? greenColor).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
                 ),
-                child: Text(
-                  badgeText ?? 'Baru',
+                const SizedBox(height: 2),
+                Text(
+                  value,
                   style: blackTextStyle.copyWith(
-                    fontSize: 12, // Slightly larger font
-                    fontWeight: medium,
-                    color: iconColor ?? greenColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Method untuk show logout dialog
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 20,
+                ),
               ),
-              SizedBox(width: 10), // More spacing
+              const SizedBox(width: 12),
+              Text(
+                'Konfirmasi Logout',
+                style: blackTextStyle.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16, // Slightly larger
-              color: Colors.grey,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Apakah Anda yakin ingin keluar dari akun?',
+                style: greyTextStyle.copyWith(fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Anda akan diarahkan ke halaman login.',
+                style: greyTextStyle.copyWith(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Batal',
+                style: greyTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Trigger logout event
+                context.read<AuthBloc>().add(const LogoutRequested());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEF4444),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Logout',
+                style: whiteTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // Helper method untuk snackbar
+  void _showSnackbar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
         ),
       ),
     );

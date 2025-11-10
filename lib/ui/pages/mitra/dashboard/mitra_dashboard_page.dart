@@ -3,6 +3,7 @@ import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/pengambilan_list_page.dart';
 import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/notification_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets.dart';
 // import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets_improved.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/dashboard_components.dart';
@@ -488,7 +489,13 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  // Implementasi untuk notifikasi
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const NotificationPage(),
+                                    ),
+                                  );
                                 },
                                 icon: Icon(
                                   Icons.notifications_outlined,

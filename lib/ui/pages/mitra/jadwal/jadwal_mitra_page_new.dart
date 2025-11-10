@@ -6,11 +6,12 @@ import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:bank_sha/ui/widgets/mitra/jadwal_mitra_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
 class JadwalMitraPageNew extends StatefulWidget {
-  const  JadwalMitraPageNew({super.key});
+  const JadwalMitraPageNew({super.key});
 
   @override
   State<JadwalMitraPageNew> createState() => _JadwalMitraPageNewState();
@@ -390,30 +391,42 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallScreen = screenWidth < 360;
 
-    return Scaffold(
-      backgroundColor: lightBackgroundColor,
-      body: Column(
-        children: [
-          // Using the updated JadwalMitraHeader component
-          JadwalMitraHeader(
-            locationCount: _locationCount,
-            pendingCount: _pendingCount,
-            completedCount: _completedCount,
-            onChatPressed: () {
-              // Handle chat press
-            },
-            onNotificationPressed: () {
-              // Handle notification press
-            },
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF9FFF8), // Background color seperti dashboard
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Appbar tanpa background
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          toolbarHeight: 0,
+        ),
+        body: Column(
+          children: [
+            // Using the updated JadwalMitraHeader component
+            JadwalMitraHeader(
+              locationCount: _locationCount,
+              pendingCount: _pendingCount,
+              completedCount: _completedCount,
+              onChatPressed: () {
+                // Handle chat press
+              },
+              onNotificationPressed: () {
+                // Handle notification press
+              },
+            ),
 
-          // Body content
-          Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator(color: greenColor))
-                : _buildBody(context, isSmallScreen),
-          ),
-        ],
+            // Body content
+            Expanded(
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator(color: greenColor))
+                  : _buildBody(context, isSmallScreen),
+            ),
+          ],
+        ),
       ),
     );
   }
