@@ -4,8 +4,17 @@ import 'package:bank_sha/services/notification_count_service.dart';
 
 class NotificationIconWithBadge extends StatefulWidget {
   final VoidCallback? onTap;
+  final Color? iconColor;
+  final double? iconSize;
+  final bool useAssetIcon;
 
-  const NotificationIconWithBadge({super.key, this.onTap});
+  const NotificationIconWithBadge({
+    super.key,
+    this.onTap,
+    this.iconColor,
+    this.iconSize,
+    this.useAssetIcon = true,
+  });
 
   @override
   State<NotificationIconWithBadge> createState() =>
@@ -39,7 +48,18 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Image.asset('assets/ic_notification.png', width: 32, height: 32),
+          // Use either asset icon or Material icon based on useAssetIcon parameter
+          widget.useAssetIcon
+              ? Image.asset(
+                  'assets/ic_notification.png',
+                  width: widget.iconSize ?? 32,
+                  height: widget.iconSize ?? 32,
+                )
+              : Icon(
+                  Icons.notifications_outlined,
+                  color: widget.iconColor ?? Colors.black,
+                  size: widget.iconSize ?? 32,
+                ),
           if (_notificationCount > 0)
             Positioned(
               right: -4,

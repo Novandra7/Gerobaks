@@ -5,6 +5,10 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/blocs/auth/auth_bloc.dart';
 import 'package:bank_sha/blocs/auth/auth_event.dart';
 import 'package:bank_sha/blocs/auth/auth_state.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/edit_profile_page.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/riwayat_page.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/notifikasi_page.dart';
+import 'package:bank_sha/ui/pages/mitra/profile/keamanan_page.dart';
 
 class ProfileMitraPage extends StatefulWidget {
   const ProfileMitraPage({super.key});
@@ -80,7 +84,9 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       },
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor: const Color(
+            0xFFF9FFF8,
+          ), // Match dashboard and jadwal pages
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
@@ -99,11 +105,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             physics: const BouncingScrollPhysics(),
             child: Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFF8FAFC), Color(0xFFE2E8F0)],
-                ),
+                color: Color(0xFFF9FFF8), // Consistent background color
               ),
               child: Column(
                 children: [
@@ -232,7 +234,13 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               child: _buildQuickActionButton(
                                 'Edit Profile',
                                 Icons.edit_rounded,
-                                () => _showSnackbar('Edit Profile', greenColor),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const EditProfilePage(),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -240,7 +248,12 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               child: _buildQuickActionButton(
                                 'Settings',
                                 Icons.settings_rounded,
-                                () => _showSnackbar('Settings', greenColor),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const KeamananPage(),
+                                  ),
+                                ),
                               ),
                             ),
                           ],
@@ -320,9 +333,11 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Icons.person_rounded,
                               const Color(0xFF3B82F6),
                               const Color(0xFFDBEAFE),
-                              () => _showSnackbar(
-                                'Edit Profile',
-                                const Color(0xFF3B82F6),
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EditProfilePage(),
+                                ),
                               ),
                             ),
                             _buildModernMenuCard(
@@ -331,9 +346,11 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Icons.history_rounded,
                               const Color(0xFF10B981),
                               const Color(0xFFD1FAE5),
-                              () => _showSnackbar(
-                                'Riwayat',
-                                const Color(0xFF10B981),
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RiwayatPage(),
+                                ),
                               ),
                             ),
                             _buildModernMenuCard(
@@ -342,9 +359,11 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Icons.notifications_rounded,
                               const Color(0xFFF59E0B),
                               const Color(0xFFFEF3C7),
-                              () => _showSnackbar(
-                                'Notifikasi',
-                                const Color(0xFFF59E0B),
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const NotifikasiPage(),
+                                ),
                               ),
                             ),
                             _buildModernMenuCard(
@@ -353,9 +372,11 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Icons.security_rounded,
                               const Color(0xFFEF4444),
                               const Color(0xFFFECACB),
-                              () => _showSnackbar(
-                                'Keamanan',
-                                const Color(0xFFEF4444),
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const KeamananPage(),
+                                ),
                               ),
                             ),
                           ],
@@ -708,7 +729,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: const Color(0xFFF9FFF8), // Match overall background
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
       ),
@@ -837,26 +858,6 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
           ],
         );
       },
-    );
-  }
-
-  // Helper method untuk snackbar
-  void _showSnackbar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        action: SnackBarAction(
-          label: 'OK',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
-      ),
     );
   }
 }

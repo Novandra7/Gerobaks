@@ -5,6 +5,7 @@ import 'package:bank_sha/ui/pages/mitra/laporan/laporan_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/notification_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets.dart';
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 // import 'package:bank_sha/ui/pages/mitra/dashboard/dashboard_widgets_improved.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/dashboard_components.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/detail_pickup_card.dart';
@@ -487,35 +488,30 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                                   ),
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const NotificationPage(),
-                                    ),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.notifications_outlined,
-                                  color: Colors.white,
-                                  size: ResponsiveHelper.getResponsiveIconSize(
-                                    context,
-                                    24,
-                                  ),
-                                ),
-                                tooltip: 'Notifikasi',
-                                iconSize:
-                                    ResponsiveHelper.getResponsiveIconSize(
-                                      context,
-                                      24,
-                                    ),
+                              Padding(
                                 padding: EdgeInsets.all(
                                   ResponsiveHelper.getResponsiveSpacing(
                                     context,
                                     8,
                                   ),
+                                ),
+                                child: NotificationIconWithBadge(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const NotificationPage(),
+                                      ),
+                                    );
+                                  },
+                                  useAssetIcon: false,
+                                  iconColor: Colors.white,
+                                  iconSize:
+                                      ResponsiveHelper.getResponsiveIconSize(
+                                        context,
+                                        24,
+                                      ),
                                 ),
                               ),
                             ],

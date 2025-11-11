@@ -11,6 +11,7 @@ import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/ui/widgets/mitra/statistics_grid.dart';
 import 'package:bank_sha/ui/widgets/mitra/schedule_section.dart';
 import 'package:bank_sha/ui/widgets/mitra/custom_bottom_navbar.dart';
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 
 /// ======== CUSTOM APPBAR (Hello David! style) ========
 class DashboardGreetingAppBar extends StatelessWidget {
@@ -67,31 +68,8 @@ class DashboardGreetingAppBar extends StatelessWidget {
               ],
             ),
 
-            // === NOTIFICATION ICON + RED DOT ===
-            Stack(
-              children: [
-                IconButton(
-                  onPressed: onNotificationPressed,
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 28,
-                    color: Colors.black,
-                  ),
-                ),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            // === NOTIFICATION ICON WITH DYNAMIC BADGE ===
+            NotificationIconWithBadge(onTap: onNotificationPressed),
           ],
         ),
       ),
