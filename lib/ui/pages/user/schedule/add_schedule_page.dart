@@ -180,8 +180,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           ), // Always tomorrow
           timeSlot: const TimeOfDay(hour: 6, minute: 0), // Fixed time 06:00
           location: _selectedLocation,
-          address:
-              'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310',
+          address: _addressController.text.isNotEmpty
+              ? _addressController.text
+              : 'Lokasi belum diisi',
           notes: _notesController.text.isNotEmpty
               ? _notesController.text
               : null,
@@ -195,8 +196,12 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
               ? _calculateTotalWeight()
               : null,
           isPaid: false,
-          contactName: 'Andi Wijaya',
-          contactPhone: '+62 812-3456-7890',
+          contactName: _nameController.text.isNotEmpty
+              ? _nameController.text
+              : null,
+          contactPhone: _phoneController.text.isNotEmpty
+              ? _phoneController.text
+              : null,
           // Add scheduled waste info in notes or a custom field
           // For now, we'll add it to notes
         );

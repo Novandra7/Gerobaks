@@ -1,5 +1,5 @@
 import 'package:bank_sha/blocs/tracking/tracking_bloc.dart';
-import 'package:bank_sha/services/tracking_service_new.dart';
+import 'package:bank_sha/services/tracking_service.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_content.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_page_args.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';

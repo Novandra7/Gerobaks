@@ -5,8 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
-import 'package:bank_sha/services/tracking_service_new.dart'
-    show Tracking, TrackingService;
+import 'package:bank_sha/services/tracking_service.dart';
 import 'tracking_event.dart';
 import 'tracking_state.dart';
 

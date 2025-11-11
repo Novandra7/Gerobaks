@@ -15,7 +15,8 @@ class ProfileMitraPage extends StatefulWidget {
 
 class _ProfileMitraPageState extends State<ProfileMitraPage> {
   Map<String, dynamic>? currentUser;
-  final GlobalKey<RefreshIndicatorState> _refreshKey = GlobalKey<RefreshIndicatorState>();
+  final GlobalKey<RefreshIndicatorState> _refreshKey =
+      GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -34,7 +35,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     final localStorage = await LocalStorageService.getInstance();
     final userData = await localStorage.getUserData();
     if (userData != null) {
-      final user = UserDataMock.getUserByEmail(userData['email']);
+      final user = await UserDataMock.getUserByEmail(userData['email']);
       if (mounted) {
         setState(() {
           currentUser = user;
@@ -98,8 +99,12 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 24)),
-                            bottomRight: Radius.circular(ResponsiveHelper.getResponsiveRadius(context, 24)),
+                            bottomLeft: Radius.circular(
+                              ResponsiveHelper.getResponsiveRadius(context, 24),
+                            ),
+                            bottomRight: Radius.circular(
+                              ResponsiveHelper.getResponsiveRadius(context, 24),
+                            ),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -110,10 +115,24 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ],
                         ),
                         padding: EdgeInsets.only(
-                          top: MediaQuery.of(context).padding.top + ResponsiveHelper.getResponsiveSpacing(context, 12),
-                          bottom: ResponsiveHelper.getResponsiveSpacing(context, 20),
-                          left: ResponsiveHelper.getResponsiveSpacing(context, 20),
-                          right: ResponsiveHelper.getResponsiveSpacing(context, 20),
+                          top:
+                              MediaQuery.of(context).padding.top +
+                              ResponsiveHelper.getResponsiveSpacing(
+                                context,
+                                12,
+                              ),
+                          bottom: ResponsiveHelper.getResponsiveSpacing(
+                            context,
+                            20,
+                          ),
+                          left: ResponsiveHelper.getResponsiveSpacing(
+                            context,
+                            20,
+                          ),
+                          right: ResponsiveHelper.getResponsiveSpacing(
+                            context,
+                            20,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -123,8 +142,11 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Image.asset(
-                                  'assets/img_gerobakss.png', 
-                                  height: ResponsiveHelper.getResponsiveHeight(context, 28),
+                                  'assets/img_gerobakss.png',
+                                  height: ResponsiveHelper.getResponsiveHeight(
+                                    context,
+                                    28,
+                                  ),
                                   color: Colors.white,
                                 ),
                                 IconButton(
@@ -134,22 +156,37 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                   icon: Icon(
                                     Icons.edit_outlined,
                                     color: Colors.white,
-                                    size: ResponsiveHelper.getResponsiveIconSize(context, 24),
+                                    size:
+                                        ResponsiveHelper.getResponsiveIconSize(
+                                          context,
+                                          24,
+                                        ),
                                   ),
                                   tooltip: 'Edit Profil',
                                 ),
                               ],
                             ),
 
-                            SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                            SizedBox(
+                              height: ResponsiveHelper.getResponsiveSpacing(
+                                context,
+                                12,
+                              ),
+                            ),
 
                             // Driver info dan greeting
                             Row(
                               children: [
                                 // Profile image
                                 Container(
-                                  width: ResponsiveHelper.getResponsiveWidth(context, 60),
-                                  height: ResponsiveHelper.getResponsiveHeight(context, 60),
+                                  width: ResponsiveHelper.getResponsiveWidth(
+                                    context,
+                                    60,
+                                  ),
+                                  height: ResponsiveHelper.getResponsiveHeight(
+                                    context,
+                                    60,
+                                  ),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
@@ -157,46 +194,85 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                       width: 2,
                                     ),
                                     image: DecorationImage(
-                                      image: AssetImage(currentUser?['profilePicture'] ?? 'assets/img_profile.png'),
+                                      image: AssetImage(
+                                        currentUser?['profilePicture'] ??
+                                            'assets/img_profile.png',
+                                      ),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
-                                SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                                SizedBox(
+                                  width: ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    12,
+                                  ),
+                                ),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       // Selamat pagi/siang/sore/malam
                                       RichText(
                                         text: TextSpan(
                                           style: whiteTextStyle.copyWith(
-                                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                            fontSize:
+                                                ResponsiveHelper.getResponsiveFontSize(
+                                                  context,
+                                                  14,
+                                                ),
                                           ),
                                           children: [
                                             TextSpan(
-                                              text: 'Selamat ${_getGreeting()}, ',
+                                              text:
+                                                  'Selamat ${_getGreeting()}, ',
                                             ),
                                             TextSpan(
-                                              text: currentUser?['name'] ?? 'Pengguna',
+                                              text:
+                                                  currentUser?['name'] ??
+                                                  'Pengguna',
                                               style: whiteTextStyle.copyWith(
-                                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                                fontSize:
+                                                    ResponsiveHelper.getResponsiveFontSize(
+                                                      context,
+                                                      14,
+                                                    ),
                                                 fontWeight: semiBold,
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                                      SizedBox(
+                                        height:
+                                            ResponsiveHelper.getResponsiveSpacing(
+                                              context,
+                                              4,
+                                            ),
+                                      ),
                                       // Badge - ID dan Rating
                                       Container(
                                         padding: EdgeInsets.symmetric(
-                                          horizontal: ResponsiveHelper.getResponsiveSpacing(context, 8),
-                                          vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
+                                          horizontal:
+                                              ResponsiveHelper.getResponsiveSpacing(
+                                                context,
+                                                8,
+                                              ),
+                                          vertical:
+                                              ResponsiveHelper.getResponsiveSpacing(
+                                                context,
+                                                4,
+                                              ),
                                         ),
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 4)),
+                                          borderRadius: BorderRadius.circular(
+                                            ResponsiveHelper.getResponsiveRadius(
+                                              context,
+                                              4,
+                                            ),
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -204,27 +280,61 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                             Icon(
                                               Icons.verified_rounded,
                                               color: Colors.white,
-                                              size: ResponsiveHelper.getResponsiveIconSize(context, 14),
+                                              size:
+                                                  ResponsiveHelper.getResponsiveIconSize(
+                                                    context,
+                                                    14,
+                                                  ),
                                             ),
-                                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+                                            SizedBox(
+                                              width:
+                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                    context,
+                                                    4,
+                                                  ),
+                                            ),
                                             Text(
                                               'ID: ${currentUser?['id'] ?? '000000'}',
                                               style: whiteTextStyle.copyWith(
-                                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                                fontSize:
+                                                    ResponsiveHelper.getResponsiveFontSize(
+                                                      context,
+                                                      12,
+                                                    ),
                                                 fontWeight: medium,
                                               ),
                                             ),
-                                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                                            SizedBox(
+                                              width:
+                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                    context,
+                                                    6,
+                                                  ),
+                                            ),
                                             Icon(
                                               Icons.star_rounded,
                                               color: Colors.amber,
-                                              size: ResponsiveHelper.getResponsiveIconSize(context, 14),
+                                              size:
+                                                  ResponsiveHelper.getResponsiveIconSize(
+                                                    context,
+                                                    14,
+                                                  ),
                                             ),
-                                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 2)),
+                                            SizedBox(
+                                              width:
+                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                    context,
+                                                    2,
+                                                  ),
+                                            ),
                                             Text(
                                               '${currentUser?['rating'] ?? '0.0'}',
                                               style: whiteTextStyle.copyWith(
-                                                fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                                fontSize:
+                                                    ResponsiveHelper.getResponsiveFontSize(
+                                                      context,
+                                                      12,
+                                                    ),
                                                 fontWeight: medium,
                                               ),
                                             ),
@@ -239,28 +349,37 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ],
                         ),
                       ),
-                      
+
                       // Statistics Cards
                       Padding(
-                        padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                        padding: EdgeInsets.all(
+                          ResponsiveHelper.getResponsiveSpacing(context, 16),
+                        ),
                         child: Row(
                           children: [
                             // Card 1 - Jumlah Pengambilan
                             Expanded(
                               child: _buildStatCard(
                                 title: 'Pengambilan',
-                                value: currentUser?['pickups']?.toString() ?? '0',
+                                value:
+                                    currentUser?['pickups']?.toString() ?? '0',
                                 icon: Icons.recycling_rounded,
                                 backgroundColor: greenLight,
                                 iconColor: greenColor,
                               ),
                             ),
-                            SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                            SizedBox(
+                              width: ResponsiveHelper.getResponsiveSpacing(
+                                context,
+                                12,
+                              ),
+                            ),
                             // Card 2 - Jumlah Poin
                             Expanded(
                               child: _buildStatCard(
                                 title: 'Poin',
-                                value: currentUser?['points']?.toString() ?? '0',
+                                value:
+                                    currentUser?['points']?.toString() ?? '0',
                                 icon: Icons.star_rounded,
                                 backgroundColor: const Color(0xFFFFF8E1),
                                 iconColor: Colors.amber,
@@ -269,19 +388,33 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ],
                         ),
                       ),
-                      
+
                       // Action shortcuts - GridView
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 16)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveHelper.getResponsiveSpacing(
+                            context,
+                            16,
+                          ),
+                        ),
                         child: GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isSmallScreen ? 2 : 3,
-                            mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
-                            crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
-                            childAspectRatio: isSmallScreen ? 1.4 : 1.6,
-                          ),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: isSmallScreen ? 2 : 3,
+                                mainAxisSpacing:
+                                    ResponsiveHelper.getResponsiveSpacing(
+                                      context,
+                                      12,
+                                    ),
+                                crossAxisSpacing:
+                                    ResponsiveHelper.getResponsiveSpacing(
+                                      context,
+                                      12,
+                                    ),
+                                childAspectRatio: isSmallScreen ? 1.4 : 1.6,
+                              ),
                           itemCount: 4,
                           itemBuilder: (context, index) {
                             final actions = [
@@ -314,14 +447,18 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                     context: context,
                                     builder: (context) => AlertDialog(
                                       title: const Text('Keluar'),
-                                      content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+                                      content: const Text(
+                                        'Apakah Anda yakin ingin keluar dari aplikasi?',
+                                      ),
                                       actions: [
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
+                                          onPressed: () =>
+                                              Navigator.pop(context, false),
                                           child: const Text('Batal'),
                                         ),
                                         TextButton(
-                                          onPressed: () => Navigator.pop(context, true),
+                                          onPressed: () =>
+                                              Navigator.pop(context, true),
                                           child: Text(
                                             'Keluar',
                                             style: TextStyle(color: redcolor),
@@ -330,14 +467,19 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                       ],
                                     ),
                                   );
-                                  
+
                                   if (confirm == true) {
-                                    final localStorage = await LocalStorageService.getInstance();
-                                    await localStorage.clear();  // Using clear() method since clearUserData() doesn't exist
+                                    final localStorage =
+                                        await LocalStorageService.getInstance();
+                                    await localStorage
+                                        .clear(); // Using clear() method since clearUserData() doesn't exist
                                     if (mounted) {
                                       Navigator.pushAndRemoveUntil(
                                         context,
-                                        MaterialPageRoute(builder: (context) => const SignInPage()),
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SignInPage(),
+                                        ),
                                         (route) => false,
                                       );
                                     }
@@ -345,7 +487,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                 },
                               },
                             ];
-                            
+
                             return _buildActionCard(
                               icon: actions[index]['icon'] as IconData,
                               label: actions[index]['label'] as String,
@@ -354,9 +496,14 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           },
                         ),
                       ),
-                      
-                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                      
+
+                      SizedBox(
+                        height: ResponsiveHelper.getResponsiveSpacing(
+                          context,
+                          16,
+                        ),
+                      ),
+
                       // Informasi Akun Section
                       _buildInfoSection(
                         title: 'Informasi Akun',
@@ -367,18 +514,36 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                                padding: EdgeInsets.all(
+                                  ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    6,
+                                  ),
+                                ),
                                 decoration: BoxDecoration(
                                   color: greenColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveHelper.getResponsiveRadius(
+                                      context,
+                                      8,
+                                    ),
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.email_outlined,
                                   color: greenColor,
-                                  size: ResponsiveHelper.getResponsiveIconSize(context, 16),
+                                  size: ResponsiveHelper.getResponsiveIconSize(
+                                    context,
+                                    16,
+                                  ),
                                 ),
                               ),
-                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                              SizedBox(
+                                width: ResponsiveHelper.getResponsiveSpacing(
+                                  context,
+                                  10,
+                                ),
+                              ),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,14 +551,23 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                     Text(
                                       'Email',
                                       style: blackTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              14,
+                                            ),
                                         fontWeight: medium,
                                       ),
                                     ),
                                     Text(
-                                      currentUser?['email'] ?? 'Email belum diisi',
+                                      currentUser?['email'] ??
+                                          'Email belum diisi',
                                       style: greyTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              12,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -401,26 +575,49 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               ),
                             ],
                           ),
-                          
-                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                          
+
+                          SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                              context,
+                              16,
+                            ),
+                          ),
+
                           // Alamat
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                                padding: EdgeInsets.all(
+                                  ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    6,
+                                  ),
+                                ),
                                 decoration: BoxDecoration(
                                   color: greenColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveHelper.getResponsiveRadius(
+                                      context,
+                                      8,
+                                    ),
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.location_on_outlined,
                                   color: greenColor,
-                                  size: ResponsiveHelper.getResponsiveIconSize(context, 16),
+                                  size: ResponsiveHelper.getResponsiveIconSize(
+                                    context,
+                                    16,
+                                  ),
                                 ),
                               ),
-                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                              SizedBox(
+                                width: ResponsiveHelper.getResponsiveSpacing(
+                                  context,
+                                  10,
+                                ),
+                              ),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -428,14 +625,23 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                     Text(
                                       'Alamat',
                                       style: blackTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              14,
+                                            ),
                                         fontWeight: medium,
                                       ),
                                     ),
                                     Text(
-                                      currentUser?['address'] ?? 'Alamat belum diisi',
+                                      currentUser?['address'] ??
+                                          'Alamat belum diisi',
                                       style: greyTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              12,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -443,26 +649,49 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               ),
                             ],
                           ),
-                          
-                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-                          
+
+                          SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                              context,
+                              16,
+                            ),
+                          ),
+
                           // Phone Number
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                                padding: EdgeInsets.all(
+                                  ResponsiveHelper.getResponsiveSpacing(
+                                    context,
+                                    6,
+                                  ),
+                                ),
                                 decoration: BoxDecoration(
                                   color: greenColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveHelper.getResponsiveRadius(
+                                      context,
+                                      8,
+                                    ),
+                                  ),
                                 ),
                                 child: Icon(
                                   Icons.phone_android_rounded,
                                   color: greenColor,
-                                  size: ResponsiveHelper.getResponsiveIconSize(context, 16),
+                                  size: ResponsiveHelper.getResponsiveIconSize(
+                                    context,
+                                    16,
+                                  ),
                                 ),
                               ),
-                              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                              SizedBox(
+                                width: ResponsiveHelper.getResponsiveSpacing(
+                                  context,
+                                  10,
+                                ),
+                              ),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,14 +699,23 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                     Text(
                                       'Nomor HP',
                                       style: blackTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              14,
+                                            ),
                                         fontWeight: medium,
                                       ),
                                     ),
                                     Text(
-                                      currentUser?['phone'] ?? 'Nomor HP belum diisi',
+                                      currentUser?['phone'] ??
+                                          'Nomor HP belum diisi',
                                       style: greyTextStyle.copyWith(
-                                        fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                                        fontSize:
+                                            ResponsiveHelper.getResponsiveFontSize(
+                                              context,
+                                              12,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -487,7 +725,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ),
                         ],
                       ),
-                      
+
                       // Keamanan Section
                       _buildInfoSection(
                         title: 'Keamanan & Privasi',
@@ -500,7 +738,12 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               // TODO: Edit profile
                             },
                           ),
-                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                          SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                              context,
+                              12,
+                            ),
+                          ),
                           _buildInfoItem(
                             icon: Icons.verified_user_outlined,
                             title: 'Verifikasi Akun',
@@ -508,7 +751,12 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               // TODO: Edit profile
                             },
                           ),
-                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                          SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                              context,
+                              12,
+                            ),
+                          ),
                           _buildInfoItem(
                             icon: Icons.privacy_tip_outlined,
                             title: 'Kebijakan Privasi',
@@ -518,7 +766,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ),
                         ],
                       ),
-                      
+
                       // Bantuan & Info Section
                       _buildInfoSection(
                         title: 'Bantuan & Informasi',
@@ -531,7 +779,12 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               // TODO: Help
                             },
                           ),
-                          SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+                          SizedBox(
+                            height: ResponsiveHelper.getResponsiveSpacing(
+                              context,
+                              12,
+                            ),
+                          ),
                           _buildInfoItem(
                             icon: Icons.info_outline_rounded,
                             title: 'Tentang Kami',
@@ -541,20 +794,33 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ),
                         ],
                       ),
-                      
-                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
-                      
+
+                      SizedBox(
+                        height: ResponsiveHelper.getResponsiveSpacing(
+                          context,
+                          24,
+                        ),
+                      ),
+
                       // App version at bottom
                       Center(
                         child: Text(
                           'Gerobaks v1.0.0',
                           style: greyTextStyle.copyWith(
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(
+                              context,
+                              12,
+                            ),
                           ),
                         ),
                       ),
-                      
-                      SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 24)),
+
+                      SizedBox(
+                        height: ResponsiveHelper.getResponsiveSpacing(
+                          context,
+                          24,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -562,7 +828,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       ),
     );
   }
-  
+
   // Helper widget for statistics cards
   Widget _buildStatCard({
     required String title,
@@ -572,10 +838,14 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
     required Color iconColor,
   }) {
     return Container(
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsiveSpacing(context, 16),
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getResponsiveRadius(context, 16),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -587,10 +857,14 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 8)),
+            padding: EdgeInsets.all(
+              ResponsiveHelper.getResponsiveSpacing(context, 8),
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+              borderRadius: BorderRadius.circular(
+                ResponsiveHelper.getResponsiveRadius(context, 8),
+              ),
             ),
             child: Icon(
               icon,
@@ -607,14 +881,22 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 Text(
                   title,
                   style: greyTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 12),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(
+                      context,
+                      12,
+                    ),
                   ),
                 ),
-                SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 2)),
+                SizedBox(
+                  height: ResponsiveHelper.getResponsiveSpacing(context, 2),
+                ),
                 Text(
                   value,
                   style: blackTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(
+                      context,
+                      18,
+                    ),
                     fontWeight: semiBold,
                   ),
                 ),
@@ -625,7 +907,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       ),
     );
   }
-  
+
   // Helper widget for action cards
   Widget _buildActionCard({
     required IconData icon,
@@ -636,12 +918,18 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => onTap(),
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getResponsiveRadius(context, 16),
+        ),
         child: Container(
-          padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 12)),
+          padding: EdgeInsets.all(
+            ResponsiveHelper.getResponsiveSpacing(context, 12),
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+            borderRadius: BorderRadius.circular(
+              ResponsiveHelper.getResponsiveRadius(context, 16),
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -654,7 +942,9 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                padding: EdgeInsets.all(
+                  ResponsiveHelper.getResponsiveSpacing(context, 10),
+                ),
                 decoration: BoxDecoration(
                   color: greenui,
                   shape: BoxShape.circle,
@@ -665,7 +955,9 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                   size: ResponsiveHelper.getResponsiveIconSize(context, 24),
                 ),
               ),
-              SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+              SizedBox(
+                height: ResponsiveHelper.getResponsiveSpacing(context, 8),
+              ),
               Text(
                 label,
                 style: blackTextStyle.copyWith(
@@ -680,7 +972,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       ),
     );
   }
-  
+
   // Helper widget for information sections
   Widget _buildInfoSection({
     required String title,
@@ -692,10 +984,14 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         horizontal: ResponsiveHelper.getResponsiveSpacing(context, 16),
         vertical: ResponsiveHelper.getResponsiveSpacing(context, 8),
       ),
-      padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 16)),
+      padding: EdgeInsets.all(
+        ResponsiveHelper.getResponsiveSpacing(context, 16),
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getResponsiveRadius(context, 16),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -714,7 +1010,9 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 color: greenColor,
                 size: ResponsiveHelper.getResponsiveIconSize(context, 20),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 8)),
+              SizedBox(
+                width: ResponsiveHelper.getResponsiveSpacing(context, 8),
+              ),
               Text(
                 title,
                 style: blackTextStyle.copyWith(
@@ -730,7 +1028,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       ),
     );
   }
-  
+
   // Helper widget for information items
   Widget _buildInfoItem({
     required IconData icon,
@@ -741,16 +1039,24 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => onTap(),
-        borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+        borderRadius: BorderRadius.circular(
+          ResponsiveHelper.getResponsiveRadius(context, 8),
+        ),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: ResponsiveHelper.getResponsiveSpacing(context, 4)),
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
+          ),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
+                padding: EdgeInsets.all(
+                  ResponsiveHelper.getResponsiveSpacing(context, 6),
+                ),
                 decoration: BoxDecoration(
                   color: greenColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveHelper.getResponsiveRadius(context, 8),
+                  ),
                 ),
                 child: Icon(
                   icon,
@@ -758,12 +1064,17 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                   size: ResponsiveHelper.getResponsiveIconSize(context, 16),
                 ),
               ),
-              SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 12)),
+              SizedBox(
+                width: ResponsiveHelper.getResponsiveSpacing(context, 12),
+              ),
               Expanded(
                 child: Text(
                   title,
                   style: blackTextStyle.copyWith(
-                    fontSize: ResponsiveHelper.getResponsiveFontSize(context, 14),
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(
+                      context,
+                      14,
+                    ),
                     fontWeight: medium,
                   ),
                 ),

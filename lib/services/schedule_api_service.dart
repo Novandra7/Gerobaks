@@ -122,8 +122,27 @@ class ScheduleApiService {
   }
 
   /// Create schedule using mobile-specific endpoint (/api/schedules/mobile)
-  /// Expected fields: pickup_location (string), scheduled_at (DateTime or String),
-  /// optional: dropoff_location, latitude, longitude, notes, waste_items (list)
+  ///
+  /// **PRODUCTION API SPEC** (from OpenAPI 3.0.3 at gerobaks.dumeg.com):
+  ///
+  /// **REQUIRED FIELDS:**
+  /// - alamat: Alamat lengkap pickup (string)
+  /// - tanggal: Format YYYY-MM-DD (string, date)
+  /// - waktu: Format HH:mm (string)
+  /// - koordinat: {lat: float, lng: float} (object)
+  /// - jenis_layanan: Service type enum (string)
+  ///   * pickup_sampah_organik
+  ///   * pickup_sampah_anorganik
+  ///   * pickup_sampah_daur_ulang
+  ///   * pickup_sampah_b3
+  ///   * pickup_sampah_campuran
+  ///
+  /// **OPTIONAL FIELDS:**
+  /// - catatan: Catatan tambahan (string)
+  /// - metode_pembayaran: cash | transfer | wallet (string, enum)
+  ///
+  /// **AUTHORIZATION**: Bearer token, role: end_user
+  /// **ENDPOINT**: POST /api/schedules/mobile
   Future<ScheduleApiModel> createScheduleMobile({
     required String address,
     required DateTime scheduledAt,
@@ -132,17 +151,51 @@ class ScheduleApiService {
     required String serviceType,
     String? notes,
     String? paymentMethod,
+    String? wasteType,
+    double? estimatedWeight,
+    String? contactName,
+    String? contactPhone,
+    String? frequency,
     List<Map<String, dynamic>>? wasteItems,
   }) async {
+    // Build request body according to OpenAPI spec
     final body = <String, dynamic>{
+      // REQUIRED fields per API spec
       'alamat': address,
       'tanggal': DateFormat('yyyy-MM-dd').format(scheduledAt),
       'waktu': DateFormat('HH:mm').format(scheduledAt),
       'koordinat': {'lat': latitude, 'lng': longitude},
       'jenis_layanan': serviceType,
-      'metode_pembayaran': paymentMethod ?? 'cash',
+
+      // OPTIONAL fields per API spec
       if (notes != null && notes.isNotEmpty) 'catatan': notes,
+      if (paymentMethod != null && paymentMethod.isNotEmpty)
+        'metode_pembayaran': paymentMethod,
+
+      // WORKAROUND: Backend database requires 'title' field (not in OpenAPI spec)
+      // This should be removed once backend migration is fixed
+      'title': contactName?.isNotEmpty == true
+          ? contactName!
+          : 'Permintaan Pengambilan Sampah',
     };
+
+    // NOTE: Additional fields below are NOT in OpenAPI spec but may be accepted by backend
+    // If backend rejects them, remove these lines
+    if (wasteType != null && wasteType.isNotEmpty) {
+      body['jenis_sampah'] = wasteType;
+    }
+    if (estimatedWeight != null) {
+      body['perkiraan_berat'] = estimatedWeight;
+    }
+    if (contactName != null && contactName.isNotEmpty) {
+      body['nama_kontak'] = contactName;
+    }
+    if (contactPhone != null && contactPhone.isNotEmpty) {
+      body['telepon_kontak'] = contactPhone;
+    }
+    if (frequency != null && frequency.isNotEmpty) {
+      body['frekuensi'] = frequency;
+    }
 
     if (wasteItems != null && wasteItems.isNotEmpty) {
       body['detail_sampah'] = wasteItems
@@ -189,10 +242,52 @@ class ScheduleApiService {
     return items;
   }
 
-  String _formatToBackend(DateTime dt) {
-    // Format as YYYY-MM-DD HH:MM:SS to match backend expectations
-    final fmt = DateFormat('yyyy-MM-dd HH:mm:ss');
-    return fmt.format(dt);
+  /// Mitra accepts a schedule
+  Future<dynamic> acceptSchedule(int scheduleId) async {
+    final json = await _api.postJson(
+      '${ApiRoutes.schedule(scheduleId)}/accept',
+      {},
+    );
+    return json;
+  }
+
+  /// Mitra starts the pickup
+  Future<dynamic> startSchedule(int scheduleId) async {
+    final json = await _api.postJson(
+      '${ApiRoutes.schedule(scheduleId)}/start',
+      {},
+    );
+    return json;
+  }
+
+  /// Mitra completes the pickup
+  Future<dynamic> completeSchedulePickup({
+    required int scheduleId,
+    double? actualWeight,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{
+      if (actualWeight != null) 'actual_weight': actualWeight,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    };
+    final json = await _api.postJson(
+      '${ApiRoutes.schedule(scheduleId)}/complete',
+      body,
+    );
+    return json;
+  }
+
+  /// Cancel schedule with reason
+  Future<dynamic> cancelScheduleWithReason({
+    required int scheduleId,
+    required String reason,
+  }) async {
+    final body = {'reason': reason};
+    final json = await _api.postJson(
+      '${ApiRoutes.schedule(scheduleId)}/cancel',
+      body,
+    );
+    return json;
   }
 }
 

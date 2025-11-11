@@ -3,7 +3,7 @@ import 'package:bank_sha/blocs/schedule/schedule_event.dart';
 import 'package:bank_sha/blocs/schedule/schedule_state.dart';
 import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/models/waste_item.dart';
-import 'package:bank_sha/services/schedule_service_new.dart';
+import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/mitra/waste_items_summary.dart';
 import 'package:flutter/material.dart';
@@ -41,13 +41,11 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
     });
 
     try {
-      final schedule = await _scheduleService.getSchedule(
-        int.parse(widget.scheduleId),
-      );
+      final schedule = await _scheduleService.getSchedule(widget.scheduleId);
 
       if (mounted) {
         setState(() {
-          _schedule = schedule as ScheduleModel?;
+          _schedule = schedule;
           _isLoadingDetail = false;
         });
       }

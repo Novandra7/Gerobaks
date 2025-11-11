@@ -14,18 +14,57 @@ class ScheduleApiModel {
     this.updatedAt,
     this.trackingsCount,
     this.assignedUser,
+    // New fields from production API
+    this.userId,
+    this.mitraId,
+    this.userName,
+    this.mitraName,
+    this.serviceType,
+    this.pickupAddress,
+    this.pickupLatitude,
+    this.pickupLongitude,
+    this.estimatedDuration,
+    this.notes,
+    this.paymentMethod,
+    this.price,
+    this.frequency,
+    this.wasteType,
+    this.estimatedWeight,
+    this.contactName,
+    this.contactPhone,
+    this.isPaid,
+    this.amount,
+    this.additionalWastes,
+    this.trackings,
   });
 
   factory ScheduleApiModel.fromJson(Map<String, dynamic> json) {
     final assignedUserJson = json['assigned_user'];
+
+    // Parse additional_wastes array
+    List<Map<String, dynamic>>? additionalWastesList;
+    if (json['additional_wastes'] is List) {
+      additionalWastesList = (json['additional_wastes'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
+    // Parse trackings array
+    List<Map<String, dynamic>>? trackingsList;
+    if (json['trackings'] is List) {
+      trackingsList = (json['trackings'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
     return ScheduleApiModel(
       id: json['id'] is int
           ? json['id'] as int
           : int.parse(json['id'].toString()),
-      title: (json['title'] ?? 'Jadwal').toString(),
+      title: (json['title'] ?? json['pickup_address'] ?? 'Jadwal').toString(),
       description: json['description']?.toString(),
-      latitude: _toDouble(json['latitude']),
-      longitude: _toDouble(json['longitude']),
+      latitude: _toDouble(json['latitude'] ?? json['pickup_latitude']),
+      longitude: _toDouble(json['longitude'] ?? json['pickup_longitude']),
       status: json['status']?.toString(),
       assignedTo: json['assigned_to'] == null
           ? null
@@ -39,6 +78,34 @@ class ScheduleApiModel {
       assignedUser: assignedUserJson is Map<String, dynamic>
           ? ScheduleAssignedUser.fromJson(assignedUserJson)
           : null,
+      // New fields
+      userId: json['user_id'] is int
+          ? json['user_id'] as int
+          : int.tryParse(json['user_id']?.toString() ?? ''),
+      mitraId: json['mitra_id'] is int
+          ? json['mitra_id'] as int
+          : int.tryParse(json['mitra_id']?.toString() ?? ''),
+      userName: json['user_name']?.toString(),
+      mitraName: json['mitra_name']?.toString(),
+      serviceType: json['service_type']?.toString(),
+      pickupAddress: json['pickup_address']?.toString(),
+      pickupLatitude: _toDouble(json['pickup_latitude']),
+      pickupLongitude: _toDouble(json['pickup_longitude']),
+      estimatedDuration: json['estimated_duration'] is int
+          ? json['estimated_duration'] as int
+          : int.tryParse(json['estimated_duration']?.toString() ?? ''),
+      notes: json['notes']?.toString(),
+      paymentMethod: json['payment_method']?.toString(),
+      price: _toDouble(json['price']),
+      frequency: json['frequency']?.toString(),
+      wasteType: json['waste_type']?.toString(),
+      estimatedWeight: _toDouble(json['estimated_weight']),
+      contactName: json['contact_name']?.toString(),
+      contactPhone: json['contact_phone']?.toString(),
+      isPaid: json['is_paid'] == true || json['is_paid'] == 1,
+      amount: _toDouble(json['amount']),
+      additionalWastes: additionalWastesList,
+      trackings: trackingsList,
     );
   }
 
@@ -54,6 +121,29 @@ class ScheduleApiModel {
   final DateTime? updatedAt;
   final int? trackingsCount;
   final ScheduleAssignedUser? assignedUser;
+
+  // New fields from production API
+  final int? userId;
+  final int? mitraId;
+  final String? userName;
+  final String? mitraName;
+  final String? serviceType;
+  final String? pickupAddress;
+  final double? pickupLatitude;
+  final double? pickupLongitude;
+  final int? estimatedDuration;
+  final String? notes;
+  final String? paymentMethod;
+  final double? price;
+  final String? frequency;
+  final String? wasteType;
+  final double? estimatedWeight;
+  final String? contactName;
+  final String? contactPhone;
+  final bool? isPaid;
+  final double? amount;
+  final List<Map<String, dynamic>>? additionalWastes;
+  final List<Map<String, dynamic>>? trackings;
 
   String get formattedDate {
     if (scheduledAt == null) return '-';

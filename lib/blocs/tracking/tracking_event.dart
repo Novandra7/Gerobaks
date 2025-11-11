@@ -1,4 +1,4 @@
-import 'package:bank_sha/services/tracking_service_new.dart' show Tracking;
+import 'package:bank_sha/services/tracking_service.dart';
 import 'package:latlong2/latlong.dart';
 
 abstract class TrackingEvent {}

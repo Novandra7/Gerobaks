@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:developer' as developer;
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
@@ -19,7 +18,6 @@ import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart'
 import 'package:bank_sha/ui/pages/mitra/lokasi/mitra_lokasi_page.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
-import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_detail_page_bloc.dart';
 // Import all BLoCs
 import 'package:bank_sha/blocs/blocs.dart';
@@ -341,7 +339,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                       as Map<String, dynamic>)
                 : {},
           ),
-          '/navigation-demo': (context) => const NavigationDemoPage(),
           '/jadwal-detail-bloc': (context) {
             final scheduleId =
                 ModalRoute.of(context)?.settings.arguments as String;

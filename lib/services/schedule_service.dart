@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/models/waste_item.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
-import 'package:bank_sha/services/schedule_service_complete.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:uuid/uuid.dart';
@@ -16,7 +16,6 @@ class ScheduleService {
   final Uuid _uuid = const Uuid();
   late LocalStorageService _localStorage;
   final ScheduleApiService _remoteService = ScheduleApiService();
-  final ScheduleServiceComplete _apiService = ScheduleServiceComplete();
   bool _isInitialized = false;
 
   // Key for storing schedules in local storage
@@ -100,6 +99,33 @@ class ScheduleService {
     }).toList();
   }
 
+  // Get schedule by ID
+  Future<ScheduleModel?> getSchedule(String scheduleId) async {
+    try {
+      // Try to get from local first
+      final schedules = await _loadLocalSchedules();
+      final local = schedules.firstWhere(
+        (s) => s.id == scheduleId,
+        orElse: () => schedules.first, // dummy
+      );
+      if (local.id == scheduleId) return local;
+
+      // If not found locally, fetch from remote
+      final id = int.tryParse(scheduleId);
+      if (id == null) return null;
+
+      final apiModel = await _remoteService.getScheduleById(id);
+      final schedule = ScheduleModel.fromApi(apiModel);
+
+      // Save to local
+      await _upsertLocalSchedule(schedule);
+      return schedule;
+    } catch (e) {
+      debugPrint('Error getting schedule: $e');
+      return null;
+    }
+  }
+
   // Get driver schedules for a specific date
   Future<List<ScheduleModel>> getDriverSchedulesByDate(
     String driverId,
@@ -176,14 +202,26 @@ class ScheduleService {
           });
         }
 
+        // Map service type dari waste type
+        final mappedServiceType = _mapServiceType(schedule.wasteType);
+        debugPrint('🔍 [CREATE SCHEDULE] wasteType: ${schedule.wasteType}');
+        debugPrint(
+          '🔍 [CREATE SCHEDULE] mappedServiceType: $mappedServiceType',
+        );
+
         final apiModel = await _remoteService.createScheduleMobile(
           address: schedule.address,
           scheduledAt: scheduledAt,
           latitude: schedule.location.latitude,
           longitude: schedule.location.longitude,
-          serviceType: _mapServiceType(schedule.wasteType),
+          serviceType: mappedServiceType,
           notes: schedule.notes,
           paymentMethod: 'cash',
+          wasteType: schedule.wasteType,
+          estimatedWeight: schedule.estimatedWeight,
+          contactName: schedule.contactName,
+          contactPhone: schedule.contactPhone,
+          frequency: _mapFrequency(schedule.frequency),
           wasteItems: wasteItems.isNotEmpty ? wasteItems : null,
         );
 
@@ -196,38 +234,24 @@ class ScheduleService {
         await _setupScheduleNotifications(remoteSchedule);
         return remoteSchedule;
       } on HttpException catch (e) {
-        debugPrint('Remote createSchedule (mobile) failed: $e');
-        if (_shouldPropagate(e.statusCode)) rethrow;
-        // fall through to legacy endpoint when retry makes sense
-      } catch (e) {
-        debugPrint('Remote createSchedule (mobile) failed: $e');
-      }
+        debugPrint('❌ Remote createSchedule (mobile) failed: $e');
 
-      // Fallback: try the legacy createSchedule endpoint
-      try {
-        final apiModel = await _remoteService.createSchedule(
-          title: _deriveTitle(schedule),
-          description: schedule.address,
-          latitude: schedule.location.latitude,
-          longitude: schedule.location.longitude,
-          status: _statusToApi(schedule.status),
-          assignedTo: schedule.driverId != null
-              ? int.tryParse(schedule.driverId!)
-              : null,
-          scheduledAt: scheduledAt,
-        );
+        // IMPORTANT: Do NOT fallback to /schedules endpoint!
+        // /schedules endpoint is for mitra/admin role only (will return 403)
+        // /schedules/mobile is the ONLY endpoint for end_user role
+        // If this fails, it means backend has an issue that needs fixing
 
-        final remoteSchedule = _mergeRemoteWithLocal(
-          ScheduleModel.fromApi(apiModel),
-          schedule.copyWith(id: apiModel.id.toString()),
-        );
+        // Check if it's a backend database schema error
+        if (e.toString().contains('title') || e.toString().contains('Field')) {
+          throw HttpException(
+            'Backend API error: Missing required field. '
+            'Please contact support. Backend needs to fix database schema for /schedules/mobile endpoint. '
+            'Error: $e',
+          );
+        }
 
-        await _upsertLocalSchedule(remoteSchedule);
-        await _setupScheduleNotifications(remoteSchedule);
-        return remoteSchedule;
-      } on HttpException catch (e) {
-        debugPrint('Remote createSchedule failed: $e');
-        if (_shouldPropagate(e.statusCode)) rethrow;
+        // Re-throw the original error for proper handling
+        rethrow;
       } catch (e) {
         debugPrint('Remote createSchedule failed: $e');
       }
@@ -900,7 +924,7 @@ class ScheduleService {
   Future<dynamic> acceptSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.acceptSchedule(id);
+      return await _remoteService.acceptSchedule(id);
     } catch (e) {
       debugPrint('Error accepting schedule: $e');
       rethrow;
@@ -911,7 +935,7 @@ class ScheduleService {
   Future<dynamic> startSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.startSchedule(id);
+      return await _remoteService.startSchedule(id);
     } catch (e) {
       debugPrint('Error starting schedule: $e');
       rethrow;
@@ -926,7 +950,7 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.completeSchedulePickup(
+      return await _remoteService.completeSchedulePickup(
         scheduleId: id,
         actualWeight: actualWeight,
         notes: notes,
@@ -944,13 +968,47 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _apiService.cancelScheduleWithReason(
+      return await _remoteService.cancelScheduleWithReason(
         scheduleId: id,
         reason: reason,
       );
     } catch (e) {
       debugPrint('Error cancelling schedule: $e');
       rethrow;
+    }
+  }
+
+  // ============================================================================
+  // HELPER METHODS
+  // ============================================================================
+
+  /// Map waste type to service type for API
+  String _mapServiceType(String? wasteType) {
+    if (wasteType == null) return 'pickup_sampah_campuran';
+    final type = wasteType.toLowerCase();
+    if (type.contains('organik')) return 'pickup_sampah_organik';
+    if (type.contains('anorganik')) return 'pickup_sampah_anorganik';
+    if (type.contains('daur ulang')) return 'pickup_sampah_daur_ulang';
+    if (type.contains('b3') || type.contains('berbahaya'))
+      return 'pickup_sampah_b3';
+    if (type.contains('campuran')) return 'pickup_sampah_campuran';
+    return 'pickup_sampah_campuran'; // default
+  }
+
+  /// Map frequency to API format
+  String _mapFrequency(ScheduleFrequency? frequency) {
+    if (frequency == null) return 'once';
+    switch (frequency) {
+      case ScheduleFrequency.once:
+        return 'once';
+      case ScheduleFrequency.daily:
+        return 'daily';
+      case ScheduleFrequency.weekly:
+        return 'weekly';
+      case ScheduleFrequency.monthly:
+        return 'monthly';
+      default:
+        return 'once';
     }
   }
 }

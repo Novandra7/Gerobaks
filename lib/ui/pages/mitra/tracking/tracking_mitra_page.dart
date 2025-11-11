@@ -5,7 +5,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:location/location.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 
 class TrackingMitraPage extends StatefulWidget {
@@ -26,7 +26,6 @@ class TrackingMitraPage extends StatefulWidget {
 
 class _TrackingMitraPageState extends State<TrackingMitraPage> {
   final MitraService _mitraService = MitraService();
-  final Location _location = Location();
   final MapController _mapController = MapController();
 
   bool _isLoading = false;
@@ -51,25 +50,22 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
 
   Future<void> _initializeLocationService() async {
     bool serviceEnabled;
-    PermissionStatus permissionGranted;
+    LocationPermission permission;
 
     // Check if location service is enabled
-    serviceEnabled = await _location.serviceEnabled();
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      serviceEnabled = await _location.requestService();
-      if (!serviceEnabled) {
-        setState(() {
-          _errorMessage = 'Layanan lokasi tidak tersedia';
-        });
-        return;
-      }
+      setState(() {
+        _errorMessage = 'Layanan lokasi tidak tersedia';
+      });
+      return;
     }
 
     // Check if permission is granted
-    permissionGranted = await _location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await _location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
         setState(() {
           _errorMessage = 'Izin lokasi tidak diberikan';
         });
@@ -77,22 +73,29 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
       }
     }
 
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _errorMessage = 'Izin lokasi ditolak permanen';
+      });
+      return;
+    }
+
     // Get current location
     try {
-      _location.onLocationChanged.listen((LocationData currentLocation) {
-        if (mounted &&
-            currentLocation.latitude != null &&
-            currentLocation.longitude != null) {
+      Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen((Position position) {
+        if (mounted) {
           setState(() {
-            _currentLocation = LatLng(
-              currentLocation.latitude!,
-              currentLocation.longitude!,
-            );
+            _currentLocation = LatLng(position.latitude, position.longitude);
           });
 
           // Center map on current location if tracking is active
           if (_isTracking) {
-            _mapController.move(_currentLocation, _mapController.zoom);
+            _mapController.move(_currentLocation, 15.0);
           }
         }
       });
@@ -259,13 +262,13 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                   child: FlutterMap(
                     mapController: _mapController,
                     options: MapOptions(
-                      center: _currentLocation.latitude != 0
+                      initialCenter: _currentLocation.latitude != 0
                           ? _currentLocation
                           : const LatLng(
                               -6.2088,
                               106.8456,
                             ), // Default to Jakarta
-                      zoom: 15.0,
+                      initialZoom: 15.0,
                     ),
                     children: [
                       TileLayer(
@@ -282,12 +285,10 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                               width: 40,
                               height: 40,
                               point: _currentLocation,
-                              builder: (ctx) => Container(
-                                child: const Icon(
-                                  Icons.location_on,
-                                  color: Colors.blue,
-                                  size: 40,
-                                ),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.blue,
+                                size: 40,
                               ),
                             ),
 
@@ -297,12 +298,10 @@ class _TrackingMitraPageState extends State<TrackingMitraPage> {
                               width: 30,
                               height: 30,
                               point: tracking.location,
-                              builder: (ctx) => Container(
-                                child: Icon(
-                                  Icons.location_history,
-                                  color: Colors.red.withOpacity(0.7),
-                                  size: 30,
-                                ),
+                              child: Icon(
+                                Icons.location_history,
+                                color: Colors.red.withOpacity(0.7),
+                                size: 30,
                               ),
                             ),
                           ),

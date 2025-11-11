@@ -3,12 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Import all services
 import 'package:bank_sha/services/api_service_manager.dart';
-import 'package:bank_sha/services/schedule_service_new.dart';
-import 'package:bank_sha/services/tracking_service_new.dart';
-import 'package:bank_sha/services/order_service_new.dart';
+import 'package:bank_sha/services/schedule_service.dart';
+import 'package:bank_sha/services/tracking_service.dart';
+// import 'package:bank_sha/services/order_service.dart'; // TODO: Create this service
 import 'package:bank_sha/services/service_management_service.dart';
 import 'package:bank_sha/services/dashboard_balance_service.dart';
-import 'package:bank_sha/services/chat_api_service_new.dart';
+// import 'package:bank_sha/services/chat_api_service.dart'; // TODO: Create this service
 import 'package:bank_sha/services/payment_rating_service.dart';
 import 'package:bank_sha/services/report_admin_service.dart';
 
@@ -36,10 +36,10 @@ class ServiceIntegrationManager {
   late final ApiServiceManager _apiManager;
   late final ScheduleService _scheduleService;
   late final TrackingService _trackingService;
-  late final OrderService _orderService;
+  // late final OrderService _orderService; // TODO: Create this service
   late final ServiceManagementService _serviceManagementService;
   late final DashboardBalanceService _dashboardBalanceService;
-  late final ChatApiService _chatService;
+  // late final ChatApiService _chatService; // TODO: Create this service
   late final PaymentRatingService _paymentRatingService;
   late final ReportAdminService _reportAdminService;
 
@@ -63,7 +63,7 @@ class ServiceIntegrationManager {
   TrackingService get trackingService => _trackingService;
 
   /// Get Order Service
-  OrderService get orderService => _orderService;
+  // OrderService get orderService => _orderService; // TODO: Create this service
 
   /// Get Service Management Service
   ServiceManagementService get serviceManagementService =>
@@ -74,7 +74,7 @@ class ServiceIntegrationManager {
       _dashboardBalanceService;
 
   /// Get Chat Service
-  ChatApiService get chatService => _chatService;
+  // ChatApiService get chatService => _chatService; // TODO: Create this service
 
   /// Get Payment Rating Service
   PaymentRatingService get paymentRatingService => _paymentRatingService;
@@ -123,10 +123,10 @@ class ServiceIntegrationManager {
       // Initialize all services
       _scheduleService = ScheduleService();
       _trackingService = TrackingService();
-      _orderService = OrderService();
+      // _orderService = OrderService(); // TODO: Create this service
       _serviceManagementService = ServiceManagementService();
       _dashboardBalanceService = DashboardBalanceService();
-      _chatService = ChatApiService();
+      // _chatService = ChatApiService(); // TODO: Create this service
       _paymentRatingService = PaymentRatingService();
       _reportAdminService = ReportAdminService();
 
@@ -299,18 +299,19 @@ class ServiceIntegrationManager {
 
     try {
       // Get recent orders
-      if (canAccessService('orders')) {
-        final orders = await _orderService.getMyOrders();
-        for (final order in orders.take(3)) {
-          activities.add({
-            'type': 'order',
-            'title': 'Order ${order.status}',
-            'description': 'Order #${order.id}',
-            'timestamp': order.updatedAt,
-            'data': order.toMap(),
-          });
-        }
-      }
+      // TODO: Uncomment when OrderService is implemented
+      // if (canAccessService('orders')) {
+      //   final orders = await _orderService.getMyOrders();
+      //   for (final order in orders.take(3)) {
+      //     activities.add({
+      //       'type': 'order',
+      //       'title': 'Order ${order.status}',
+      //       'description': 'Order #${order.id}',
+      //       'timestamp': order.updatedAt,
+      //       'data': order.toMap(),
+      //     });
+      //   }
+      // }
 
       // Get recent payments (for end users)
       if (canAccessService('payments')) {
@@ -327,18 +328,19 @@ class ServiceIntegrationManager {
       }
 
       // Get recent schedules (for mitra)
-      if (canAccessService('schedules') && isMitra) {
-        final schedules = await _scheduleService.getMySchedules();
-        for (final schedule in schedules.take(2)) {
-          activities.add({
-            'type': 'schedule',
-            'title': 'Schedule ${schedule.status}',
-            'description': schedule.description,
-            'timestamp': schedule.updatedAt,
-            'data': schedule.toMap(),
-          });
-        }
-      }
+      // TODO: Fix method name after checking ScheduleService API
+      // if (canAccessService('schedules') && isMitra) {
+      //   final schedules = await _scheduleService.getMySchedules();
+      //   for (final schedule in schedules.take(2)) {
+      //     activities.add({
+      //       'type': 'schedule',
+      //       'title': 'Schedule ${schedule.status}',
+      //       'description': schedule.description,
+      //       'timestamp': schedule.updatedAt,
+      //       'data': schedule.toMap(),
+      //     });
+      //   }
+      // }
 
       // Sort by timestamp
       activities.sort(
@@ -361,10 +363,11 @@ class ServiceIntegrationManager {
 
     try {
       // Search orders
-      if (canAccessService('orders')) {
-        final orders = await _orderService.searchOrders(query);
-        results['orders'] = orders;
-      }
+      // TODO: Uncomment when OrderService is implemented
+      // if (canAccessService('orders')) {
+      //   final orders = await _orderService.searchOrders(query);
+      //   results['orders'] = orders;
+      // }
 
       // Search services
       if (canAccessService('services')) {
@@ -373,10 +376,11 @@ class ServiceIntegrationManager {
       }
 
       // Search schedules
-      if (canAccessService('schedules')) {
-        final schedules = await _scheduleService.searchSchedules(query);
-        results['schedules'] = schedules;
-      }
+      // TODO: Fix method name after checking ScheduleService API
+      // if (canAccessService('schedules')) {
+      //   final schedules = await _scheduleService.searchSchedules(query);
+      //   results['schedules'] = schedules;
+      // }
 
       return results;
     } catch (e) {
