@@ -924,7 +924,7 @@ class ScheduleService {
   Future<dynamic> acceptSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _remoteService.acceptSchedule(id);
+      return await _apiService.acceptSchedule(id);
     } catch (e) {
       debugPrint('Error accepting schedule: $e');
       rethrow;
@@ -935,7 +935,7 @@ class ScheduleService {
   Future<dynamic> startSchedule(String scheduleId) async {
     try {
       final id = int.parse(scheduleId);
-      return await _remoteService.startSchedule(id);
+      return await _apiService.startSchedule(id);
     } catch (e) {
       debugPrint('Error starting schedule: $e');
       rethrow;
@@ -950,11 +950,12 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _remoteService.completeSchedulePickup(
+      return await _apiService.completeSchedulePickup(
         scheduleId: id,
         actualWeight: actualWeight,
         notes: notes,
       );
+      return true;
     } catch (e) {
       debugPrint('Error completing schedule: $e');
       rethrow;
@@ -968,7 +969,7 @@ class ScheduleService {
   }) async {
     try {
       final id = int.parse(scheduleId);
-      return await _remoteService.cancelScheduleWithReason(
+      return await _apiService.cancelScheduleWithReason(
         scheduleId: id,
         reason: reason,
       );

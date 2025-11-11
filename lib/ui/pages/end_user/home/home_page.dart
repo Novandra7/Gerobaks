@@ -1,8 +1,6 @@
 import 'package:bank_sha/ui/pages/end_user/popupiklan.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page.dart';
-import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
-import 'package:bank_sha/utils/subscription_guard.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
 import 'package:bank_sha/services/popup_notification_service.dart';
@@ -78,19 +76,16 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.only(top: 30),
         child: FloatingActionButton(
           onPressed: () async {
-            final hasSubscription =
-                await SubscriptionGuard.checkSubscriptionAndShowDialog(context);
-            if (hasSubscription && mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BlocProvider.value(
-                    value: context.read<ScheduleBloc>(),
-                    child: const AddSchedulePage(),
-                  ),
+            // Allow adding schedule without subscription requirement
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlocProvider.value(
+                  value: context.read<ScheduleBloc>(),
+                  child: const AddSchedulePage(),
                 ),
-              );
-            }
+              ),
+            );
           },
           elevation: 4,
           highlightElevation: 8,

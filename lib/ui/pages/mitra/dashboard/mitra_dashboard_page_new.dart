@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/notification_page.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/ui/widgets/mitra/statistics_grid.dart';
 import 'package:bank_sha/ui/widgets/mitra/schedule_section.dart';
 import 'package:bank_sha/ui/widgets/mitra/custom_bottom_navbar.dart';
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 
 /// ======== CUSTOM APPBAR (Hello David! style) ========
 class DashboardGreetingAppBar extends StatelessWidget {
@@ -65,31 +68,8 @@ class DashboardGreetingAppBar extends StatelessWidget {
               ],
             ),
 
-            // === NOTIFICATION ICON + RED DOT ===
-            Stack(
-              children: [
-                IconButton(
-                  onPressed: onNotificationPressed,
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    size: 28,
-                    color: Colors.black,
-                  ),
-                ),
-                Positioned(
-                  right: 10,
-                  top: 10,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            // === NOTIFICATION ICON WITH DYNAMIC BADGE ===
+            NotificationIconWithBadge(onTap: onNotificationPressed),
           ],
         ),
       ),
@@ -226,9 +206,12 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
       backgroundColor: const Color(0xFFF9FFF8),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(0),
-          child: Container(),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          toolbarHeight: 0,
         ),
         body: RefreshIndicator(
           key: _refreshKey,
@@ -249,11 +232,10 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
                       : 'Guest',
                   profileImage: 'assets/img_friend4.png',
                   onNotificationPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Halaman notifikasi akan segera tersedia',
-                        ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationPage(),
                       ),
                     );
                   },

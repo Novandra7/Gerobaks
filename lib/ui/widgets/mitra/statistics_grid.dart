@@ -6,10 +6,7 @@ import 'package:bank_sha/utils/responsive_helper.dart';
 class StatisticsGrid extends StatelessWidget {
   final VoidCallback onRefresh;
 
-  const StatisticsGrid({
-    Key? key,
-    required this.onRefresh,
-  }) : super(key: key);
+  const StatisticsGrid({super.key, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +19,9 @@ class StatisticsGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20)),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -36,11 +35,16 @@ class StatisticsGrid extends StatelessWidget {
                       borderRadius: BorderRadius.all(Radius.circular(2)),
                     ),
                   ),
-                  SizedBox(width: ResponsiveHelper.getResponsiveSpacing(context, 10)),
+                  SizedBox(
+                    width: ResponsiveHelper.getResponsiveSpacing(context, 10),
+                  ),
                   Text(
                     'Statistik Hari Ini',
                     style: blackTextStyle.copyWith(
-                      fontSize: ResponsiveHelper.getResponsiveFontSize(context, isSmallScreen ? 16 : 18),
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(
+                        context,
+                        isSmallScreen ? 16 : 18,
+                      ),
                       fontWeight: semiBold,
                     ),
                   ),
@@ -50,18 +54,28 @@ class StatisticsGrid extends StatelessWidget {
             ],
           ),
         ),
-        
+
         SizedBox(height: ResponsiveHelper.getResponsiveSpacing(context, 16)),
-        
+
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20)),
+          padding: EdgeInsets.symmetric(
+            horizontal: ResponsiveHelper.getResponsiveSpacing(context, 20),
+          ),
           child: GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2, // Tetap menggunakan 2 kolom
-            crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 12),
-            mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(context, 16), // Menambah spacing vertikal
-            childAspectRatio: isSmallScreen ? 1.3 : 1.5, // Mengurangi aspect ratio lebih banyak untuk menambah tinggi card
+            crossAxisSpacing: ResponsiveHelper.getResponsiveSpacing(
+              context,
+              12,
+            ),
+            mainAxisSpacing: ResponsiveHelper.getResponsiveSpacing(
+              context,
+              16,
+            ), // Menambah spacing vertikal
+            childAspectRatio: isSmallScreen
+                ? 1.3
+                : 1.5, // Mengurangi aspect ratio lebih banyak untuk menambah tinggi card
             children: [
               // Pengambilan Selesai
               StatisticCard(
@@ -70,23 +84,23 @@ class StatisticsGrid extends StatelessWidget {
                 valueColor: const Color(0xFF00A643), // Bright green
                 icon: Icons.check_circle_outline,
               ),
-              
+
               // Rating
               StatisticCard(
                 title: 'Rating',
                 value: '4.8',
-                valueColor: const Color(0xFFEAB308), // Yellow/gold
+                valueColor: blueColor, // Menggunakan blueColor dari theme.dart
                 icon: Icons.star_border_rounded,
               ),
-              
+
               // Waktu Aktif
               StatisticCard(
                 title: 'Waktu Aktif',
                 value: '7',
-                valueColor: const Color(0xFF3B82F6), // Blue
+                valueColor: blueColor, // Menggunakan blueColor dari theme.dart
                 icon: Icons.access_time_outlined,
               ),
-              
+
               // Pengambilan Menunggu
               StatisticCard(
                 title: 'Pengambilan Menunggu',
@@ -100,29 +114,24 @@ class StatisticsGrid extends StatelessWidget {
       ],
     );
   }
-  
+
   Widget _buildRefreshButton(BuildContext context, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
+      borderRadius: BorderRadius.circular(
+        ResponsiveHelper.getResponsiveRadius(context, 16),
+      ),
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: ResponsiveHelper.getResponsiveSpacing(context, 12),
           vertical: ResponsiveHelper.getResponsiveSpacing(context, 6),
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFC1F2AD), // Warna paling atas (0%)
-              const Color(0xFF5CC488), // Warna kedua (55%)
-              const Color(0xFF55C080), // Warna ketiga (80%)
-              const Color(0xFF46C375), // Warna paling bawah (100%)
-            ],
-            stops: const [0.0, 0.55, 0.8, 1.0],
+          // Solid color background menggunakan greenLight dari theme
+          color: greenColor, // Menggunakan warna dari theme.dart
+          borderRadius: BorderRadius.circular(
+            ResponsiveHelper.getResponsiveRadius(context, 20),
           ),
-          borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 20)),
         ),
         child: Row(
           children: [

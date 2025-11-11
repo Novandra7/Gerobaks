@@ -38,12 +38,16 @@ class ChatAudioService {
 
   /// Check if voice recording is supported dan available untuk chat
   bool isVoiceRecordingAvailable() {
-    return AudioRecorderService.isRecordingSupported();
+    // Untuk iOS dan Android, voice recording tersedia
+    return Platform.isIOS || Platform.isAndroid;
   }
 
   /// Get platform support information
-  String getPlatformInfo() {
-    return AudioRecorderService.getPlatformSupportInfo();
+  Map<String, String> getPlatformInfo() {
+    return {
+      'os': Platform.operatingSystem,
+      'version': Platform.operatingSystemVersion,
+    };
   }
 
   /// Request permissions untuk voice recording di chat

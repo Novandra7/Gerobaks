@@ -41,7 +41,11 @@ class _JadwalDetailPageBlocState extends State<JadwalDetailPageBloc> {
     });
 
     try {
-      final schedule = await _scheduleService.getSchedule(widget.scheduleId);
+      final allSchedules = await _scheduleService.getAllSchedules();
+      final schedule = allSchedules.firstWhere(
+        (s) => s.id == widget.scheduleId,
+        orElse: () => throw Exception('Schedule not found'),
+      );
 
       if (mounted) {
         setState(() {

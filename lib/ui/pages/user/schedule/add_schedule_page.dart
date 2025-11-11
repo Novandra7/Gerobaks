@@ -1,6 +1,7 @@
 import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_service.dart';
+import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
@@ -9,6 +10,8 @@ import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+
+// Subscription check implemented for additional waste feature
 
 class AddSchedulePage extends StatefulWidget {
   const AddSchedulePage({super.key});
@@ -33,7 +36,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   String _todayWasteType = 'Campuran';
   String _todayWasteDescription = 'Hari ini pengambilan sampah campuran!';
 
-  // Additional waste toggle
+  // Additional waste toggle - requires subscription
   bool _hasAdditionalWaste = false;
 
   // Scheduled waste toggle - default ON
@@ -209,8 +212,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         // Add scheduled waste info to notes if enabled
         String finalNotes = _notesController.text;
         if (_hasScheduledWaste) {
-          String scheduledWasteNote =
-              'Sampah sesuai jadwal: $_todayWasteType (GRATIS)';
+          String scheduledWasteNote = 'Sampah sesuai jadwal: $_todayWasteType';
           if (finalNotes.isNotEmpty) {
             finalNotes = '$finalNotes\n\n$scheduledWasteNote';
           } else {
@@ -698,7 +700,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      'Sampah ${_todayWasteType.toLowerCase()} sesuai jadwal hari ini - Gratis',
+                                      'Sampah ${_todayWasteType.toLowerCase()} sesuai jadwal hari ini',
                                       style: TextStyle(
                                         color: Colors.blue.withOpacity(0.8),
                                         fontSize: 14,
@@ -758,24 +760,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: greenColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'GRATIS',
-                                      style: TextStyle(
-                                        color: greenColor,
-                                        fontSize: 12,
-                                        fontWeight: bold,
-                                      ),
                                     ),
                                   ),
                                 ],
@@ -839,12 +823,31 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   ),
                                 ),
                               ),
-                              // Toggle Switch
+                              // Star icon indicating subscription required
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              const SizedBox(width: 8),
+                              // Toggle Switch - WITH SUBSCRIPTION CHECK
                               Transform.scale(
                                 scale: 0.8,
                                 child: Switch(
                                   value: _hasAdditionalWaste,
-                                  onChanged: (value) {
+                                  onChanged: (value) async {
+                                    if (value) {
+                                      // Check subscription when trying to enable additional waste
+                                      final subscriptionService =
+                                          SubscriptionService();
+                                      final hasActiveSubscription =
+                                          subscriptionService
+                                              .hasActiveSubscription();
+
+                                      if (!hasActiveSubscription) {
+                                        // Show subscription dialog
+                                        _showSubscriptionDialog();
+                                        return;
+                                      }
+                                    }
+
+                                    // Allow toggle if turning off or has subscription
                                     setState(() {
                                       _hasAdditionalWaste = value;
                                       if (!value) {
@@ -899,21 +902,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           TextSpan(
                                             text:
-                                                'Tambahkan sampah selain yang dijadwalkan hari ini ',
+                                                'Tambahkan sampah selain yang dijadwalkan hari ini',
                                             style: TextStyle(
                                               color: greenColor.withOpacity(
                                                 0.8,
                                               ),
                                               fontSize: 14,
                                               fontWeight: medium,
-                                            ),
-                                          ),
-                                          TextSpan(
-                                            text: '(Berbayar)',
-                                            style: TextStyle(
-                                              color: redcolor,
-                                              fontSize: 14,
-                                              fontWeight: semiBold,
                                             ),
                                           ),
                                         ],
@@ -1398,15 +1393,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               'Sampah $_todayWasteType',
                               style: blackTextStyle.copyWith(fontSize: 14),
                             ),
-                            const Spacer(),
-                            Text(
-                              'GRATIS',
-                              style: TextStyle(
-                                color: greenColor,
-                                fontSize: 12,
-                                fontWeight: bold,
-                              ),
-                            ),
                           ],
                         ),
                       ],
@@ -1435,14 +1421,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                       style: blackTextStyle.copyWith(
                                         fontSize: 14,
                                       ),
-                                    ),
-                                  ),
-                                  Text(
-                                    'Berbayar',
-                                    style: TextStyle(
-                                      color: Colors.orange,
-                                      fontSize: 12,
-                                      fontWeight: bold,
                                     ),
                                   ),
                                 ],
@@ -1505,18 +1483,134 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       return 'Pilih Jenis Sampah';
     }
 
-    if (_hasScheduledWaste && !_hasAdditionalWaste) {
-      return 'Buat Jadwal - Gratis';
-    }
-
-    if (!_hasScheduledWaste && _hasAdditionalWaste) {
-      return 'Buat Jadwal - Berbayar';
-    }
-
-    if (_hasScheduledWaste && _hasAdditionalWaste) {
-      return 'Buat Jadwal - Gratis + Berbayar';
-    }
-
     return 'Buat Jadwal';
+  }
+
+  // Show subscription dialog when additional waste is requested without subscription
+  void _showSubscriptionDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.amber, size: 28),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Berlangganan Diperlukan',
+                  style: blackTextStyle.copyWith(
+                    fontSize: 18,
+                    fontWeight: semiBold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Fitur "Sampah Tambahan" membutuhkan paket berlangganan',
+                        style: blackTextStyle.copyWith(
+                          fontSize: 14,
+                          fontWeight: medium,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Dengan berlangganan, Anda dapat:',
+                style: blackTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: semiBold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildBenefitItem(
+                '✓ Menambah berbagai jenis sampah dalam satu jadwal',
+              ),
+              _buildBenefitItem('✓ Fleksibilitas pengambilan sampah'),
+              _buildBenefitItem('✓ Prioritas layanan customer'),
+              _buildBenefitItem('✓ Bonus poin reward lebih banyak'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Tidak Sekarang',
+                style: greyTextStyle.copyWith(fontSize: 14, fontWeight: medium),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navigate to subscription plans page for payment
+                Navigator.pushNamed(context, '/subscription-plans');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Berlangganan Sekarang',
+                style: whiteTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: semiBold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Helper method to build benefit item
+  Widget _buildBenefitItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: greyTextStyle.copyWith(fontSize: 13, fontWeight: regular),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
