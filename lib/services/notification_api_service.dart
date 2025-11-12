@@ -36,34 +36,41 @@ class NotificationApiService {
     String? priority,
   }) async {
     try {
+      print('� Fetching notifications...');
+      print('   - Page: $page, Per Page: $perPage');
+      if (isRead != null) print('   - Filter is_read: $isRead');
+      if (type != null) print('   - Filter type: $type');
+      if (category != null) print('   - Filter category: $category');
+      if (priority != null) print('   - Filter priority: $priority');
+
+      final response = await _dio.get('$baseUrl/notifications', queryParameters: {
+        'page': page,
+        'per_page': perPage,
+        if (isRead != null) 'is_read': isRead ? 1 : 0,
+        if (type != null) 'type': type,
+        if (category != null) 'category': category,
+        if (priority != null) 'priority': priority,
+      });
+
+      print('📦 Response status: ${response.statusCode}');
+      print('📦 Response data: ${response.data}');
+      
+      final notificationsList = response.data['data']['notifications'];
       print(
-        '📥 Fetching notifications: page=$page, perPage=$perPage, isRead=$isRead',
-      );
-
-      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
-
-      // Backend expects integer (0/1) not boolean
-      if (isRead != null) {
-        queryParams['is_read'] = isRead ? 1 : 0;
-      }
-
-      if (type != null) queryParams['type'] = type;
-      if (category != null) queryParams['category'] = category;
-      if (priority != null) queryParams['priority'] = priority;
-
-      final response = await _dio.get(
-        '$baseUrl/notifications',
-        queryParameters: queryParams,
-      );
-
-      print(
-        '✅ Notifications fetched: ${response.data['data']['notifications'].length} items',
+        '✅ Notifications fetched: ${notificationsList.length} items',
       );
 
       return NotificationResponse.fromJson(response.data);
     } on DioException catch (e) {
-      print('❌ Error fetching notifications: ${e.message}');
+      print('❌ DioException details:');
+      print('   - Message: ${e.message}');
+      print('   - Type: ${e.type}');
+      print('   - Response: ${e.response?.data}');
+      print('   - Status Code: ${e.response?.statusCode}');
       _handleError(e, 'fetching notifications');
+      rethrow;
+    } catch (e) {
+      print('❌ Unexpected error: $e');
       rethrow;
     }
   }

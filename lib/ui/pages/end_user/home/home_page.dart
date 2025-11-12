@@ -21,12 +21,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
+  int _activityPageKey = 0; // Key to force activity page refresh
 
-  final List<Widget> _pages = const [
-    HomeContent(),
-    ActivityPageImproved(),
-    WilayahPage(),
-    ProfilePage(),
+  List<Widget> _buildPages() => [
+    const HomeContent(),
+    ActivityPageImproved(key: ValueKey(_activityPageKey)),
+    const WilayahPage(),
+    const ProfilePage(),
   ];
 
   void _onTabTapped(int index) {
@@ -77,7 +78,7 @@ class _HomePageState extends State<HomePage> {
         child: FloatingActionButton(
           onPressed: () async {
             // Allow adding schedule without subscription requirement
-            Navigator.push(
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => BlocProvider.value(
@@ -86,6 +87,24 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             );
+
+            // If schedule was created successfully, refresh activity page
+            if (result == true) {
+              // Increment key to force activity page rebuild
+              setState(() {
+                _activityPageKey++; // Increment key to force rebuild
+                print(
+                  '🔄 Schedule created successfully, refreshing activity page...',
+                );
+              });
+
+              // If user not on activity tab, switch to it to show the new schedule
+              if (_currentIndex != 1) {
+                setState(() {
+                  _currentIndex = 1; // Switch to activity tab
+                });
+              }
+            }
           },
           elevation: 4,
           highlightElevation: 8,
@@ -107,7 +126,7 @@ class _HomePageState extends State<HomePage> {
         transitionBuilder: (child, animation) {
           return FadeTransition(opacity: animation, child: child);
         },
-        child: _pages[_currentIndex],
+        child: _buildPages()[_currentIndex],
       ),
     );
   }

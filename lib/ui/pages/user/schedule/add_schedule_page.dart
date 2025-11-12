@@ -264,8 +264,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
             message:
                 'Jadwal penjemputan sampah berhasil dibuat!\n\nID Jadwal: $scheduleId\n${wasteSummary != null ? 'Jenis sampah: $wasteSummary\n' : ''}${totalWeight != null ? 'Estimasi berat: $totalWeight kg\n' : ''}Status: Menunggu penjemputan',
             onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Return to previous screen
+              Navigator.of(context).pop(); // Close success dialog
+              Navigator.of(
+                context,
+              ).pop(true); // Close AddSchedulePage with success flag
             },
           );
         } else {

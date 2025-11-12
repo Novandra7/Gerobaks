@@ -74,49 +74,285 @@ class EndUserApiService {
   }
 
   // Schedule API
-  Future<List<Map<String, dynamic>>> getUserSchedules() async {
+  /// Get user schedules with optional filters
+  ///
+  /// Parameters:
+  /// - [status]: Filter by status (pending, in_progress, completed, cancelled)
+  /// - [date]: Filter by date (YYYY-MM-DD)
+  /// - [wasteType]: Filter by waste type (Organik, Anorganik, B3, Elektronik)
+  /// - [page]: Page number (default: 1)
+  /// - [perPage]: Items per page (default: 20)
+  Future<Map<String, dynamic>> getUserSchedules({
+    String? status,
+    String? date,
+    String? wasteType,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+
+      // Build query parameters
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'per_page': perPage.toString(),
+      };
+
+      if (status != null) queryParams['status'] = status;
+      if (date != null) queryParams['date'] = date;
+      if (wasteType != null) queryParams['waste_type'] = wasteType;
+
+      final uri = Uri.parse(
+        '${ApiRoutes.baseUrl}/api/waste-schedules',
+      ).replace(queryParameters: queryParams);
+
+      _logger.i('📅 Fetching schedules: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          _logger.i('✅ Schedules fetched successfully');
+          _logger.i(
+            '   - Total: ${data['data']['summary']['total_schedules']}',
+          );
+          _logger.i('   - Active: ${data['data']['summary']['active_count']}');
+          _logger.i(
+            '   - Completed: ${data['data']['summary']['completed_count']}',
+          );
+
+          // Safely cast schedules array to avoid type errors
+          final schedulesData = data['data']['schedules'];
+          List<Map<String, dynamic>> schedules = [];
+
+          if (schedulesData is List) {
+            schedules = schedulesData.map((item) {
+              if (item is Map) {
+                return Map<String, dynamic>.from(item);
+              }
+              return <String, dynamic>{};
+            }).toList();
+          }
+
+          return {
+            'schedules': schedules,
+            'pagination': data['data']['pagination'] ?? {},
+            'summary': data['data']['summary'] ?? {},
+          };
+        } else {
+          _logger.e('❌ API returned success=false: ${data['message']}');
+          return {'schedules': [], 'pagination': {}, 'summary': {}};
+        }
+      } else if (response.statusCode == 404) {
+        _logger.w(
+          '⚠️  Endpoint not found (404). Backend endpoint /api/waste-schedules mungkin belum ready',
+        );
+        _logger.w(
+          '   Mengembalikan data kosong. Ini normal jika backend belum ready.',
+        );
+        return {'schedules': [], 'pagination': {}, 'summary': {}};
+      } else {
+        _logger.e('❌ Failed to fetch schedules: ${response.statusCode}');
+        _logger.e('   Response: ${response.body}');
+        return {'schedules': [], 'pagination': {}, 'summary': {}};
+      }
+    } catch (e) {
+      _logger.e('❌ Error fetching schedules: $e');
+      return {'schedules': [], 'pagination': {}, 'summary': {}};
+    }
+  }
+
+  /// Get schedule detail by ID
+  Future<Map<String, dynamic>?> getScheduleDetail(int scheduleId) async {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.schedules}'),
+        Uri.parse('${ApiRoutes.baseUrl}/api/waste-schedules/$scheduleId'),
         headers: headers,
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data['data'] ?? []);
+
+        if (data['success'] == true) {
+          _logger.i('✅ Schedule detail fetched: ID $scheduleId');
+          return data['data']['schedule'];
+        } else {
+          _logger.e('❌ Failed to get schedule detail: ${data['message']}');
+          return null;
+        }
+      } else if (response.statusCode == 404) {
+        _logger.e('❌ Schedule not found: ID $scheduleId');
+        return null;
       } else {
-        _logger.e('Failed to fetch schedules: ${response.statusCode}');
-        return [];
+        _logger.e('❌ Failed to fetch schedule detail: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
-      _logger.e('Error fetching schedules: $e');
-      return [];
+      _logger.e('❌ Error fetching schedule detail: $e');
+      return null;
     }
   }
 
-  // Create new schedule
+  /// Create new schedule
+  ///
+  /// Required fields:
+  /// - service_type: String
+  /// - waste_type: String (Organik, Anorganik, B3, Elektronik)
+  /// - pickup_address: String
+  /// - scheduled_at: String (YYYY-MM-DD HH:MM:SS)
+  ///
+  /// Optional fields:
+  /// - pickup_latitude: double
+  /// - pickup_longitude: double
+  /// - notes: String
+  /// - estimated_weight: double
   Future<Map<String, dynamic>?> createSchedule(
     Map<String, dynamic> scheduleData,
   ) async {
     try {
       final headers = await _getHeaders();
+
+      _logger.i('📝 Creating schedule...');
+      _logger.i('   - Service: ${scheduleData['service_type']}');
+      _logger.i('   - Waste Type: ${scheduleData['waste_type']}');
+      _logger.i('   - Scheduled: ${scheduleData['scheduled_at']}');
+
       final response = await http.post(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.schedules}'),
+        Uri.parse('${ApiRoutes.baseUrl}/api/waste-schedules'),
         headers: headers,
         body: json.encode(scheduleData),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
-        return data['data'];
+
+        if (data['success'] == true) {
+          _logger.i(
+            '✅ Schedule created successfully: ID ${data['data']['schedule']['id']}',
+          );
+          return data['data']['schedule'];
+        } else {
+          _logger.e('❌ Failed to create schedule: ${data['message']}');
+          return null;
+        }
+      } else if (response.statusCode == 422) {
+        final data = json.decode(response.body);
+        _logger.e('❌ Validation error: ${data['errors']}');
+        return null;
       } else {
-        _logger.e('Failed to create schedule: ${response.statusCode}');
+        _logger.e('❌ Failed to create schedule: ${response.statusCode}');
+        _logger.e('   Response: ${response.body}');
         return null;
       }
     } catch (e) {
-      _logger.e('Error creating schedule: $e');
+      _logger.e('❌ Error creating schedule: $e');
       return null;
+    }
+  }
+
+  /// Cancel schedule
+  ///
+  /// Parameters:
+  /// - [scheduleId]: ID of schedule to cancel
+  /// - [reason]: Reason for cancellation (optional)
+  Future<bool> cancelSchedule(int scheduleId, {String? reason}) async {
+    try {
+      final headers = await _getHeaders();
+
+      _logger.i('🚫 Cancelling schedule ID: $scheduleId');
+      if (reason != null) {
+        _logger.i('   Reason: $reason');
+      }
+
+      final response = await http.post(
+        Uri.parse(
+          '${ApiRoutes.baseUrl}/api/waste-schedules/$scheduleId/cancel',
+        ),
+        headers: headers,
+        body: json.encode({'reason': reason ?? 'Cancelled by user'}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true) {
+          _logger.i('✅ Schedule cancelled successfully');
+          return true;
+        } else {
+          _logger.e('❌ Failed to cancel schedule: ${data['message']}');
+          return false;
+        }
+      } else if (response.statusCode == 404) {
+        _logger.e('❌ Schedule not found or cannot be cancelled');
+        return false;
+      } else {
+        _logger.e('❌ Failed to cancel schedule: ${response.statusCode}');
+        _logger.e('   Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('❌ Error cancelling schedule: $e');
+      return false;
+    }
+  }
+
+  /// Get user pickup schedules (from /api/pickup-schedules)
+  /// This is the endpoint that's currently working and used for creating schedules
+  Future<List<Map<String, dynamic>>> getUserPickupSchedules() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('${ApiRoutes.baseUrl}/api/pickup-schedules'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['success'] == true && data['data'] != null) {
+          _logger.i('✅ Pickup schedules fetched successfully');
+
+          // Handle nested response: data.data contains the array
+          dynamic schedulesData = data['data'];
+
+          if (schedulesData is Map) {
+            // If data is object, check for 'data' key (pagination response)
+            if (schedulesData['data'] is List) {
+              final schedules = List<Map<String, dynamic>>.from(
+                schedulesData['data'],
+              );
+              _logger.i(
+                '📦 Loaded ${schedules.length} schedules from nested data.data',
+              );
+              return schedules;
+            }
+            // Check for 'schedules' key (alternative format)
+            if (schedulesData['schedules'] is List) {
+              return List<Map<String, dynamic>>.from(
+                schedulesData['schedules'],
+              );
+            }
+          } else if (schedulesData is List) {
+            // Direct array
+            return List<Map<String, dynamic>>.from(schedulesData);
+          }
+
+          _logger.w('⚠️ Unexpected data format, returning empty list');
+          return [];
+        } else {
+          _logger.e('❌ API returned success=false: ${data['message']}');
+          return [];
+        }
+      } else {
+        _logger.e('❌ Failed to fetch pickup schedules: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      _logger.e('❌ Error fetching pickup schedules: $e');
+      return [];
     }
   }
 

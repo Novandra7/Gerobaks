@@ -22,14 +22,15 @@ class ActivityContentImproved extends StatefulWidget {
   });
 
   @override
-  State<ActivityContentImproved> createState() => _ActivityContentImprovedState();
+  State<ActivityContentImproved> createState() =>
+      _ActivityContentImprovedState();
 }
 
 class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _schedules = [];
   late EndUserApiService _apiService;
-  
+
   @override
   void initState() {
     super.initState();
@@ -48,24 +49,33 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
     });
 
     try {
-      final schedules = await _apiService.getUserSchedules();
-      
+      print('🔄 Loading schedules from pickup-schedules endpoint...');
+      print('   - Show Active: ${widget.showActive}');
+      print('   - Date Filter: ${widget.selectedDate}');
+      print('   - Category Filter: ${widget.filterCategory}');
+
+      // Use pickup-schedules as primary endpoint (already working and tested!)
+      final schedules = await _apiService.getUserPickupSchedules();
+
       if (mounted) {
         setState(() {
           _schedules = schedules;
           _isLoading = false;
         });
+
+        print('✅ Loaded ${_schedules.length} schedules successfully');
       }
     } catch (e) {
-      print("Error loading schedules: $e");
+      print("❌ Error loading schedules: $e");
       if (mounted) {
         setState(() {
+          _schedules = [];
           _isLoading = false;
         });
       }
     }
   }
-  
+
   @override
   void didUpdateWidget(ActivityContentImproved oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -82,7 +92,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   Widget _buildSkeletonLoading() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      itemCount: 6,  // Show 6 skeleton items
+      itemCount: 6, // Show 6 skeleton items
       itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -91,14 +101,14 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
       },
     );
   }
-  
+
   List<ActivityModel> getFilteredActivities() {
     // Convert API schedules to ActivityModel objects
     List<ActivityModel> activities = _schedules.map((schedule) {
-      final scheduledDate = schedule['scheduled_at'] != null 
+      final scheduledDate = schedule['scheduled_at'] != null
           ? DateTime.parse(schedule['scheduled_at'])
           : DateTime.now();
-      
+
       return ActivityModel(
         id: schedule['id']?.toString() ?? '',
         title: schedule['service_type'] ?? 'Layanan Sampah',
@@ -110,43 +120,58 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
         notes: schedule['notes'],
       );
     }).toList();
-    
+
     // Filter berdasarkan tab aktif/riwayat
-    activities = activities.where((activity) => activity.isActive == widget.showActive).toList();
-    
+    activities = activities
+        .where((activity) => activity.isActive == widget.showActive)
+        .toList();
+
     // Filter berdasarkan tanggal jika ada
     if (widget.selectedDate != null) {
       activities = activities.where((activity) {
         return activity.date.year == widget.selectedDate!.year &&
-               activity.date.month == widget.selectedDate!.month &&
-               activity.date.day == widget.selectedDate!.day;
+            activity.date.month == widget.selectedDate!.month &&
+            activity.date.day == widget.selectedDate!.day;
       }).toList();
     }
-    
+
     // Filter berdasarkan kategori
     if (widget.filterCategory != null && widget.filterCategory != 'Semua') {
       if (widget.filterCategory == 'Lainnya') {
         // Untuk filter "Lainnya", tampilkan yang tidak masuk kategori utama
-        final mainCategories = ['Dijadwalkan', 'Menuju Lokasi', 'Selesai', 'Dibatalkan'];
-        activities = activities.where((activity) => !mainCategories.contains(activity.getCategory())).toList();
+        final mainCategories = [
+          'Dijadwalkan',
+          'Menuju Lokasi',
+          'Selesai',
+          'Dibatalkan',
+        ];
+        activities = activities
+            .where(
+              (activity) => !mainCategories.contains(activity.getCategory()),
+            )
+            .toList();
       } else {
-        activities = activities.where((activity) => activity.getCategory() == widget.filterCategory).toList();
+        activities = activities
+            .where(
+              (activity) => activity.getCategory() == widget.filterCategory,
+            )
+            .toList();
       }
     }
-    
+
     // Filter berdasarkan pencarian
     if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
       final query = widget.searchQuery!.toLowerCase();
       activities = activities.where((activity) {
         return activity.title.toLowerCase().contains(query) ||
-               activity.address.toLowerCase().contains(query) ||
-               (activity.notes ?? '').toLowerCase().contains(query);
+            activity.address.toLowerCase().contains(query) ||
+            (activity.notes ?? '').toLowerCase().contains(query);
       }).toList();
     }
-    
+
     // Urutkan berdasarkan tanggal (yang terbaru di atas)
     activities.sort((a, b) => b.date.compareTo(a.date));
-    
+
     return activities;
   }
 
@@ -175,7 +200,15 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   }
 
   String _getDayName(int weekday) {
-    const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    const days = [
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+      'Minggu',
+    ];
     return days[weekday - 1];
   }
 
@@ -211,9 +244,11 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   }
 
   Widget _buildEmptyState() {
-    String title = widget.showActive ? 'Tidak ada aktivitas aktif' : 'Tidak ada riwayat aktivitas';
-    String subtitle = widget.showActive 
-        ? 'Buat jadwal pengambilan sampah baru' 
+    String title = widget.showActive
+        ? 'Tidak ada aktivitas aktif'
+        : 'Tidak ada riwayat aktivitas';
+    String subtitle = widget.showActive
+        ? 'Buat jadwal pengambilan sampah baru'
         : 'Belum ada aktivitas yang diselesaikan';
 
     if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
@@ -242,14 +277,36 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               subtitle,
-              style: greyTextStyle.copyWith(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: greyTextStyle.copyWith(fontSize: 14),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            // Backend notice
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Backend sedang memproses data. Silakan coba lagi dalam beberapa saat.',
+                      style: blackTextStyle.copyWith(
+                        fontSize: 12,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

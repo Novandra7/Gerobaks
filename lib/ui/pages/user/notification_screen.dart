@@ -72,10 +72,17 @@ class _NotificationScreenState extends State<NotificationScreen>
     });
 
     try {
+      print('🔄 NotificationScreen: Loading notifications...');
+      print('   - Current tab: ${_tabController.index}');
+      print('   - Filter isRead: $filterIsRead');
+      
       final response = await _notificationApi.getNotifications(
         page: currentPage,
         isRead: filterIsRead,
       );
+
+      print('✅ NotificationScreen: Received ${response.notifications.length} notifications');
+      print('   - Unread count: ${response.summary.unreadCount}');
 
       setState(() {
         notifications = response.notifications;
@@ -83,17 +90,21 @@ class _NotificationScreenState extends State<NotificationScreen>
         isLoading = false;
       });
     } catch (e) {
-      print('❌ Error loading notifications: $e');
+      print('❌ NotificationScreen: Error loading notifications');
+      print('   - Error type: ${e.runtimeType}');
+      print('   - Error message: $e');
+      
       setState(() {
         isLoading = false;
-        _errorMessage = _notificationApi.getErrorMessage(e);
+        _errorMessage = e.toString();
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memuat notifikasi: $_errorMessage'),
+            content: Text('Gagal memuat notifikasi: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }

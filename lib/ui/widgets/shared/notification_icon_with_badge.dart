@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:bank_sha/services/notification_count_service.dart';
+import 'package:bank_sha/services/notification_api_service.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 
 class NotificationIconWithBadge extends StatefulWidget {
   final VoidCallback? onTap;
@@ -23,17 +25,51 @@ class NotificationIconWithBadge extends StatefulWidget {
 
 class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
   int _notificationCount = 0;
+  bool _hasUrgent = false;
+  NotificationApiService? _notificationApi;
 
   @override
   void initState() {
     super.initState();
-    _loadNotificationCount();
+    _initializeAndLoad();
   }
 
-  void _loadNotificationCount() {
-    setState(() {
-      _notificationCount = NotificationCountService.getTotalNotificationCount();
-    });
+  Future<void> _initializeAndLoad() async {
+    await _initializeService();
+    if (_notificationApi != null) {
+      await _loadNotificationCount();
+    }
+  }
+
+  Future<void> _initializeService() async {
+    try {
+      final localStorage = await LocalStorageService.getInstance();
+      final token = await localStorage.getToken();
+
+      if (token != null && token.isNotEmpty) {
+        final dio = Dio();
+        _notificationApi = NotificationApiService(dio: dio);
+        _notificationApi!.setAuthToken(token);
+      }
+    } catch (e) {
+      print('⚠️ NotificationIcon: Error initializing: $e');
+    }
+  }
+
+  Future<void> _loadNotificationCount() async {
+    if (_notificationApi == null) return;
+
+    try {
+      final response = await _notificationApi!.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _notificationCount = response.unreadCount;
+          _hasUrgent = response.hasUrgent;
+        });
+      }
+    } catch (e) {
+      print('⚠️ NotificationIcon: Error loading count: $e');
+    }
   }
 
   /// Refresh notification count (can be called from parent widgets)
@@ -60,6 +96,8 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
                   color: widget.iconColor ?? Colors.black,
                   size: widget.iconSize ?? 32,
                 ),
+          
+          // Badge with count
           if (_notificationCount > 0)
             Positioned(
               right: -4,
@@ -83,6 +121,28 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                ),
+              ),
+            ),
+          
+          // Urgent indicator (pulsing red dot)
+          if (_hasUrgent && _notificationCount > 0)
+            Positioned(
+              left: -2,
+              top: -2,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
               ),
             ),
