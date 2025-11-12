@@ -1,9 +1,10 @@
 # API Notifikasi - Spesifikasi Teknis
 ## Aplikasi Gerobaks - Waste Management System
 
-**Version:** 1.0  
+**Version:** 1.0 (Updated from Backend Implementation)  
 **Date:** November 12, 2025  
 **Author:** Flutter Development Team  
+**Backend Status:** ✅ Implemented & Production Ready  
 
 ---
 
@@ -53,16 +54,22 @@ API Notifikasi digunakan untuk mengirimkan pemberitahuan kepada user terkait:
 |-----------|------|----------|---------|-------------|
 | `page` | integer | No | 1 | Page number |
 | `per_page` | integer | No | 20 | Items per page (max: 100) |
+| `is_read` | integer | No | null | Filter: `0` (unread), `1` (read), `null` (all) |
 | `type` | string | No | null | Filter: `schedule`, `reminder`, `info`, `system`, `promo` |
 | `category` | string | No | null | Filter: `waste_pickup`, `waste_schedule`, `points`, etc |
-| `is_read` | boolean | No | null | Filter: `true`, `false`, `null` (all) |
 | `priority` | string | No | null | Filter: `low`, `normal`, `high`, `urgent` |
 
 **Request Example:**
 ```http
-GET /api/notifications?page=1&per_page=20&is_read=false&type=schedule
+GET /api/notifications?page=1&per_page=20&is_read=0&type=schedule
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJS...
+Accept: application/json
 ```
+
+**Important Notes:**
+- `is_read` uses **integer** (0/1) not boolean
+- `data` field returns as **JSON string**, needs to be decoded in frontend
+- Response includes `from` and `to` in pagination for easier navigation
 
 **Response Success (200):**
 ```json
