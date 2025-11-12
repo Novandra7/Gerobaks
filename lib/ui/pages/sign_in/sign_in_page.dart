@@ -94,16 +94,23 @@ class _SignInPageState extends State<SignInPage> {
             // Preserve phone and address from localStorage if not in API response
             if (!userData.containsKey('phone') || userData['phone'] == null) {
               userData['phone'] = existingData['phone'];
-              print("✅ Preserved phone from localStorage: ${userData['phone']}");
+              print(
+                "✅ Preserved phone from localStorage: ${userData['phone']}",
+              );
             }
-            if (!userData.containsKey('address') || userData['address'] == null) {
+            if (!userData.containsKey('address') ||
+                userData['address'] == null) {
               userData['address'] = existingData['address'];
-              print("✅ Preserved address from localStorage: ${userData['address']}");
+              print(
+                "✅ Preserved address from localStorage: ${userData['address']}",
+              );
             }
-            if (!userData.containsKey('latitude') || userData['latitude'] == null) {
+            if (!userData.containsKey('latitude') ||
+                userData['latitude'] == null) {
               userData['latitude'] = existingData['latitude'];
             }
-            if (!userData.containsKey('longitude') || userData['longitude'] == null) {
+            if (!userData.containsKey('longitude') ||
+                userData['longitude'] == null) {
               userData['longitude'] = existingData['longitude'];
             }
           }
@@ -319,12 +326,15 @@ class _SignInPageState extends State<SignInPage> {
         }
         if (!userData.containsKey('address') || userData['address'] == null) {
           userData['address'] = existingData['address'];
-          print("✅ Preserved address from localStorage: ${userData['address']}");
+          print(
+            "✅ Preserved address from localStorage: ${userData['address']}",
+          );
         }
         if (!userData.containsKey('latitude') || userData['latitude'] == null) {
           userData['latitude'] = existingData['latitude'];
         }
-        if (!userData.containsKey('longitude') || userData['longitude'] == null) {
+        if (!userData.containsKey('longitude') ||
+            userData['longitude'] == null) {
           userData['longitude'] = existingData['longitude'];
         }
       }

@@ -86,9 +86,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       // Get current user ID and data
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
-      
+
       print('📦 User data from localStorage: $userData');
-      
+
       if (userData != null) {
         _userId = userData['id']?.toString() ?? '';
 
@@ -96,11 +96,11 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         final name = userData['name'] ?? userData['fullName'] ?? '';
         final phone = userData['phone'] ?? '';
         final address = userData['address'] ?? '';
-        
+
         print('👤 Name: $name');
         print('📞 Phone: $phone');
         print('📍 Address: $address');
-        
+
         _nameController.text = name;
         _phoneController.text = phone;
         _addressController.text = address;
@@ -554,8 +554,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           Icon(
                                             Icons.person_outline,
-                                            color: _nameController.text.isEmpty 
-                                                ? Colors.orange 
+                                            color: _nameController.text.isEmpty
+                                                ? Colors.orange
                                                 : greenColor,
                                             size: 18,
                                           ),
@@ -568,7 +568,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                               style: blackTextStyle.copyWith(
                                                 fontSize: 14,
                                                 fontWeight: medium,
-                                                color: _nameController.text.isEmpty
+                                                color:
+                                                    _nameController.text.isEmpty
                                                     ? Colors.orange
                                                     : null,
                                               ),
@@ -598,7 +599,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                               style: blackTextStyle.copyWith(
                                                 fontSize: 14,
                                                 fontWeight: medium,
-                                                color: _phoneController.text.isEmpty
+                                                color:
+                                                    _phoneController
+                                                        .text
+                                                        .isEmpty
                                                     ? Colors.orange
                                                     : null,
                                               ),
@@ -616,7 +620,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           Icon(
                                             Icons.location_on_outlined,
-                                            color: _addressController.text.isEmpty
+                                            color:
+                                                _addressController.text.isEmpty
                                                 ? Colors.orange
                                                 : greenColor,
                                             size: 18,
@@ -630,7 +635,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                               style: blackTextStyle.copyWith(
                                                 fontSize: 14,
                                                 fontWeight: medium,
-                                                color: _addressController.text.isEmpty
+                                                color:
+                                                    _addressController
+                                                        .text
+                                                        .isEmpty
                                                     ? Colors.orange
                                                     : null,
                                               ),
@@ -640,7 +648,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           ),
                                         ],
                                       ),
-                                      
+
                                       // Warning if data is incomplete
                                       if (_nameController.text.isEmpty ||
                                           _phoneController.text.isEmpty ||
@@ -649,10 +657,16 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: Colors.orange.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.orange.withOpacity(0.3),
+                                              color: Colors.orange.withOpacity(
+                                                0.3,
+                                              ),
                                             ),
                                           ),
                                           child: Row(
@@ -681,16 +695,22 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           child: OutlinedButton.icon(
                                             onPressed: () {
                                               // Navigate to profile page
-                                              Navigator.pushNamed(context, '/profile');
+                                              Navigator.pushNamed(
+                                                context,
+                                                '/profile',
+                                              );
                                             },
                                             icon: Icon(Icons.edit, size: 16),
                                             label: Text('Lengkapi Profil'),
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: Colors.orange,
-                                              side: BorderSide(color: Colors.orange),
-                                              padding: const EdgeInsets.symmetric(
-                                                vertical: 8,
+                                              side: BorderSide(
+                                                color: Colors.orange,
                                               ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
                                             ),
                                           ),
                                         ),

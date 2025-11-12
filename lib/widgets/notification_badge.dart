@@ -11,11 +11,11 @@ class NotificationBadge extends StatefulWidget {
   final double iconSize;
 
   const NotificationBadge({
-    Key? key,
+    super.key,
     this.onTap,
     this.showLabel = true,
     this.iconSize = 24,
-  }) : super(key: key);
+  });
 
   @override
   State<NotificationBadge> createState() => _NotificationBadgeState();
@@ -53,7 +53,7 @@ class _NotificationBadgeState extends State<NotificationBadge> {
       final dio = Dio();
       _notificationApi = NotificationApiService(dio: dio);
       _notificationApi!.setAuthToken(token);
-      
+
       setState(() {
         _isInitialized = true;
       });
@@ -85,31 +85,22 @@ class _NotificationBadgeState extends State<NotificationBadge> {
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          icon: Icon(
-            Icons.notifications_outlined,
-            size: widget.iconSize,
-          ),
+          icon: Icon(Icons.notifications_outlined, size: widget.iconSize),
           onPressed: widget.onTap,
         ),
-        
+
         // Badge dengan unread count
         if (widget.showLabel && unreadCount > 0)
           Positioned(
             right: 8,
             top: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 2,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(10),
               ),
-              constraints: const BoxConstraints(
-                minWidth: 18,
-                minHeight: 18,
-              ),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               child: Text(
                 unreadCount > 99 ? '99+' : '$unreadCount',
                 style: const TextStyle(
@@ -121,7 +112,7 @@ class _NotificationBadgeState extends State<NotificationBadge> {
               ),
             ),
           ),
-        
+
         // Urgent indicator (red dot with glow effect)
         if (hasUrgent)
           Positioned(
@@ -152,17 +143,16 @@ class _NotificationBadgeState extends State<NotificationBadge> {
 class NotificationAppBarIcon extends StatelessWidget {
   final VoidCallback? onPressed;
 
-  const NotificationAppBarIcon({
-    Key? key,
-    this.onPressed,
-  }) : super(key: key);
+  const NotificationAppBarIcon({super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return NotificationBadge(
-      onTap: onPressed ?? () {
-        Navigator.pushNamed(context, '/notifications');
-      },
+      onTap:
+          onPressed ??
+          () {
+            Navigator.pushNamed(context, '/notifications');
+          },
     );
   }
 }

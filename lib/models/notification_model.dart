@@ -216,7 +216,7 @@ class NotificationResponse {
         'notifications': notifications.map((n) => n.toJson()).toList(),
         'pagination': pagination.toJson(),
         'summary': summary.toJson(),
-      }
+      },
     };
   }
 }
@@ -251,7 +251,7 @@ class UnreadCountResponse {
         'by_category': byCategory,
         'by_priority': byPriority,
         'has_urgent': hasUrgent,
-      }
+      },
     };
   }
 }

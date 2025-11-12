@@ -6,11 +6,9 @@ class NotificationApiService {
   final Dio _dio;
   final String baseUrl;
 
-  NotificationApiService({
-    required Dio dio,
-    String? baseUrl,
-  })  : _dio = dio,
-        baseUrl = baseUrl ?? 'http://127.0.0.1:8000/api';
+  NotificationApiService({required Dio dio, String? baseUrl})
+    : _dio = dio,
+      baseUrl = baseUrl ?? 'http://127.0.0.1:8000/api';
 
   /// Setup Dio dengan Bearer token
   void setAuthToken(String token) {
@@ -21,7 +19,7 @@ class NotificationApiService {
   }
 
   /// 1. Get Notifications List
-  /// 
+  ///
   /// Query Parameters:
   /// - page: Page number (default: 1)
   /// - perPage: Items per page (max: 100, default: 20)
@@ -38,12 +36,11 @@ class NotificationApiService {
     String? priority,
   }) async {
     try {
-      print('📥 Fetching notifications: page=$page, perPage=$perPage, isRead=$isRead');
+      print(
+        '📥 Fetching notifications: page=$page, perPage=$perPage, isRead=$isRead',
+      );
 
-      final queryParams = <String, dynamic>{
-        'page': page,
-        'per_page': perPage,
-      };
+      final queryParams = <String, dynamic>{'page': page, 'per_page': perPage};
 
       // Backend expects integer (0/1) not boolean
       if (isRead != null) {
@@ -59,7 +56,9 @@ class NotificationApiService {
         queryParameters: queryParams,
       );
 
-      print('✅ Notifications fetched: ${response.data['data']['notifications'].length} items');
+      print(
+        '✅ Notifications fetched: ${response.data['data']['notifications'].length} items',
+      );
 
       return NotificationResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -70,7 +69,7 @@ class NotificationApiService {
   }
 
   /// 2. Get Unread Count
-  /// 
+  ///
   /// Returns:
   /// - unread_count: Total unread notifications
   /// - by_category: Unread count per category
@@ -105,10 +104,10 @@ class NotificationApiService {
   }
 
   /// 3. Mark Notification as Read (Single)
-  /// 
+  ///
   /// Parameters:
   /// - notificationId: ID notifikasi yang akan di-mark read
-  /// 
+  ///
   /// Returns:
   /// - notification: Notification yang sudah di-update
   /// - remaining_unread: Jumlah notif yang masih unread
@@ -131,7 +130,7 @@ class NotificationApiService {
   }
 
   /// 4. Mark All Notifications as Read
-  /// 
+  ///
   /// Returns:
   /// - marked_count: Jumlah notifikasi yang di-mark read
   /// - unread_count: Sisa unread count (should be 0)
@@ -139,9 +138,7 @@ class NotificationApiService {
     try {
       print('✓✓ Marking all notifications as read...');
 
-      final response = await _dio.post(
-        '$baseUrl/notifications/mark-all-read',
-      );
+      final response = await _dio.post('$baseUrl/notifications/mark-all-read');
 
       final markedCount = response.data['data']['marked_count'];
       print('✅ All notifications marked as read: $markedCount items');
@@ -155,10 +152,10 @@ class NotificationApiService {
   }
 
   /// 5. Delete Notification
-  /// 
+  ///
   /// Parameters:
   /// - notificationId: ID notifikasi yang akan dihapus
-  /// 
+  ///
   /// Returns:
   /// - id: ID notifikasi yang dihapus
   /// - deleted_at: Timestamp penghapusan
@@ -181,18 +178,16 @@ class NotificationApiService {
   }
 
   /// 6. Clear All Read Notifications
-  /// 
+  ///
   /// Menghapus semua notifikasi yang sudah dibaca
-  /// 
+  ///
   /// Returns:
   /// - deleted_count: Jumlah notifikasi yang dihapus
   Future<int> clearReadNotifications() async {
     try {
       print('🗑️ Clearing all read notifications...');
 
-      final response = await _dio.delete(
-        '$baseUrl/notifications/clear-read',
-      );
+      final response = await _dio.delete('$baseUrl/notifications/clear-read');
 
       final deletedCount = response.data['data']['deleted_count'];
       print('✅ Cleared $deletedCount read notifications');
@@ -232,7 +227,9 @@ class NotificationApiService {
 
         default:
           print('❌ Error $statusCode: ${data?['message']}');
-          throw Exception('Failed $action: ${data?['message'] ?? 'Unknown error'}');
+          throw Exception(
+            'Failed $action: ${data?['message'] ?? 'Unknown error'}',
+          );
       }
     } else {
       // Network error

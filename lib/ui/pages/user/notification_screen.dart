@@ -5,7 +5,7 @@ import '../../../services/notification_api_service.dart';
 import '../../../services/local_storage_service.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({Key? key}) : super(key: key);
+  const NotificationScreen({super.key});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -210,10 +210,7 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Hapus',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -475,18 +472,14 @@ class _NotificationScreenState extends State<NotificationScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.notifications_none,
-              size: 64,
-              color: Colors.grey[300],
-            ),
+            Icon(Icons.notifications_none, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
               filterIsRead == null
                   ? 'Belum ada notifikasi'
                   : filterIsRead!
-                      ? 'Belum ada notifikasi yang sudah dibaca'
-                      : 'Belum ada notifikasi yang belum dibaca',
+                  ? 'Belum ada notifikasi yang sudah dibaca'
+                  : 'Belum ada notifikasi yang belum dibaca',
               style: TextStyle(color: Colors.grey[600]),
             ),
           ],
@@ -537,11 +530,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            notif.message,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(notif.message, maxLines: 2, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
           Text(
             _formatTime(notif.createdAt),
