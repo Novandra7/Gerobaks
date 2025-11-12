@@ -39,6 +39,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:bank_sha/ui/pages/end_user/home/home_page.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_page.dart';
 import 'package:bank_sha/ui/pages/end_user/noftification_page.dart';
+import 'package:bank_sha/ui/pages/user/notification_screen.dart'; // New notification feature
 import 'package:bank_sha/ui/pages/splash_onboard/onboarding_page.dart';
 import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/pages/sign_up/sign_up_success_page.dart';
@@ -285,6 +286,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/home': (context) => HomePage(),
           '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
           '/notif': (context) => const NotificationPage(),
+          '/notifications': (context) => const NotificationScreen(), // New notification feature
           '/chat': (context) => ChatListPage(),
           '/subscription-plans': (context) => SubscriptionPlansPage(),
           '/my-subscription': (context) => MySubscriptionPage(),

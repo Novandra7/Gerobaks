@@ -1,6 +1,7 @@
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_full_screen.dart';
 import 'package:bank_sha/ui/widgets/shared/chat_icon_with_badge.dart';
 import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
+import 'package:bank_sha/widgets/notification_badge.dart'; // New notification feature
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 
@@ -167,10 +168,19 @@ class CustomAppBarHome extends StatelessWidget implements PreferredSizeWidget {
                     },
                   ),
                   const SizedBox(width: 12),
-                  // Notification icon with dynamic badge
+                  // Old Notification icon with dynamic badge
                   NotificationIconWithBadge(
                     onTap: () {
                       Navigator.pushNamed(context, '/notif');
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  // NEW: API-based notification badge
+                  NotificationBadge(
+                    showLabel: true,
+                    iconSize: 24,
+                    onTap: () {
+                      Navigator.pushNamed(context, '/notifications');
                     },
                   ),
                 ],
