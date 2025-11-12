@@ -75,6 +75,39 @@ class _SignInPageState extends State<SignInPage> {
           // For backward compatibility
           final localStorage = await LocalStorageService.getInstance();
 
+          // Normalize field names dari backend (user_phone → phone)
+          if (userData.containsKey('user_phone')) {
+            userData['phone'] = userData['user_phone'];
+            print("🔄 Mapped user_phone to phone: ${userData['phone']}");
+          }
+          if (userData.containsKey('user_address')) {
+            userData['address'] = userData['user_address'];
+            print("🔄 Mapped user_address to address: ${userData['address']}");
+          }
+
+          // Get existing user data from localStorage to preserve phone/address
+          final existingData = await localStorage.getUserData();
+          print("📦 Existing localStorage data: $existingData");
+
+          // Merge: API data (newer) + existing localStorage data (preserve phone/address)
+          if (existingData != null) {
+            // Preserve phone and address from localStorage if not in API response
+            if (!userData.containsKey('phone') || userData['phone'] == null) {
+              userData['phone'] = existingData['phone'];
+              print("✅ Preserved phone from localStorage: ${userData['phone']}");
+            }
+            if (!userData.containsKey('address') || userData['address'] == null) {
+              userData['address'] = existingData['address'];
+              print("✅ Preserved address from localStorage: ${userData['address']}");
+            }
+            if (!userData.containsKey('latitude') || userData['latitude'] == null) {
+              userData['latitude'] = existingData['latitude'];
+            }
+            if (!userData.containsKey('longitude') || userData['longitude'] == null) {
+              userData['longitude'] = existingData['longitude'];
+            }
+          }
+
           // Pastikan role tersimpan dengan benar
           if (!userData.containsKey('role') || userData['role'] == null) {
             print("WARNING: Role not found or null, adding default role");
@@ -262,6 +295,39 @@ class _SignInPageState extends State<SignInPage> {
       // Debug print full user data untuk membantu debugging
       print("Raw userData from API login response: $userData");
       print("userData keys: ${userData.keys.toList()}");
+
+      // Normalize field names dari backend (user_phone → phone)
+      if (userData.containsKey('user_phone')) {
+        userData['phone'] = userData['user_phone'];
+        print("🔄 Mapped user_phone to phone: ${userData['phone']}");
+      }
+      if (userData.containsKey('user_address')) {
+        userData['address'] = userData['user_address'];
+        print("🔄 Mapped user_address to address: ${userData['address']}");
+      }
+
+      // Get existing user data from localStorage to preserve phone/address
+      final existingData = await localStorage.getUserData();
+      print("📦 Existing localStorage data: $existingData");
+
+      // Merge: API data (newer) + existing localStorage data (preserve phone/address)
+      if (existingData != null) {
+        // Preserve phone and address from localStorage if not in API response
+        if (!userData.containsKey('phone') || userData['phone'] == null) {
+          userData['phone'] = existingData['phone'];
+          print("✅ Preserved phone from localStorage: ${userData['phone']}");
+        }
+        if (!userData.containsKey('address') || userData['address'] == null) {
+          userData['address'] = existingData['address'];
+          print("✅ Preserved address from localStorage: ${userData['address']}");
+        }
+        if (!userData.containsKey('latitude') || userData['latitude'] == null) {
+          userData['latitude'] = existingData['latitude'];
+        }
+        if (!userData.containsKey('longitude') || userData['longitude'] == null) {
+          userData['longitude'] = existingData['longitude'];
+        }
+      }
 
       // Pastikan role tersimpan dengan benar
       if (!userData.containsKey('role')) {

@@ -156,17 +156,56 @@ class AuthApiService {
         // Check if user data is nested under 'user' key
         if (data['user'] is Map) {
           print('✅ User data found in nested structure under "user" key');
-          return Map<String, dynamic>.from(data['user'] as Map);
+          final userData = Map<String, dynamic>.from(data['user'] as Map);
+          
+          // Normalize field names dari backend
+          _normalizeUserFields(userData);
+          
+          return userData;
         }
 
         // If no nested user key, return the data directly
         print('⚠️ Using data directly - no nested user key found');
-        return Map<String, dynamic>.from(data);
+        final userData = Map<String, dynamic>.from(data);
+        
+        // Normalize field names dari backend
+        _normalizeUserFields(userData);
+        
+        return userData;
       }
     }
 
     print('❌ Invalid response structure from API: $json');
     return {};
+  }
+
+  /// Normalize field names dari backend ke format yang digunakan di app
+  /// Backend bisa pakai: user_phone, user_address, etc
+  /// App menggunakan: phone, address, etc
+  void _normalizeUserFields(Map<String, dynamic> userData) {
+    // Map user_phone → phone
+    if (userData.containsKey('user_phone') && !userData.containsKey('phone')) {
+      userData['phone'] = userData['user_phone'];
+      print('🔄 Normalized: user_phone → phone');
+    }
+    
+    // Map user_address → address
+    if (userData.containsKey('user_address') && !userData.containsKey('address')) {
+      userData['address'] = userData['user_address'];
+      print('🔄 Normalized: user_address → address');
+    }
+    
+    // Map user_latitude → latitude
+    if (userData.containsKey('user_latitude') && !userData.containsKey('latitude')) {
+      userData['latitude'] = userData['user_latitude'];
+      print('🔄 Normalized: user_latitude → latitude');
+    }
+    
+    // Map user_longitude → longitude
+    if (userData.containsKey('user_longitude') && !userData.containsKey('longitude')) {
+      userData['longitude'] = userData['user_longitude'];
+      print('🔄 Normalized: user_longitude → longitude');
+    }
   }
 
   Future<Map<String, dynamic>> _persistFromResponse(dynamic json) async {
@@ -189,6 +228,9 @@ class AuthApiService {
 
         // Make sure the token is included in returned data
         userData['token'] = token;
+
+        // Normalize field names dari backend
+        _normalizeUserFields(userData);
 
         // Debug
         print(

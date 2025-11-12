@@ -86,13 +86,26 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       // Get current user ID and data
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
+      
+      print('📦 User data from localStorage: $userData');
+      
       if (userData != null) {
-        _userId = userData['id'] as String;
+        _userId = userData['id']?.toString() ?? '';
 
         // Use real user data from localStorage (from backend)
-        _nameController.text = userData['name'] ?? userData['fullName'] ?? '';
-        _phoneController.text = userData['phone'] ?? '';
-        _addressController.text = userData['address'] ?? '';
+        final name = userData['name'] ?? userData['fullName'] ?? '';
+        final phone = userData['phone'] ?? '';
+        final address = userData['address'] ?? '';
+        
+        print('👤 Name: $name');
+        print('📞 Phone: $phone');
+        print('📍 Address: $address');
+        
+        _nameController.text = name;
+        _phoneController.text = phone;
+        _addressController.text = address;
+      } else {
+        print('⚠️ User data is NULL - user may not be logged in');
       }
 
       // Get current location
@@ -541,17 +554,24 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           Icon(
                                             Icons.person_outline,
-                                            color: greenColor,
+                                            color: _nameController.text.isEmpty 
+                                                ? Colors.orange 
+                                                : greenColor,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            _nameController.text.isNotEmpty
-                                                ? _nameController.text
-                                                : 'Nama Pengguna',
-                                            style: blackTextStyle.copyWith(
-                                              fontSize: 14,
-                                              fontWeight: medium,
+                                          Expanded(
+                                            child: Text(
+                                              _nameController.text.isNotEmpty
+                                                  ? _nameController.text
+                                                  : 'Nama Pengguna (Belum diisi)',
+                                              style: blackTextStyle.copyWith(
+                                                fontSize: 14,
+                                                fontWeight: medium,
+                                                color: _nameController.text.isEmpty
+                                                    ? Colors.orange
+                                                    : null,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -564,17 +584,24 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           Icon(
                                             Icons.phone_outlined,
-                                            color: greenColor,
+                                            color: _phoneController.text.isEmpty
+                                                ? Colors.orange
+                                                : greenColor,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
-                                          Text(
-                                            _phoneController.text.isNotEmpty
-                                                ? _phoneController.text
-                                                : 'Nomor Telepon',
-                                            style: blackTextStyle.copyWith(
-                                              fontSize: 14,
-                                              fontWeight: medium,
+                                          Expanded(
+                                            child: Text(
+                                              _phoneController.text.isNotEmpty
+                                                  ? _phoneController.text
+                                                  : 'Nomor Telepon (Belum diisi)',
+                                              style: blackTextStyle.copyWith(
+                                                fontSize: 14,
+                                                fontWeight: medium,
+                                                color: _phoneController.text.isEmpty
+                                                    ? Colors.orange
+                                                    : null,
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -589,7 +616,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         children: [
                                           Icon(
                                             Icons.location_on_outlined,
-                                            color: greenColor,
+                                            color: _addressController.text.isEmpty
+                                                ? Colors.orange
+                                                : greenColor,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 8),
@@ -597,10 +626,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                             child: Text(
                                               _addressController.text.isNotEmpty
                                                   ? _addressController.text
-                                                  : 'Alamat Lengkap',
+                                                  : 'Alamat Lengkap (Belum diisi)',
                                               style: blackTextStyle.copyWith(
                                                 fontSize: 14,
                                                 fontWeight: medium,
+                                                color: _addressController.text.isEmpty
+                                                    ? Colors.orange
+                                                    : null,
                                               ),
                                               maxLines: 3,
                                               overflow: TextOverflow.ellipsis,
@@ -608,6 +640,61 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                           ),
                                         ],
                                       ),
+                                      
+                                      // Warning if data is incomplete
+                                      if (_nameController.text.isEmpty ||
+                                          _phoneController.text.isEmpty ||
+                                          _addressController.text.isEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: Colors.orange.withOpacity(0.3),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.warning_amber_rounded,
+                                                color: Colors.orange,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  'Data profil belum lengkap. Silakan lengkapi di halaman Profil.',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.orange[800],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: OutlinedButton.icon(
+                                            onPressed: () {
+                                              // Navigate to profile page
+                                              Navigator.pushNamed(context, '/profile');
+                                            },
+                                            icon: Icon(Icons.edit, size: 16),
+                                            label: Text('Lengkapi Profil'),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: Colors.orange,
+                                              side: BorderSide(color: Colors.orange),
+                                              padding: const EdgeInsets.symmetric(
+                                                vertical: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
