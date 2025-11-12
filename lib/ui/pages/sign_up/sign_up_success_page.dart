@@ -1,7 +1,5 @@
-import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/services/user_service.dart';
@@ -110,90 +108,31 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
                         final authApiService = AuthApiService();
 
                         // Step 2: Register with backend API
-                        try {
-                          // Use AuthApiService directly to ensure API registration happens
-                          try {
-                            await authApiService.register(
-                              name: args['name'] ?? 'New User',
-                              email: args['email'],
-                              password: args['password'],
-                              role: args['role'] ?? 'end_user',
-                            );
-                            debugPrint('Backend API registration successful');
-                          } catch (apiError) {
-                            // Just log the error but continue - could be that user already exists
-                            debugPrint('API registration error: $apiError');
-                            // This is OK - we'll try to login instead
-                          }
-                        } catch (e) {
-                          debugPrint('Error during API registration setup: $e');
-                          // Continue with local auth regardless of API errors
-                        }
+                        // Extract name from either 'fullName' or 'name' key
+                        final userName =
+                            args['fullName'] ?? args['name'] ?? 'New User';
 
-                        // Step 3: Login via API to persist authenticated session
-                        Map<String, dynamic>? loginData;
-                        try {
-                          debugPrint('Attempting auto-login via API...');
+                        await authApiService.register(
+                          name: userName,
+                          email: args['email'],
+                          password: args['password'],
+                          role: args['role'] ?? 'end_user',
+                          phone: args['phone'],
+                          address: args['address'],
+                          latitude: args['latitude'],
+                          longitude: args['longitude'],
+                        );
 
-                          loginData = await authApiService.login(
-                            email: args['email'],
-                            password: args['password'],
-                          );
-                          if (!context.mounted) return;
-
-                          final localStorage =
-                              await LocalStorageService.getInstance();
-
-                          // Persist raw API response for compatibility (token, role, etc)
-                          await localStorage.saveUserData(loginData);
-                          await localStorage.saveBool(
-                            localStorage.getLoginKey(),
-                            true,
-                          );
-                          await localStorage.saveCredentials(
-                            args['email'],
-                            args['password'],
-                          );
-
-                          // Update UserService listeners with normalized model
-                          final userModel = UserModel.fromJson(
-                            Map<String, dynamic>.from(loginData),
-                          );
-                          await userService.updateUserData(userModel);
-
-                          // Ensure token remains available after updateUserData overwrite
-                          await localStorage.saveUserData(loginData);
-
-                          debugPrint(
-                            'Auto-login successful for: ${loginData['name']} with role ${loginData['role']}',
-                          );
-                        } catch (loginError) {
-                          debugPrint(
-                            'API auto-login failed: $loginError. Falling back to local login.',
-                          );
-
-                          final fallbackUser = await userService.loginUser(
-                            email: args['email'],
-                            password: args['password'],
-                          );
-                          if (!context.mounted) return;
-
-                          if (fallbackUser == null) {
-                            throw Exception(
-                              'Gagal login otomatis. Silakan login secara manual.',
-                            );
-                          }
-
-                          debugPrint(
-                            'Fallback local login successful for: ${fallbackUser.name}',
-                          );
-                        }
+                        debugPrint('✅ Backend API registration successful');
+                        debugPrint('  Name: $userName');
+                        debugPrint('  Email: ${args['email']}');
+                        debugPrint('  Phone: ${args['phone']}');
+                        debugPrint('  Address: ${args['address']}');
 
                         // Update subscription status if needed
                         final bool hasSubscription =
                             args['hasSubscription'] ?? false;
                         if (hasSubscription) {
-                          // In a real app, you would update subscription status
                           debugPrint(
                             'User ${args['email']} has subscription: $hasSubscription',
                           );

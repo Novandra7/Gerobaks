@@ -1,14 +1,11 @@
-import 'package:bank_sha/models/schedule_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
-import 'package:bank_sha/services/schedule_service.dart';
+import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
-import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
 // Subscription check implemented for additional waste feature
@@ -28,7 +25,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  final _scheduleService = ScheduleService();
   bool _isLoading = false;
   String? _userId;
 
@@ -42,13 +38,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   // Scheduled waste toggle - default ON
   bool _hasScheduledWaste = true;
 
-  LatLng _selectedLocation = const LatLng(
-    -6.2088,
-    106.8456,
-  ); // Default to Jakarta
   final List<String> _selectedWasteTypes =
       []; // Changed to list for multi-select
-  final ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
 
   // Dynamic weight controllers for each waste type
   final Map<String, TextEditingController> _weightControllers = {};
@@ -92,19 +83,16 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       // Load today's waste schedule info
       _loadTodayWasteSchedule();
 
-      // Get current user ID
+      // Get current user ID and data
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
       if (userData != null) {
         _userId = userData['id'] as String;
 
-        // Get user data from mock based on user ID
-        final userMockData = UserDataMock.getUserById(_userId!);
-        if (userMockData != null) {
-          _nameController.text = userMockData['name'] ?? '';
-          _phoneController.text = userMockData['phone'] ?? '';
-          _addressController.text = userMockData['address'] ?? '';
-        }
+        // Use real user data from localStorage (from backend)
+        _nameController.text = userData['name'] ?? userData['fullName'] ?? '';
+        _phoneController.text = userData['phone'] ?? '';
+        _addressController.text = userData['address'] ?? '';
       }
 
       // Get current location
@@ -160,10 +148,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       final position = await Geolocator.getCurrentPosition();
 
       if (!mounted) return;
-      setState(() {
-        _selectedLocation = LatLng(position.latitude, position.longitude);
-        // Keep mock address data, don't override
-      });
+      // Location obtained but not used in new API (uses user address from backend)
+      print('Location: ${position.latitude}, ${position.longitude}');
     } catch (e) {
       print('Error getting location: $e');
     }
@@ -176,35 +162,60 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       });
 
       try {
-        final newSchedule = ScheduleModel(
-          userId: _userId!,
-          scheduledDate: DateTime.now().add(
-            const Duration(days: 1),
-          ), // Always tomorrow
-          timeSlot: const TimeOfDay(hour: 6, minute: 0), // Fixed time 06:00
-          location: _selectedLocation,
-          address:
-              'Jl. Sudirman No. 123, Kec. Menteng, Jakarta Pusat, DKI Jakarta 10310',
-          notes: _notesController.text.isNotEmpty
-              ? _notesController.text
-              : null,
-          status: ScheduleStatus.pending,
-          frequency: _selectedFrequency,
-          createdAt: DateTime.now(),
-          wasteType: _hasAdditionalWaste && _selectedWasteTypes.isNotEmpty
-              ? _selectedWasteTypes.join(', ')
-              : null,
-          estimatedWeight: _hasAdditionalWaste && _selectedWasteTypes.isNotEmpty
-              ? _calculateTotalWeight()
-              : null,
-          isPaid: false,
-          contactName: 'Andi Wijaya',
-          contactPhone: '+62 812-3456-7890',
-          // Add scheduled waste info in notes or a custom field
-          // For now, we'll add it to notes
-        );
+        // Use new pickup-schedules API endpoint
+        final scheduleApiService = ScheduleApiService();
 
-        // Add scheduled waste info to notes if enabled
+        // Determine schedule day - map day of week to Indonesian
+        final scheduledDate = DateTime.now().add(const Duration(days: 1));
+        final dayOfWeek = scheduledDate.weekday;
+        String scheduleDay;
+        switch (dayOfWeek) {
+          case DateTime.monday:
+            scheduleDay = 'senin';
+            break;
+          case DateTime.tuesday:
+            scheduleDay = 'selasa';
+            break;
+          case DateTime.wednesday:
+            scheduleDay = 'rabu';
+            break;
+          case DateTime.thursday:
+            scheduleDay = 'kamis';
+            break;
+          case DateTime.friday:
+            scheduleDay = 'jumat';
+            break;
+          case DateTime.saturday:
+            scheduleDay = 'sabtu';
+            break;
+          case DateTime.sunday:
+            scheduleDay = 'minggu';
+            break;
+          default:
+            scheduleDay = 'senin';
+        }
+
+        // Prepare additional wastes array
+        List<Map<String, dynamic>>? additionalWastes;
+        if (_hasAdditionalWaste && _selectedWasteTypes.isNotEmpty) {
+          additionalWastes = [];
+          for (String type in _selectedWasteTypes) {
+            final controller = _weightControllers[type];
+            if (controller != null && controller.text.isNotEmpty) {
+              try {
+                final weight = double.parse(controller.text);
+                additionalWastes.add({
+                  'type': type.toLowerCase(),
+                  'estimated_weight': weight,
+                });
+              } catch (e) {
+                // Skip invalid weight
+              }
+            }
+          }
+        }
+
+        // Prepare notes
         String finalNotes = _notesController.text;
         if (_hasScheduledWaste) {
           String scheduledWasteNote = 'Sampah sesuai jadwal: $_todayWasteType';
@@ -215,60 +226,54 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           }
         }
 
-        // Update schedule with final notes
-        final updatedSchedule = ScheduleModel(
-          userId: newSchedule.userId,
-          scheduledDate: newSchedule.scheduledDate,
-          timeSlot: newSchedule.timeSlot,
-          location: newSchedule.location,
-          address: newSchedule.address,
+        // Call new API endpoint
+        final response = await scheduleApiService.createPickupSchedule(
+          scheduleDay: scheduleDay,
+          wasteTypeScheduled: _todayWasteType,
+          isScheduledActive: _hasScheduledWaste,
+          pickupTimeStart: '06:00', // Fixed start time
+          pickupTimeEnd: '08:00', // Fixed end time
+          hasAdditionalWaste: _hasAdditionalWaste,
+          additionalWastes: additionalWastes,
           notes: finalNotes.isNotEmpty ? finalNotes : null,
-          status: newSchedule.status,
-          frequency: newSchedule.frequency,
-          createdAt: newSchedule.createdAt,
-          wasteType: newSchedule.wasteType,
-          estimatedWeight: newSchedule.estimatedWeight,
-          isPaid: newSchedule.isPaid,
-          contactName: newSchedule.contactName,
-          contactPhone: newSchedule.contactPhone,
         );
 
-        final createdSchedule = await _scheduleService.createSchedule(
-          updatedSchedule,
-        );
+        // Check if successful
+        if (response['success'] == true && mounted) {
+          final data = response['data'] as Map<String, dynamic>;
+          final scheduleId = data['id'] as int;
+          final wasteSummary = data['waste_summary'] as String?;
+          final totalWeight = data['total_estimated_weight'];
 
-        if (createdSchedule != null) {
-          if (mounted) {
-            DialogHelper.showSuccessDialog(
-              context: context,
-              title: 'Jadwal Berhasil Dibuat',
-              message: 'Jadwal pengambilan sampah Anda telah berhasil dibuat.',
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(
-                  context,
-                  createdSchedule,
-                ); // Return to previous screen with created schedule
-              },
-            );
-          }
+          DialogHelper.showSuccessDialog(
+            context: context,
+            title: 'Jadwal Berhasil Dibuat',
+            message:
+                'Jadwal penjemputan sampah berhasil dibuat!\n\nID Jadwal: $scheduleId\n${wasteSummary != null ? 'Jenis sampah: $wasteSummary\n' : ''}${totalWeight != null ? 'Estimasi berat: $totalWeight kg\n' : ''}Status: Menunggu penjemputan',
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Return to previous screen
+            },
+          );
         } else {
           if (mounted) {
+            final errorMessage =
+                response['message'] as String? ??
+                'Terjadi kesalahan saat membuat jadwal';
             DialogHelper.showErrorDialog(
               context: context,
               title: 'Gagal Membuat Jadwal',
-              message:
-                  'Terjadi kesalahan saat membuat jadwal. Silakan coba lagi nanti.',
+              message: errorMessage,
             );
           }
         }
       } catch (e) {
-        print('Error creating schedule: $e');
+        print('Error creating pickup schedule: $e');
         if (mounted) {
           DialogHelper.showErrorDialog(
             context: context,
             title: 'Gagal Membuat Jadwal',
-            message: 'Terjadi kesalahan: $e',
+            message: 'Terjadi kesalahan: ${e.toString()}',
           );
         }
       } finally {
@@ -279,26 +284,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         }
       }
     }
-  }
-
-  // Calculate total weight from all selected waste types
-  double? _calculateTotalWeight() {
-    double total = 0.0;
-    bool hasValidWeight = false;
-
-    for (String type in _selectedWasteTypes) {
-      final controller = _weightControllers[type];
-      if (controller != null && controller.text.isNotEmpty) {
-        try {
-          total += double.parse(controller.text);
-          hasValidWeight = true;
-        } catch (e) {
-          // Skip invalid numbers
-        }
-      }
-    }
-
-    return hasValidWeight ? total : null;
   }
 
   @override

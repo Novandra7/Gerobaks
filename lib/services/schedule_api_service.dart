@@ -119,6 +119,60 @@ class ScheduleApiService {
   Future<ScheduleApiModel> updateScheduleStatus(int id, String status) {
     return updateSchedule(id, status: status);
   }
+
+  // Pickup Schedule Methods - New API endpoint
+  Future<Map<String, dynamic>> createPickupSchedule({
+    required String scheduleDay,
+    required String wasteTypeScheduled,
+    required bool isScheduledActive,
+    required String pickupTimeStart,
+    required String pickupTimeEnd,
+    required bool hasAdditionalWaste,
+    List<Map<String, dynamic>>? additionalWastes,
+    String? notes,
+  }) async {
+    final body = <String, dynamic>{
+      'schedule_day': scheduleDay,
+      'waste_type_scheduled': wasteTypeScheduled,
+      'is_scheduled_active': isScheduledActive,
+      'pickup_time_start': pickupTimeStart,
+      'pickup_time_end': pickupTimeEnd,
+      'has_additional_waste': hasAdditionalWaste,
+      if (additionalWastes != null && additionalWastes.isNotEmpty)
+        'additional_wastes': additionalWastes,
+      if (notes != null && notes.isNotEmpty) 'notes': notes,
+    };
+
+    final json = await _api.postJson(ApiRoutes.pickupSchedules, body);
+    if (json is Map<String, dynamic>) {
+      return json;
+    }
+    throw HttpException(
+      'Invalid pickup schedule create response: ${json.runtimeType}',
+    );
+  }
+
+  Future<Map<String, dynamic>> listPickupSchedules({
+    int page = 1,
+    int perPage = 20,
+    String? status,
+  }) async {
+    final query = <String, dynamic>{
+      'page': page,
+      'per_page': perPage,
+      if (status != null && status.isNotEmpty && status != 'semua')
+        'status': status,
+    };
+
+    final json = await _api.getJson(ApiRoutes.pickupSchedules, query: query);
+    if (json is! Map<String, dynamic>) {
+      throw HttpException(
+        'Invalid pickup schedules response: ${json.runtimeType}',
+      );
+    }
+
+    return json;
+  }
 }
 
 class SchedulePageResult {

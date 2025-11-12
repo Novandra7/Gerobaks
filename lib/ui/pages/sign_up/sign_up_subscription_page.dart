@@ -408,12 +408,20 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
 
       // Navigate to sign-up-success page to show success message
       if (!mounted) return;
+
+      // Pass ALL user data to success page for API registration
       Navigator.pushNamed(
         context,
         '/sign-up-success',
         arguments: {
+          'fullName': userData['fullName'] ?? userData['name'] ?? 'New User',
           'email': user.email,
           'password': userData['password'],
+          'role': userData['role'] ?? 'end_user',
+          'phone': userData['phone'],
+          'address': userData['address'],
+          'latitude': userData['latitude'],
+          'longitude': userData['longitude'],
           'hasSubscription': hasSubscription,
         },
       );

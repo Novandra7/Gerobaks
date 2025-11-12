@@ -16,14 +16,25 @@ class AuthApiService {
     required String email,
     required String password,
     String? role,
+    String? phone,
+    String? address,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       print('🔐 Registering user via API: $name ($email)');
+      print('📍 Address: $address');
+      print('📍 Coordinates: ($latitude, $longitude)');
+
       final resp = await _api.postJson(ApiRoutes.register, {
         'name': name,
         'email': email,
         'password': password,
         if (role != null) 'role': role,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+        if (address != null && address.isNotEmpty) 'address': address,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       });
       print('✅ API registration successful');
       return await _persistFromResponse(resp);
@@ -96,6 +107,29 @@ class AuthApiService {
   /// Mendapatkan base URL yang digunakan API
   String getBaseUrl() {
     return _api.getBaseUrl();
+  }
+
+  /// Check if email already exists
+  Future<Map<String, dynamic>> checkEmail(String email) async {
+    try {
+      print('🔍 Checking if email exists: $email');
+      final resp = await _api.get('${ApiRoutes.checkEmail}?email=$email');
+      print('✅ Email check response: $resp');
+
+      // Response format: {"exists": true/false, "message": "..."}
+      if (resp is Map) {
+        return {
+          'exists': resp['exists'] ?? false,
+          'message': resp['message'] ?? '',
+        };
+      }
+
+      return {'exists': false, 'message': ''};
+    } catch (e) {
+      print('❌ Email check failed: $e');
+      // If API error, assume email doesn't exist (let register handle it)
+      return {'exists': false, 'message': 'Error checking email'};
+    }
   }
 
   Future<void> logout() async {

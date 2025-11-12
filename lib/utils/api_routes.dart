@@ -14,6 +14,7 @@ class ApiRoutes {
   // Authentication Routes
   static const String register = '/api/register';
   static const String login = '/api/login';
+  static const String checkEmail = '/api/check-email';
   static const String me = '/api/auth/me';
   static const String logout = '/api/auth/logout';
 
@@ -43,6 +44,10 @@ class ApiRoutes {
   static String schedule(int id) => '/api/schedules/$id';
   static String scheduleComplete(int id) => '/api/schedules/$id/complete';
   static String scheduleCancel(int id) => '/api/schedules/$id/cancel';
+
+  // Pickup Schedule Routes
+  static const String pickupSchedules = '/api/pickup-schedules';
+  static String pickupSchedule(int id) => '/api/pickup-schedules/$id';
 
   // Tracking Routes
   static const String trackings = '/api/trackings';
