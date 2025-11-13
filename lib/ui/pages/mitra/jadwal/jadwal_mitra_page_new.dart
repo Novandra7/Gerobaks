@@ -5,6 +5,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_map_view.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/detail_pickup.dart';
 import 'package:bank_sha/ui/widgets/mitra/jadwal_mitra_header.dart';
+import 'package:bank_sha/ui/pages/mitra/available_schedules_tab_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -37,21 +38,24 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
         setState(() {
           switch (_tabController.index) {
             case 0:
-              _selectedFilter = "semua";
+              _selectedFilter = "tersedia";
               break;
             case 1:
-              _selectedFilter = "pending";
+              _selectedFilter = "semua";
               break;
             case 2:
-              _selectedFilter = "in_progress";
+              _selectedFilter = "pending";
               break;
             case 3:
+              _selectedFilter = "in_progress";
+              break;
+            case 4:
               _selectedFilter = "completed";
               break;
           }
@@ -436,6 +440,11 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
   // since we're now using the JadwalMitraHeader component
 
   Widget _buildBody(BuildContext context, bool isSmallScreen) {
+    // If "Tersedia" tab is selected, show AvailableSchedulesTabContent
+    if (_selectedFilter == "tersedia") {
+      return const AvailableSchedulesTabContent();
+    }
+
     return Column(
       children: [
         // Filter tabs - responsive layout
@@ -444,59 +453,66 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
             horizontal: isSmallScreen ? 12 : 16,
             vertical: isSmallScreen ? 4 : 6,
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildFilterTab("Semua", _selectedFilter == "semua", () {
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterTab(
+                  "Tersedia",
+                  _selectedFilter == "tersedia",
+                  () {
+                    setState(() {
+                      _selectedFilter = "tersedia";
+                      _tabController.animateTo(0);
+                    });
+                  },
+                  isSmallScreen,
+                ),
+                SizedBox(width: isSmallScreen ? 4 : 8),
+                _buildFilterTab("Semua", _selectedFilter == "semua", () {
                   setState(() {
                     _selectedFilter = "semua";
-                    _tabController.animateTo(0);
+                    _tabController.animateTo(1);
                   });
                 }, isSmallScreen),
-              ),
-              SizedBox(width: isSmallScreen ? 4 : 8),
-              Expanded(
-                child: _buildFilterTab(
+                SizedBox(width: isSmallScreen ? 4 : 8),
+                _buildFilterTab(
                   "Menunggu",
                   _selectedFilter == "pending",
                   () {
                     setState(() {
                       _selectedFilter = "pending";
-                      _tabController.animateTo(1);
-                    });
-                  },
-                  isSmallScreen,
-                ),
-              ),
-              SizedBox(width: isSmallScreen ? 4 : 8),
-              Expanded(
-                child: _buildFilterTab(
-                  "Diproses",
-                  _selectedFilter == "in_progress",
-                  () {
-                    setState(() {
-                      _selectedFilter = "in_progress";
                       _tabController.animateTo(2);
                     });
                   },
                   isSmallScreen,
                 ),
-              ),
-              SizedBox(width: isSmallScreen ? 4 : 8),
-              Expanded(
-                child: _buildFilterTab(
-                  "Selesai",
-                  _selectedFilter == "completed",
+                SizedBox(width: isSmallScreen ? 4 : 8),
+                _buildFilterTab(
+                  "Diproses",
+                  _selectedFilter == "in_progress",
                   () {
                     setState(() {
-                      _selectedFilter = "completed";
+                      _selectedFilter = "in_progress";
                       _tabController.animateTo(3);
                     });
                   },
                   isSmallScreen,
                 ),
-              ),
-            ],
+                SizedBox(width: isSmallScreen ? 4 : 8),
+                _buildFilterTab(
+                  "Selesai",
+                  _selectedFilter == "completed",
+                  () {
+                    setState(() {
+                      _selectedFilter = "completed";
+                      _tabController.animateTo(4);
+                    });
+                  },
+                  isSmallScreen,
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -520,7 +536,9 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
               ),
               SizedBox(width: 8),
               Text(
-                _selectedFilter == "semua"
+                _selectedFilter == "tersedia"
+                    ? 'Jadwal Tersedia untuk Diambil'
+                    : _selectedFilter == "semua"
                     ? 'Prioritas Terdekat'
                     : _selectedFilter == "pending"
                     ? 'Terjadwal'
