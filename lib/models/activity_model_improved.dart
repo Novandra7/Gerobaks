@@ -22,10 +22,10 @@ class ActivityModel {
   final String status;
   final bool isActive;
   final DateTime date;
-  
+
   // Data tambahan untuk pengambilan selesai
   final List<TrashDetail>? trashDetails;
-  final int? totalWeight;  // dalam kg
+  final int? totalWeight; // dalam kg
   final int? totalPoints;
   final List<String>? photoProofs;
   final String? completedBy;
@@ -52,8 +52,13 @@ class ActivityModel {
     switch (status.toLowerCase()) {
       case 'dijadwalkan':
         return 'Dijadwalkan';
+      case 'diterima mitra':
+        return 'Diterima Mitra';
       case 'menuju lokasi':
+      case 'mitra menuju lokasi':
         return 'Menuju Lokasi';
+      case 'mitra sudah tiba':
+        return 'Mitra Sudah Tiba';
       case 'selesai':
         return 'Selesai';
       case 'dibatalkan':
@@ -68,8 +73,13 @@ class ActivityModel {
     switch (status.toLowerCase()) {
       case 'dijadwalkan':
         return 'assets/ic_calender_search.png';
+      case 'diterima mitra':
+        return 'assets/ic_check.png';
       case 'menuju lokasi':
+      case 'mitra menuju lokasi':
         return 'assets/ic_truck_otw.png';
+      case 'mitra sudah tiba':
+        return 'assets/ic_pin.png';
       case 'selesai':
         return 'assets/ic_check.png';
       case 'dibatalkan':

@@ -96,7 +96,7 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
                   color: widget.iconColor ?? Colors.black,
                   size: widget.iconSize ?? 32,
                 ),
-          
+
           // Badge with count
           if (_notificationCount > 0)
             Positioned(
@@ -124,7 +124,7 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
                 ),
               ),
             ),
-          
+
           // Urgent indicator (pulsing red dot)
           if (_hasUrgent && _notificationCount > 0)
             Positioned(

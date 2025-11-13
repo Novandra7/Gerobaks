@@ -116,26 +116,26 @@ class Pagination {
   final int perPage;
   final int total;
   final int lastPage;
-  final int from;
-  final int to;
+  final int? from; // Nullable
+  final int? to; // Nullable
 
   Pagination({
     required this.currentPage,
     required this.perPage,
     required this.total,
     required this.lastPage,
-    required this.from,
-    required this.to,
+    this.from, // Optional
+    this.to, // Optional
   });
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      currentPage: json['current_page'],
-      perPage: json['per_page'],
-      total: json['total'],
-      lastPage: json['last_page'],
-      from: json['from'],
-      to: json['to'],
+      currentPage: json['current_page'] ?? 1,
+      perPage: json['per_page'] ?? 20,
+      total: json['total'] ?? 0,
+      lastPage: json['last_page'] ?? 1,
+      from: json['from'], // Can be null
+      to: json['to'], // Can be null
     );
   }
 
@@ -167,10 +167,16 @@ class Summary {
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) {
+    // Handle by_priority - could be Map or empty List from backend
+    Map<String, int> byPriorityMap = {};
+    if (json['by_priority'] is Map) {
+      byPriorityMap = Map<String, int>.from(json['by_priority']);
+    }
+
     return Summary(
-      totalNotifications: json['total_notifications'],
-      unreadCount: json['unread_count'],
-      byPriority: Map<String, int>.from(json['by_priority']),
+      totalNotifications: json['total_notifications'] ?? 0,
+      unreadCount: json['unread_count'] ?? 0,
+      byPriority: byPriorityMap,
     );
   }
 
@@ -236,11 +242,25 @@ class UnreadCountResponse {
   });
 
   factory UnreadCountResponse.fromJson(Map<String, dynamic> json) {
+    final data = json['data'];
+
+    // Handle by_category - could be Map or empty List from backend
+    Map<String, int> byCategoryMap = {};
+    if (data['by_category'] is Map) {
+      byCategoryMap = Map<String, int>.from(data['by_category']);
+    }
+
+    // Handle by_priority - could be Map or empty List from backend
+    Map<String, int> byPriorityMap = {};
+    if (data['by_priority'] is Map) {
+      byPriorityMap = Map<String, int>.from(data['by_priority']);
+    }
+
     return UnreadCountResponse(
-      unreadCount: json['data']['unread_count'],
-      byCategory: Map<String, int>.from(json['data']['by_category']),
-      byPriority: Map<String, int>.from(json['data']['by_priority']),
-      hasUrgent: json['data']['has_urgent'],
+      unreadCount: data['unread_count'] ?? 0,
+      byCategory: byCategoryMap,
+      byPriority: byPriorityMap,
+      hasUrgent: data['has_urgent'] ?? false,
     );
   }
 

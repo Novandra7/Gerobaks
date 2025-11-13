@@ -43,22 +43,23 @@ class NotificationApiService {
       if (category != null) print('   - Filter category: $category');
       if (priority != null) print('   - Filter priority: $priority');
 
-      final response = await _dio.get('$baseUrl/notifications', queryParameters: {
-        'page': page,
-        'per_page': perPage,
-        if (isRead != null) 'is_read': isRead ? 1 : 0,
-        if (type != null) 'type': type,
-        if (category != null) 'category': category,
-        if (priority != null) 'priority': priority,
-      });
+      final response = await _dio.get(
+        '$baseUrl/notifications',
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+          if (isRead != null) 'is_read': isRead ? 1 : 0,
+          if (type != null) 'type': type,
+          if (category != null) 'category': category,
+          if (priority != null) 'priority': priority,
+        },
+      );
 
       print('📦 Response status: ${response.statusCode}');
       print('📦 Response data: ${response.data}');
-      
+
       final notificationsList = response.data['data']['notifications'];
-      print(
-        '✅ Notifications fetched: ${notificationsList.length} items',
-      );
+      print('✅ Notifications fetched: ${notificationsList.length} items');
 
       return NotificationResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -88,6 +89,9 @@ class NotificationApiService {
 
       final response = await _dio.get('$baseUrl/notifications/unread-count');
 
+      print('📦 Unread count response status: ${response.statusCode}');
+      print('📦 Unread count response data: ${response.data}');
+
       final unreadCount = response.data['data']['unread_count'];
       print('✅ Unread count: $unreadCount');
 
@@ -95,6 +99,9 @@ class NotificationApiService {
     } on DioException catch (e) {
       print('❌ Error getting unread count: ${e.message}');
       _handleError(e, 'getting unread count');
+      rethrow;
+    } catch (e) {
+      print('❌ Unexpected error in getUnreadCount: $e');
       rethrow;
     }
   }

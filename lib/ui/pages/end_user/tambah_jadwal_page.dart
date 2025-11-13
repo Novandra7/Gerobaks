@@ -23,56 +23,58 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
   final _weightController = TextEditingController();
-  
+
   LatLng _currentCenter = LatLng(-0.5028797174108289, 117.15020096577763);
-  
+
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 9, minute: 0);
   ScheduleFrequency _selectedFrequency = ScheduleFrequency.once;
   String _selectedWasteType = 'Organik';
-  
+
   bool _isLoading = false;
   List<TimeOfDay> _availableTimeSlots = [];
   String? _userId;
-  
+
   final ScheduleService _scheduleService = ScheduleService();
-  
+
   @override
   void initState() {
     super.initState();
     _getUserId();
     _loadAvailableTimeSlots();
   }
-  
+
   Future<void> _getUserId() async {
     final localStorage = await LocalStorageService.getInstance();
     final userData = await localStorage.getUserData();
     if (userData != null) {
       setState(() {
-        _userId = userData['id'] as String;
+        _userId = userData['id'].toString();
       });
     }
   }
-  
+
   Future<void> _loadAvailableTimeSlots() async {
     await _scheduleService.initialize();
-    final timeSlots = await _scheduleService.getAvailableTimeSlots(_selectedDate);
+    final timeSlots = await _scheduleService.getAvailableTimeSlots(
+      _selectedDate,
+    );
     setState(() {
       _availableTimeSlots = timeSlots;
-      
+
       // Set default time slot if available
       if (timeSlots.isNotEmpty) {
         _selectedTime = timeSlots.first;
       }
     });
   }
-  
+
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
-  
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -92,7 +94,7 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
         );
       },
     );
-    
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -100,61 +102,69 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
       _loadAvailableTimeSlots();
     }
   }
-  
+
   Future<void> _saveSchedule() async {
     if (_formKey.currentState!.validate()) {
       if (_userId == null) {
         DialogHelper.showErrorDialog(
-          context: context, 
+          context: context,
           title: 'Login Diperlukan',
           message: 'Silakan login terlebih dahulu untuk menambah jadwal',
         );
         return;
       }
-      
+
       setState(() {
         _isLoading = true;
       });
-      
+
       try {
         final double? weight = double.tryParse(_weightController.text);
-        
+
         final schedule = await _scheduleService.addSchedule(
           userId: _userId!,
           scheduledDate: _selectedDate,
           timeSlot: _selectedTime,
           location: _currentCenter,
           address: _addressController.text,
-          notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+          notes: _notesController.text.isNotEmpty
+              ? _notesController.text
+              : null,
           frequency: _selectedFrequency,
           wasteType: _selectedWasteType,
           estimatedWeight: weight,
-          isPaid: false, // Default to unpaid, payment will be handled separately
-          amount: null, // Will be calculated later based on weight and waste type
+          isPaid:
+              false, // Default to unpaid, payment will be handled separately
+          amount:
+              null, // Will be calculated later based on weight and waste type
         );
-        
+
         setState(() {
           _isLoading = false;
         });
-        
+
         // Show success dialog
         DialogHelper.showSuccessDialog(
           context: context,
           title: 'Jadwal Berhasil Ditambahkan',
-          message: 'Jadwal pengambilan sampah telah berhasil ditambahkan untuk ${DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate)} pukul ${_formatTimeOfDay(_selectedTime)}',
+          message:
+              'Jadwal pengambilan sampah telah berhasil ditambahkan untuk ${DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate)} pukul ${_formatTimeOfDay(_selectedTime)}',
         ).then((_) {
-          Navigator.pop(context, schedule); // Return to previous screen with the new schedule
+          Navigator.pop(
+            context,
+            schedule,
+          ); // Return to previous screen with the new schedule
         });
-        
       } catch (e) {
         setState(() {
           _isLoading = false;
         });
-        
+
         DialogHelper.showErrorDialog(
           context: context,
           title: 'Gagal Menambah Jadwal',
-          message: 'Terjadi kesalahan saat menambahkan jadwal. Silakan coba lagi nanti.',
+          message:
+              'Terjadi kesalahan saat menambahkan jadwal. Silakan coba lagi nanti.',
         );
         print('Error adding schedule: $e');
       }
@@ -180,7 +190,8 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
             ),
             children: [
               TileLayer(
-                urlTemplate: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                urlTemplate:
+                    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.gerobaks.app',
               ),
@@ -238,9 +249,7 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                         const SizedBox(height: 4),
                         Text(
                           'Geser peta untuk memilih lokasi yang tepat',
-                          style: greyTextStyle.copyWith(
-                            fontSize: 12,
-                          ),
+                          style: greyTextStyle.copyWith(fontSize: 12),
                         ),
                       ],
                     ),
@@ -274,7 +283,10 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                 child: SingleChildScrollView(
                   controller: scrollController,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -306,7 +318,9 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Koordinat lokasi terpilih
                           Text(
                             'Koordinat Lokasi',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Container(
@@ -317,7 +331,11 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.location_on, color: greenColor, size: 18),
+                                Icon(
+                                  Icons.location_on,
+                                  color: greenColor,
+                                  size: 18,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -345,7 +363,7 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          
+
                           // Lokasi saya saat ini field
                           Container(
                             decoration: BoxDecoration(
@@ -360,20 +378,25 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(Icons.my_location, color: greenColor),
+                                  child: Icon(
+                                    Icons.my_location,
+                                    color: greenColor,
+                                  ),
                                 ),
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     'Lokasi saya saat ini',
-                                    style: blackTextStyle.copyWith(fontSize: 14),
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           const SizedBox(height: 10),
-                          
+
                           // Peta Lokasi button
                           GestureDetector(
                             onTap: () {
@@ -404,11 +427,7 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.map,
-                                    size: 40,
-                                    color: greenColor,
-                                  ),
+                                  Icon(Icons.map, size: 40, color: greenColor),
                                   SizedBox(height: 8),
                                   Text(
                                     'Peta Lokasi',
@@ -420,9 +439,7 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                                   SizedBox(height: 4),
                                   Text(
                                     'Tekan untuk memilih lokasi di peta',
-                                    style: greyTextStyle.copyWith(
-                                      fontSize: 12,
-                                    ),
+                                    style: greyTextStyle.copyWith(fontSize: 12),
                                   ),
                                 ],
                               ),
@@ -433,7 +450,9 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Alamat lengkap
                           Text(
                             'Alamat Lengkap',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
@@ -461,27 +480,44 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Pilih Tanggal
                           Text(
                             'Tanggal Penjemputan',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           GestureDetector(
                             onTap: () => _selectDate(context),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey.shade300),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.calendar_today, color: greenColor, size: 18),
+                                  Icon(
+                                    Icons.calendar_today,
+                                    color: greenColor,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(_selectedDate),
-                                    style: blackTextStyle.copyWith(fontSize: 14),
+                                    DateFormat(
+                                      'EEEE, d MMMM yyyy',
+                                      'id_ID',
+                                    ).format(_selectedDate),
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 14,
+                                    ),
                                   ),
                                   const Spacer(),
-                                  Icon(Icons.arrow_drop_down, color: greenColor),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: greenColor,
+                                  ),
                                 ],
                               ),
                             ),
@@ -491,12 +527,18 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Pilih Waktu
                           Text(
                             'Waktu Penjemputan',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           DropdownButtonFormField<TimeOfDay>(
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.access_time, color: greenColor, size: 18),
+                              prefixIcon: Icon(
+                                Icons.access_time,
+                                color: greenColor,
+                                size: 18,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -525,12 +567,18 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Jenis Sampah
                           Text(
                             'Jenis Sampah',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.delete_outline, color: greenColor, size: 18),
+                              prefixIcon: Icon(
+                                Icons.delete_outline,
+                                color: greenColor,
+                                size: 18,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -539,12 +587,14 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                                 vertical: 12,
                               ),
                             ),
-                            items: ['Organik', 'Anorganik', 'B3', 'Campuran'].map((String type) {
-                              return DropdownMenuItem<String>(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }).toList(),
+                            items: ['Organik', 'Anorganik', 'B3', 'Campuran']
+                                .map((String type) {
+                                  return DropdownMenuItem<String>(
+                                    value: type,
+                                    child: Text(type),
+                                  );
+                                })
+                                .toList(),
                             value: _selectedWasteType,
                             onChanged: (String? newValue) {
                               if (newValue != null) {
@@ -559,7 +609,9 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Perkiraan Berat
                           Text(
                             'Perkiraan Berat (kg)',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
@@ -567,7 +619,11 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                             keyboardType: TextInputType.number,
                             decoration: InputDecoration(
                               hintText: 'Masukkan perkiraan berat',
-                              prefixIcon: Icon(Icons.scale, color: greenColor, size: 18),
+                              prefixIcon: Icon(
+                                Icons.scale,
+                                color: greenColor,
+                                size: 18,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -582,12 +638,18 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Frekuensi Penjemputan
                           Text(
                             'Frekuensi Penjemputan',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           DropdownButtonFormField<ScheduleFrequency>(
                             decoration: InputDecoration(
-                              prefixIcon: Icon(Icons.repeat, color: greenColor, size: 18),
+                              prefixIcon: Icon(
+                                Icons.repeat,
+                                color: greenColor,
+                                size: 18,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -632,14 +694,20 @@ class _TambahJadwalPageState extends State<TambahJadwalPage> {
                           // Catatan tambahan
                           Text(
                             'Catatan (opsional)',
-                            style: blackTextStyle.copyWith(fontWeight: semiBold),
+                            style: blackTextStyle.copyWith(
+                              fontWeight: semiBold,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           TextFormField(
                             controller: _notesController,
                             decoration: InputDecoration(
                               hintText: 'Masukkan catatan tambahan',
-                              prefixIcon: Icon(Icons.note_alt, color: greenColor, size: 18),
+                              prefixIcon: Icon(
+                                Icons.note_alt,
+                                color: greenColor,
+                                size: 18,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),

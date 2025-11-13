@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/models/activity_model_improved.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/activity_item_improved.dart';
@@ -30,6 +31,8 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _schedules = [];
   late EndUserApiService _apiService;
+  Timer? _refreshTimer;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -37,10 +40,128 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
     _initializeServices();
   }
 
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _initializeServices() async {
     _apiService = EndUserApiService();
     await _apiService.initialize();
     await _loadSchedules();
+
+    // Start auto-refresh timer (setiap 10 detik) untuk detect status changes
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && !_isRefreshing && widget.showActive) {
+        // Only auto-refresh if on "Aktif" tab
+        _refreshSchedulesInBackground();
+      }
+    });
+  }
+
+  Future<void> _refreshSchedulesInBackground() async {
+    if (_isRefreshing) return;
+
+    _isRefreshing = true;
+    try {
+      final schedules = await _apiService.getUserPickupSchedules();
+
+      if (mounted) {
+        // Check if there are any status changes
+        bool hasChanges = false;
+        if (_schedules.length != schedules.length) {
+          hasChanges = true;
+        } else {
+          for (int i = 0; i < schedules.length; i++) {
+            final oldSchedule = _schedules.firstWhere(
+              (s) => s['id'] == schedules[i]['id'],
+              orElse: () => {},
+            );
+
+            if (oldSchedule.isNotEmpty &&
+                oldSchedule['status'] != schedules[i]['status']) {
+              hasChanges = true;
+
+              // Show notification for status change
+              final oldStatus = oldSchedule['status'];
+              final newStatus = schedules[i]['status'];
+              final address = schedules[i]['pickup_address'] ?? 'lokasi Anda';
+
+              if (oldStatus == 'pending' && newStatus == 'accepted') {
+                _showStatusChangeNotification(
+                  '✅ Jadwal Anda telah diterima oleh mitra!',
+                  Colors.green,
+                );
+              } else if ((oldStatus == 'pending' || oldStatus == 'accepted') &&
+                  (newStatus == 'in_progress' || newStatus == 'on_the_way')) {
+                _showStatusChangeNotification(
+                  '🚛 Mitra sedang menuju ke $address',
+                  Colors.blue,
+                );
+              } else if (newStatus == 'arrived') {
+                _showStatusChangeNotification(
+                  '� Mitra sudah tiba di lokasi!',
+                  Colors.orange,
+                );
+              } else if (newStatus == 'completed') {
+                _showStatusChangeNotification(
+                  '✅ Pengambilan sampah selesai! Terima kasih 🎉',
+                  Colors.green,
+                );
+              }
+            }
+          }
+        }
+
+        if (hasChanges) {
+          setState(() {
+            _schedules = schedules;
+          });
+        }
+      }
+    } catch (e) {
+      print("❌ Background refresh error: $e");
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
+  void _showStatusChangeNotification(String message, Color color) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.notifications_active, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: color,
+          duration: const Duration(seconds: 5),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Lihat',
+            textColor: Colors.white,
+            onPressed: () {
+              // Refresh list to show updated status
+              _loadSchedules();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _loadSchedules() async {
@@ -109,6 +230,70 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
           ? DateTime.parse(schedule['scheduled_at'])
           : DateTime.now();
 
+      // Parse actual_weights jika ada (untuk schedule yang completed)
+      List<TrashDetail>? trashDetails;
+      int? totalWeight;
+      int? totalPoints;
+
+      if (schedule['actual_weights'] != null &&
+          schedule['status'] == 'completed') {
+        print('🔍 Parsing completed schedule #${schedule['id']}');
+        final weights = schedule['actual_weights'];
+        print('   📦 Actual weights: $weights');
+        trashDetails = [];
+        int calculatedWeight = 0;
+        int calculatedPoints = 0;
+
+        if (weights is Map) {
+          weights.forEach((type, weight) {
+            final weightValue = (weight is String)
+                ? double.tryParse(weight)?.toInt() ?? 0
+                : (weight is num)
+                ? weight.toInt()
+                : 0;
+
+            // Kalkulasi poin (contoh: 10 poin per kg)
+            final points = weightValue * 10;
+
+            calculatedWeight += weightValue;
+            calculatedPoints += points;
+
+            print('   ✅ $type: ${weightValue}kg = $points poin');
+
+            trashDetails!.add(
+              TrashDetail(
+                type: type.toString(),
+                weight: weightValue,
+                points: points,
+                icon: _getTrashIcon(type.toString()),
+              ),
+            );
+          });
+        }
+
+        totalWeight = calculatedWeight;
+        totalPoints = calculatedPoints;
+        print(
+          '   📊 Total: ${totalWeight}kg, $totalPoints poin, ${trashDetails.length} jenis',
+        );
+      }
+
+      // Parse pickup_photos jika ada
+      List<String>? photoProofs;
+      if (schedule['pickup_photos'] != null) {
+        if (schedule['pickup_photos'] is List) {
+          photoProofs = (schedule['pickup_photos'] as List)
+              .map((p) => p.toString())
+              .toList();
+        }
+      }
+
+      // Get mitra name jika ada
+      String? completedBy;
+      if (schedule['mitra_name'] != null) {
+        completedBy = schedule['mitra_name'].toString();
+      }
+
       return ActivityModel(
         id: schedule['id']?.toString() ?? '',
         title: schedule['service_type'] ?? 'Layanan Sampah',
@@ -118,6 +303,11 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
         isActive: _isScheduleActive(schedule['status']),
         date: scheduledDate,
         notes: schedule['notes'],
+        trashDetails: trashDetails,
+        totalWeight: totalWeight,
+        totalPoints: totalPoints,
+        photoProofs: photoProofs,
+        completedBy: completedBy,
       );
     }).toList();
 
@@ -179,20 +369,29 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
     switch (status) {
       case 'pending':
         return 'Dijadwalkan';
+      case 'accepted':
+        return 'Diterima Mitra';
       case 'in_progress':
-        return 'Menuju Lokasi';
+      case 'on_the_way':
+        return 'Mitra Menuju Lokasi';
+      case 'arrived':
+        return 'Mitra Sudah Tiba';
       case 'completed':
         return 'Selesai';
       case 'cancelled':
         return 'Dibatalkan';
       default:
-        return 'Unknown';
+        return status?.replaceAll('_', ' ').toUpperCase() ?? 'Unknown';
     }
   }
 
   bool _isScheduleActive(String? status) {
-    // Active schedules are those that are pending or in progress
-    return status == 'pending' || status == 'in_progress';
+    // Active schedules are those that are pending, accepted, in_progress, or arrived
+    return status == 'pending' ||
+        status == 'accepted' ||
+        status == 'in_progress' ||
+        status == 'on_the_way' ||
+        status == 'arrived';
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -216,6 +415,26 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
+  String _getTrashIcon(String trashType) {
+    final type = trashType.toLowerCase();
+
+    if (type.contains('organik')) {
+      return 'assets/ic_transaction_cat1.png';
+    } else if (type.contains('plastik')) {
+      return 'assets/ic_transaction_cat2.png';
+    } else if (type.contains('kertas') || type.contains('paper')) {
+      return 'assets/ic_transaction_cat3.png';
+    } else if (type.contains('kaca') ||
+        type.contains('logam') ||
+        type.contains('metal')) {
+      return 'assets/ic_transaction_cat4.png';
+    } else if (type.contains('elektronik') || type.contains('b3')) {
+      return 'assets/ic_transaction_cat5.png';
+    }
+
+    return 'assets/ic_trash.png'; // Default icon
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -228,18 +447,66 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
       return _buildEmptyState();
     }
 
-    return RefreshIndicator(
-      onRefresh: widget.onRefresh ?? _loadSchedules,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        itemCount: filteredActivities.length,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ActivityItemImproved(activity: filteredActivities[index]),
-          );
-        },
-      ),
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: widget.onRefresh ?? _loadSchedules,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            itemCount: filteredActivities.length,
+            itemBuilder: (context, index) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ActivityItemImproved(
+                  activity: filteredActivities[index],
+                ),
+              );
+            },
+          ),
+        ),
+        // Auto-refresh indicator
+        if (_isRefreshing && widget.showActive)
+          Positioned(
+            top: 8,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Checking updates...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 

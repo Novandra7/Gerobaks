@@ -170,7 +170,10 @@ class CustomAppBarHome extends StatelessWidget implements PreferredSizeWidget {
                   // Notification icon with API-based badge
                   NotificationIconWithBadge(
                     onTap: () {
-                      Navigator.pushNamed(context, '/notifications'); // Navigate to new notification screen
+                      Navigator.pushNamed(
+                        context,
+                        '/notifications',
+                      ); // Navigate to new notification screen
                     },
                   ),
                 ],

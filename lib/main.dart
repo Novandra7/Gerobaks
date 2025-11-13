@@ -21,6 +21,13 @@ import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_improved.dar
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_page_redesigned.dart';
 import 'package:bank_sha/ui/pages/mitra/pengambilan/navigation_demo_page.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_detail_page_bloc.dart';
+// Mitra Pickup System
+import 'package:bank_sha/ui/pages/mitra/mitra_home_page.dart';
+import 'package:bank_sha/ui/pages/mitra/available_schedules_page.dart';
+import 'package:bank_sha/ui/pages/mitra/schedule_detail_page.dart';
+import 'package:bank_sha/ui/pages/mitra/active_schedules_page.dart';
+import 'package:bank_sha/ui/pages/mitra/complete_pickup_page.dart';
+import 'package:bank_sha/ui/pages/mitra/history_page.dart';
 // Import all BLoCs
 import 'package:bank_sha/blocs/blocs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -285,8 +292,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/sign-up-success': (context) => SignUpSuccessPage(),
           '/home': (context) => HomePage(),
           '/mitra-dashboard-new': (context) => const MitraDashboardPageNew(),
+          '/mitra-pickup': (context) => const MitraHomePage(),
+          '/mitra-pickup-available': (context) =>
+              const AvailableSchedulesPage(),
+          '/mitra-pickup-active': (context) => const ActiveSchedulesPage(),
+          '/mitra-pickup-history': (context) => const HistoryPage(),
           '/notif': (context) => const NotificationPage(),
-          '/notifications': (context) => const NotificationScreen(), // New notification feature
+          '/notifications': (context) =>
+              const NotificationScreen(), // New notification feature
           '/chat': (context) => ChatListPage(),
           '/subscription-plans': (context) => SubscriptionPlansPage(),
           '/my-subscription': (context) => MySubscriptionPage(),

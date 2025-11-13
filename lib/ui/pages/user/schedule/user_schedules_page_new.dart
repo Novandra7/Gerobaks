@@ -58,7 +58,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
       if (userData != null) {
-        _userId = userData['id'] as String;
+        _userId = userData['id'].toString();
       }
 
       // Load schedules

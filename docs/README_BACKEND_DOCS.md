@@ -1,12 +1,59 @@
-# 📚 Activity Schedule API - Documentation Index
+# 📚 Backend Issues Documentation Index
 
 > **Untuk Backend Team**  
 > **Created:** 12 November 2025  
-> **Status:** 🔴 URGENT - Flutter Ready, Backend Pending
+> **Updated:** 13 November 2025  
+> **Status:** 🔴 CRITICAL - Available Schedules Bug Active
 
 ---
 
-## 📖 Daftar Dokumentasi
+## � CRITICAL ISSUE AKTIF (13 Nov 2025)
+
+### **Bug: Available Schedules Hanya Return 1 User**
+
+**Endpoint:** `/api/mitra/pickup-schedules/available`  
+**Priority:** 🔴 CRITICAL BLOCKER  
+**Impact:** Sistem penjemputan mitra tidak bisa digunakan  
+**Time to Fix:** 15-30 menit
+
+#### 📄 Dokumentasi untuk Issue Ini:
+
+1. **[QUICK_FIX_BACKEND.md](./QUICK_FIX_BACKEND.md)** ⚡ **← MULAI DI SINI!**
+   - Summary 1 halaman
+   - 3 langkah fix (tinker, code, test)
+   - Copy-paste ready commands
+   - **Waktu: 5 menit baca, 15 menit fix**
+
+2. **[EMAIL_BACKEND_URGENT.md](./EMAIL_BACKEND_URGENT.md)** 📧
+   - Format email siap kirim
+   - Penjelasan singkat masalah
+   - Request specific ke backend
+   - **Waktu: 2 menit baca**
+
+3. **[LAPORAN_BACKEND_URGENT.md](./LAPORAN_BACKEND_URGENT.md)** 📖
+   - Lengkap bahasa Indonesia
+   - Bukti dari test & database
+   - 4 kemungkinan penyebab
+   - Multiple solusi options
+   - **Waktu: 15 menit baca**
+
+4. **[CRITICAL_BACKEND_ISSUE.md](./CRITICAL_BACKEND_ISSUE.md)** 📚
+   - Full technical documentation (English)
+   - Tinker diagnostics (copy-paste ready)
+   - SQL queries for verification
+   - Multiple solution approaches
+   - **Waktu: 30 menit baca**
+
+**TL;DR:**
+```
+Problem: API hanya return jadwal dari user_id: 2
+Fix: Hapus filter ->where('work_area', $mitra->work_area)
+File: MitraPickupScheduleController.php method getAvailableSchedules()
+```
+
+---
+
+## �📖 Daftar Dokumentasi
 
 ### 🎯 Untuk Backend Team (MULAI DI SINI!)
 

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../models/notification_model.dart';
 import '../../../services/notification_api_service.dart';
 import '../../../services/local_storage_service.dart';
+import '../../../shared/theme.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -75,13 +76,15 @@ class _NotificationScreenState extends State<NotificationScreen>
       print('🔄 NotificationScreen: Loading notifications...');
       print('   - Current tab: ${_tabController.index}');
       print('   - Filter isRead: $filterIsRead');
-      
+
       final response = await _notificationApi.getNotifications(
         page: currentPage,
         isRead: filterIsRead,
       );
 
-      print('✅ NotificationScreen: Received ${response.notifications.length} notifications');
+      print(
+        '✅ NotificationScreen: Received ${response.notifications.length} notifications',
+      );
       print('   - Unread count: ${response.summary.unreadCount}');
 
       setState(() {
@@ -93,7 +96,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       print('❌ NotificationScreen: Error loading notifications');
       print('   - Error type: ${e.runtimeType}');
       print('   - Error message: $e');
-      
+
       setState(() {
         isLoading = false;
         _errorMessage = e.toString();
@@ -103,7 +106,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memuat notifikasi: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: redcolor,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -136,7 +139,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menandai sebagai dibaca'),
-            backgroundColor: Colors.red,
+            backgroundColor: redcolor,
           ),
         );
       }
@@ -153,7 +156,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$markedCount notifikasi ditandai sudah dibaca'),
-            backgroundColor: Colors.green,
+            backgroundColor: greenColor,
           ),
         );
       }
@@ -166,7 +169,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menandai semua sebagai dibaca'),
-            backgroundColor: Colors.red,
+            backgroundColor: redcolor,
           ),
         );
       }
@@ -183,9 +186,9 @@ class _NotificationScreenState extends State<NotificationScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Notifikasi dihapus'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Notifikasi dihapus'),
+            backgroundColor: greenColor,
           ),
         );
       }
@@ -197,7 +200,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menghapus notifikasi'),
-            backgroundColor: Colors.red,
+            backgroundColor: redcolor,
           ),
         );
       }
@@ -210,18 +213,29 @@ class _NotificationScreenState extends State<NotificationScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Hapus Semua Notifikasi?'),
-        content: const Text(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Hapus Semua Notifikasi?',
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
+        ),
+        content: Text(
           'Semua notifikasi yang sudah dibaca akan dihapus. Tindakan ini tidak dapat dibatalkan.',
+          style: greyTextStyle.copyWith(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            child: Text(
+              'Batal',
+              style: greyTextStyle.copyWith(fontWeight: medium),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+            child: Text(
+              'Hapus',
+              style: TextStyle(color: redcolor, fontWeight: semiBold),
+            ),
           ),
         ],
       ),
@@ -236,7 +250,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$deletedCount notifikasi dihapus'),
-            backgroundColor: Colors.green,
+            backgroundColor: greenColor,
           ),
         );
       }
@@ -249,7 +263,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menghapus notifikasi'),
-            backgroundColor: Colors.red,
+            backgroundColor: redcolor,
           ),
         );
       }
@@ -302,14 +316,24 @@ class _NotificationScreenState extends State<NotificationScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Icon(
               _getIcon(notif.icon),
               color: _getPriorityColor(notif.priority),
+              size: 24,
             ),
             const SizedBox(width: 12),
-            Expanded(child: Text(notif.title)),
+            Expanded(
+              child: Text(
+                notif.title,
+                style: blackTextStyle.copyWith(
+                  fontSize: 16,
+                  fontWeight: semiBold,
+                ),
+              ),
+            ),
           ],
         ),
         content: SingleChildScrollView(
@@ -317,11 +341,11 @@ class _NotificationScreenState extends State<NotificationScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(notif.message),
+              Text(notif.message, style: greyTextStyle.copyWith(fontSize: 14)),
               const SizedBox(height: 16),
               Text(
                 _formatTime(notif.createdAt),
-                style: Theme.of(context).textTheme.bodySmall,
+                style: greyTextStyle.copyWith(fontSize: 12),
               ),
             ],
           ),
@@ -329,7 +353,10 @@ class _NotificationScreenState extends State<NotificationScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tutup'),
+            child: Text(
+              'Tutup',
+              style: blueTextStyle.copyWith(fontWeight: medium),
+            ),
           ),
         ],
       ),
@@ -339,17 +366,25 @@ class _NotificationScreenState extends State<NotificationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: lightBackgroundColor,
       appBar: AppBar(
-        title: const Text('Notifikasi'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
+        title: Text(
+          'Notifikasi',
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
+        ),
+        backgroundColor: whiteColor,
+        foregroundColor: blackColor,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: blackColor),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           // Badge with unread count
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined),
+                icon: Icon(Icons.notifications_outlined, color: blackColor),
                 onPressed: () {},
               ),
               if (unreadCount > 0)
@@ -358,8 +393,8 @@ class _NotificationScreenState extends State<NotificationScreen>
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
+                    decoration: BoxDecoration(
+                      color: redcolor,
                       shape: BoxShape.circle,
                     ),
                     constraints: const BoxConstraints(
@@ -368,10 +403,9 @@ class _NotificationScreenState extends State<NotificationScreen>
                     ),
                     child: Text(
                       unreadCount > 99 ? '99+' : '$unreadCount',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: whiteTextStyle.copyWith(
                         fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -385,12 +419,12 @@ class _NotificationScreenState extends State<NotificationScreen>
                   child: Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
+                    decoration: BoxDecoration(
+                      color: redcolor,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red,
+                          color: redcolor.withOpacity(0.5),
                           blurRadius: 4,
                           spreadRadius: 1,
                         ),
@@ -402,25 +436,32 @@ class _NotificationScreenState extends State<NotificationScreen>
           ),
           // Mark all as read
           IconButton(
-            icon: const Icon(Icons.done_all),
+            icon: Icon(
+              Icons.done_all,
+              color: unreadCount > 0 ? greenColor : greyColor,
+            ),
             onPressed: unreadCount > 0 ? _markAllAsRead : null,
             tooltip: 'Tandai semua sudah dibaca',
           ),
           // Clear read notifications
           PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: blackColor),
             onSelected: (value) {
               if (value == 'clear') {
                 _clearReadNotifications();
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'clear',
                 child: Row(
                   children: [
-                    Icon(Icons.delete_sweep, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Hapus yang sudah dibaca'),
+                    Icon(Icons.delete_sweep, color: redcolor),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Hapus yang sudah dibaca',
+                      style: greyTextStyle.copyWith(fontSize: 14),
+                    ),
                   ],
                 ),
               ),
@@ -429,9 +470,11 @@ class _NotificationScreenState extends State<NotificationScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Theme.of(context).primaryColor,
+          labelColor: greenColor,
+          unselectedLabelColor: greyColor,
+          indicatorColor: greenColor,
+          labelStyle: TextStyle(fontWeight: semiBold, fontSize: 14),
+          unselectedLabelStyle: TextStyle(fontWeight: regular, fontSize: 14),
           onTap: (index) {
             setState(() {
               currentPage = 1;
@@ -456,18 +499,35 @@ class _NotificationScreenState extends State<NotificationScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+            Icon(Icons.error_outline, size: 64, color: greyColor),
             const SizedBox(height: 16),
-            Text(
-              _errorMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.grey),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: greyTextStyle.copyWith(fontSize: 14),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _loadNotifications,
               icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
+              label: Text(
+                'Coba Lagi',
+                style: whiteTextStyle.copyWith(fontWeight: medium),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                foregroundColor: whiteColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -475,7 +535,7 @@ class _NotificationScreenState extends State<NotificationScreen>
     }
 
     if (isLoading && notifications.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(child: CircularProgressIndicator(color: greenColor));
     }
 
     if (notifications.isEmpty) {
@@ -483,7 +543,11 @@ class _NotificationScreenState extends State<NotificationScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.notifications_none, size: 64, color: Colors.grey[300]),
+            Icon(
+              Icons.notifications_none,
+              size: 80,
+              color: greyColor.withOpacity(0.3),
+            ),
             const SizedBox(height: 16),
             Text(
               filterIsRead == null
@@ -491,7 +555,17 @@ class _NotificationScreenState extends State<NotificationScreen>
                   : filterIsRead!
                   ? 'Belum ada notifikasi yang sudah dibaca'
                   : 'Belum ada notifikasi yang belum dibaca',
-              style: TextStyle(color: Colors.grey[600]),
+              style: greyTextStyle.copyWith(fontSize: 16, fontWeight: medium),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              filterIsRead == null
+                  ? 'Notifikasi Anda akan muncul di sini'
+                  : filterIsRead!
+                  ? 'Notifikasi yang sudah dibaca akan muncul di sini'
+                  : 'Notifikasi baru akan muncul di sini',
+              style: greyTextStyle.copyWith(fontSize: 12),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -500,8 +574,11 @@ class _NotificationScreenState extends State<NotificationScreen>
 
     return RefreshIndicator(
       onRefresh: _loadNotifications,
-      child: ListView.builder(
+      color: greenColor,
+      child: ListView.separated(
         itemCount: notifications.length,
+        separatorBuilder: (context, index) =>
+            Divider(height: 1, color: greyColor.withOpacity(0.2)),
         itemBuilder: (context, index) {
           final notif = notifications[index];
           return Dismissible(
@@ -511,10 +588,10 @@ class _NotificationScreenState extends State<NotificationScreen>
               _deleteNotification(notif.id);
             },
             background: Container(
-              color: Colors.red,
+              color: redcolor,
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.only(right: 20),
-              child: const Icon(Icons.delete, color: Colors.white),
+              child: Icon(Icons.delete, color: whiteColor, size: 28),
             ),
             child: _buildNotificationTile(notif),
           );
@@ -524,47 +601,116 @@ class _NotificationScreenState extends State<NotificationScreen>
   }
 
   Widget _buildNotificationTile(NotificationModel notif) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: _getPriorityColor(notif.priority).withOpacity(0.1),
-        child: Icon(
-          _getIcon(notif.icon),
-          color: _getPriorityColor(notif.priority),
+    final priorityColor = _getPriorityColor(notif.priority);
+
+    return Container(
+      color: notif.isRead ? whiteColor : greenui,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
         ),
-      ),
-      title: Text(
-        notif.title,
-        style: TextStyle(
-          fontWeight: notif.isRead ? FontWeight.normal : FontWeight.bold,
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(notif.message, maxLines: 2, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          Text(
-            _formatTime(notif.createdAt),
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: priorityColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (!notif.isRead)
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: _getPriorityColor(notif.priority),
-                shape: BoxShape.circle,
-              ),
+          child: Icon(_getIcon(notif.icon), color: priorityColor, size: 24),
+        ),
+        title: Text(
+          notif.title,
+          style: blackTextStyle.copyWith(
+            fontSize: 14,
+            fontWeight: notif.isRead ? medium : semiBold,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              notif.message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: greyTextStyle.copyWith(fontSize: 12),
             ),
-        ],
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 12, color: greyColor),
+                const SizedBox(width: 4),
+                Text(
+                  _formatTime(notif.createdAt),
+                  style: greyTextStyle.copyWith(fontSize: 11),
+                ),
+                const SizedBox(width: 12),
+                // Priority badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: priorityColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _getPriorityLabel(notif.priority),
+                    style: TextStyle(
+                      color: priorityColor,
+                      fontSize: 10,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (!notif.isRead)
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: priorityColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: priorityColor.withOpacity(0.3),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+        onTap: () => _handleNotificationTap(notif),
       ),
-      onTap: () => _handleNotificationTap(notif),
     );
+  }
+
+  /// Get priority label
+  String _getPriorityLabel(String priority) {
+    switch (priority) {
+      case 'urgent':
+        return 'URGENT';
+      case 'high':
+        return 'TINGGI';
+      case 'normal':
+        return 'NORMAL';
+      case 'low':
+        return 'RENDAH';
+      default:
+        return 'NORMAL';
+    }
   }
 
   /// Get icon berdasarkan icon name dari backend
@@ -607,15 +753,15 @@ class _NotificationScreenState extends State<NotificationScreen>
   Color _getPriorityColor(String priority) {
     switch (priority) {
       case 'urgent':
-        return Colors.red;
+        return redcolor;
       case 'high':
-        return Colors.orange;
+        return orangeColor;
       case 'normal':
-        return Colors.blue;
+        return blueColor;
       case 'low':
-        return Colors.grey;
+        return greyColor;
       default:
-        return Colors.blue;
+        return blueColor;
     }
   }
 

@@ -34,6 +34,25 @@ class ApiRoutes {
   static const String mitraOrders = '/api/mitra/orders';
   static String mitraDashboard(int id) => '/api/dashboard/mitra/$id';
 
+  // Mitra Pickup System Routes (New)
+  static const String mitraPickupAvailable =
+      '/api/mitra/pickup-schedules/available';
+  static String mitraPickupDetail(int id) => '/api/mitra/pickup-schedules/$id';
+  static String mitraPickupAccept(int id) =>
+      '/api/mitra/pickup-schedules/$id/accept';
+  static String mitraPickupStartJourney(int id) =>
+      '/api/mitra/pickup-schedules/$id/start-journey';
+  static String mitraPickupArrive(int id) =>
+      '/api/mitra/pickup-schedules/$id/arrive';
+  static String mitraPickupComplete(int id) =>
+      '/api/mitra/pickup-schedules/$id/complete';
+  static String mitraPickupCancel(int id) =>
+      '/api/mitra/pickup-schedules/$id/cancel';
+  static const String mitraPickupMyActive =
+      '/api/mitra/pickup-schedules/my-active';
+  static const String mitraPickupHistory =
+      '/api/mitra/pickup-schedules/history';
+
   // Activity Routes
   static const String activities = '/api/activities';
   static String activity(int id) => '/api/activities/$id';

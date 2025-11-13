@@ -83,7 +83,8 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
       final userData = await localStorageService.getUserData();
 
       if (userData != null && userData["id"] != null) {
-        _driverId = userData["id"] as String;
+        // Convert to String - id might be int or String
+        _driverId = userData["id"].toString();
       } else {
         throw Exception("ID driver tidak ditemukan");
       }
