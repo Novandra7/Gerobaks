@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'available_schedules_page.dart';
+import 'package:flutter/services.dart';
+import 'available_schedules_tab_content.dart';
 import 'active_schedules_page.dart';
 import 'history_page.dart';
 
-/// Main navigation container for Mitra role
-/// Contains 3 tabs: Available Schedules, Active Schedules, and History
+/// Main navigation container for Mitra role - Jadwal Tersedia dengan sliding tabs
+/// Contains 3 tabs: Tersedia, Aktif, and Riwayat (can be swiped)
 class MitraHomePage extends StatefulWidget {
   const MitraHomePage({super.key});
 
@@ -12,40 +13,111 @@ class MitraHomePage extends StatefulWidget {
   State<MitraHomePage> createState() => _MitraHomePageState();
 }
 
-class _MitraHomePageState extends State<MitraHomePage> {
-  int _currentIndex = 0;
+class _MitraHomePageState extends State<MitraHomePage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-  final List<Widget> _pages = [
-    const AvailableSchedulesPage(),
-    const ActiveSchedulesPage(),
-    const HistoryPage(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
-            label: 'Tersedia',
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF9FFF8), // Background color
+      ),
+      child: Column(
+        children: [
+          // Custom AppBar with TabBar
+          Container(
+            color: Colors.white,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Jadwal Tersedia',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.notifications_outlined),
+                          onPressed: () {
+                            // Handle notification
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // TabBar
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: Colors.green,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: Colors.green,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.normal,
+                      ),
+                      tabs: const [
+                        Tab(text: 'Tersedia'),
+                        Tab(text: 'Aktif'),
+                        Tab(text: 'Riwayat'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            activeIcon: Icon(Icons.work),
-            label: 'Aktif',
+
+          // TabBarView (swipeable content)
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                AvailableSchedulesTabContent(),
+                ActiveSchedulesPage(),
+                HistoryPage(),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
         ],
       ),
     );

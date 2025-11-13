@@ -1,7 +1,7 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/mitra/aktivitas/aktivitas_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
-import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_bloc.dart'; // Updated to BLoC version
+import 'package:bank_sha/ui/pages/mitra/mitra_home_page.dart'; // Updated to use MitraHomePage (Jadwal Tersedia with tabs)
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +18,7 @@ class _MitraNavigationPageState extends State<MitraNavigationPage> {
 
   final List<Widget> _pages = [
     const MitraDashboardPage(),
-    const JadwalMitraPageBloc(), // Updated to BLoC version
+    const MitraHomePage(), // Updated: Now shows Jadwal Tersedia with sliding tabs
     const AktivitasMitraPage(),
     const ProfileMitraPage(),
   ];

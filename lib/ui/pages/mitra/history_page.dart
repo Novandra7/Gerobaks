@@ -264,38 +264,55 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riwayat Pengambilan'),
-        actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.filter_list),
-                if (_dateFrom != null || _dateTo != null)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+    return Column(
+      children: [
+        // Filter and refresh buttons
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _dateFrom != null || _dateTo != null
+                      ? 'Filter aktif'
+                      : 'Riwayat pengambilan',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
-              ],
-            ),
-            onPressed: _showDateFilter,
+                ),
+              ),
+              IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.filter_list),
+                    if (_dateFrom != null || _dateTo != null)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: _showDateFilter,
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => _loadHistory(reset: true),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _loadHistory(reset: true),
-          ),
-        ],
-      ),
-      body: _buildBody(),
+        ),
+        Expanded(child: _buildBody()),
+      ],
     );
   }
 
