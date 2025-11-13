@@ -277,10 +277,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   _dateFrom != null || _dateTo != null
                       ? 'Filter aktif'
                       : 'Riwayat pengambilan',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ),
               IconButton(

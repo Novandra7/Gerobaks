@@ -400,9 +400,7 @@ class _AvailableSchedulesTabContentState
         ),
 
         // Content
-        Expanded(
-          child: _buildBody(),
-        ),
+        Expanded(child: _buildBody()),
       ],
     );
   }

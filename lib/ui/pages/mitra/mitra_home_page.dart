@@ -1,5 +1,5 @@
+import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'available_schedules_tab_content.dart';
 import 'active_schedules_page.dart';
 import 'history_page.dart';
@@ -32,14 +32,14 @@ class _MitraHomePageState extends State<MitraHomePage>
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF9FFF8), // Background color
+      decoration: BoxDecoration(
+        color: uicolor, // Background color dari theme
       ),
       child: Column(
         children: [
           // Custom AppBar with TabBar
           Container(
-            color: Colors.white,
+            color: whiteColor,
             child: SafeArea(
               bottom: false,
               child: Column(
@@ -52,17 +52,16 @@ class _MitraHomePageState extends State<MitraHomePage>
                     ),
                     child: Row(
                       children: [
-                        const Text(
+                        Text(
                           'Jadwal Tersedia',
-                          style: TextStyle(
+                          style: blackTextStyle.copyWith(
                             fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontWeight: bold,
                           ),
                         ),
                         const Spacer(),
                         IconButton(
-                          icon: const Icon(Icons.notifications_outlined),
+                          icon: Icon(Icons.notifications_outlined, color: blackColor),
                           onPressed: () {
                             // Handle notification
                           },
@@ -75,25 +74,22 @@ class _MitraHomePageState extends State<MitraHomePage>
                   Container(
                     decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
+                        bottom: BorderSide(color: greyColor.withOpacity(0.3), width: 1),
                       ),
                     ),
                     child: TabBar(
                       controller: _tabController,
-                      labelColor: Colors.green,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: Colors.green,
+                      labelColor: greenColor,
+                      unselectedLabelColor: greyColor,
+                      indicatorColor: greenColor,
                       indicatorWeight: 3,
-                      labelStyle: const TextStyle(
+                      labelStyle: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: semiBold,
                       ),
-                      unselectedLabelStyle: const TextStyle(
+                      unselectedLabelStyle: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.normal,
+                        fontWeight: regular,
                       ),
                       tabs: const [
                         Tab(text: 'Tersedia'),
