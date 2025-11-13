@@ -400,38 +400,28 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
       decoration: const BoxDecoration(
         color: Color(0xFFF9FFF8), // Background color seperti dashboard
       ),
-      child: Scaffold(
-        backgroundColor: Colors.transparent, // Appbar tanpa background
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          systemOverlayStyle: SystemUiOverlayStyle.dark,
-          toolbarHeight: 0,
-        ),
-        body: Column(
-          children: [
-            // Using the updated JadwalMitraHeader component
-            JadwalMitraHeader(
-              locationCount: _locationCount,
-              pendingCount: _pendingCount,
-              completedCount: _completedCount,
-              onChatPressed: () {
-                // Handle chat press
-              },
-              onNotificationPressed: () {
-                // Handle notification press
-              },
-            ),
+      child: Column(
+        children: [
+          // Using the updated JadwalMitraHeader component
+          JadwalMitraHeader(
+            locationCount: _locationCount,
+            pendingCount: _pendingCount,
+            completedCount: _completedCount,
+            onChatPressed: () {
+              // Handle chat press
+            },
+            onNotificationPressed: () {
+              // Handle notification press
+            },
+          ),
 
-            // Body content
-            Expanded(
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: greenColor))
-                  : _buildBody(context, isSmallScreen),
-            ),
-          ],
-        ),
+          // Body content
+          Expanded(
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator(color: greenColor))
+                : _buildBody(context, isSmallScreen),
+          ),
+        ],
       ),
     );
   }
