@@ -1,3 +1,4 @@
+import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/mitra_pickup_schedule.dart';
@@ -341,17 +342,31 @@ class _HistoryPageState extends State<HistoryPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.history, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: greyColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.history,
+                size: 64,
+                color: greyColor.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
               'Belum ada riwayat',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: greyTextStyle.copyWith(fontSize: 16, fontWeight: medium),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Riwayat pengambilan yang selesai akan muncul di sini',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-              textAlign: TextAlign.center,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Text(
+                'Riwayat pengambilan yang selesai akan muncul di sini',
+                style: greyTextStyle.copyWith(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
@@ -404,195 +419,292 @@ class _HistoryCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      shadowColor: greenColor.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: greenColor.withOpacity(0.1), width: 1),
+      ),
       child: InkWell(
         onTap: () => _showDetailModal(context),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with Date
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    schedule.completedAt != null
-                        ? DateFormat(
-                            'dd MMM yyyy, HH:mm',
-                            'id_ID',
-                          ).format(schedule.completedAt!)
-                        : '-',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle, size: 14, color: Colors.green),
-                        SizedBox(width: 4),
-                        Text(
-                          'Selesai',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 20),
-
-              // User Info
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.blue[100],
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.blue,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          schedule.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        Text(
-                          schedule.pickupAddress,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Weight and Points Info
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [whiteColor, lightBackgroundColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with Date
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.scale,
-                            size: 20,
-                            color: Colors.orange,
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Total Berat',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                '${schedule.totalWeight?.toStringAsFixed(2) ?? '0'} kg',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    Text(
+                      schedule.completedAt != null
+                          ? DateFormat(
+                              'dd MMM yyyy, HH:mm',
+                              'id_ID',
+                            ).format(schedule.completedAt!)
+                          : '-',
+                      style: greyTextStyle.copyWith(fontSize: 12),
                     ),
-                    Container(width: 1, height: 40, color: Colors.grey[300]),
-                    Expanded(
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: schedule.statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: schedule.statusColor.withOpacity(0.3),
+                        ),
+                      ),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.stars,
-                            size: 20,
-                            color: Colors.amber,
+                          Icon(
+                            schedule.statusIcon,
+                            size: 14,
+                            color: schedule.statusColor,
                           ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Poin Didapat',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                '$pointsEarned pts',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(width: 4),
+                          Text(
+                            schedule.statusDisplay,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: semiBold,
+                              color: schedule.statusColor,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
+                Divider(height: 20, color: greyColor.withOpacity(0.3)),
 
-              // Photos Count
-              if (schedule.pickupPhotos != null &&
-                  schedule.pickupPhotos!.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                // User Info
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: blueColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: blueColor.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(Icons.person, color: blueColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            schedule.userName,
+                            style: blackTextStyle.copyWith(
+                              fontWeight: bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            schedule.pickupAddress,
+                            style: greyTextStyle.copyWith(fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Scheduled Pickup Time
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: blueColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: blueColor.withOpacity(0.2)),
+                  ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.photo_library,
-                        size: 16,
-                        color: Colors.blue,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${schedule.pickupPhotos!.length} foto',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      Icon(Icons.access_time, size: 18, color: blueColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              schedule.scheduleDay,
+                              style: blackTextStyle.copyWith(
+                                fontSize: 13,
+                                fontWeight: semiBold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              schedule.pickupTimeStart,
+                              style: greyTextStyle.copyWith(
+                                fontSize: 12,
+                                fontWeight: medium,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-            ],
+                const SizedBox(height: 12),
+
+                // Weight and Points Info
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        orangeColor.withOpacity(0.1),
+                        yellowColor.withOpacity(0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: orangeColor.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: orangeColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.scale,
+                                size: 20,
+                                color: orangeColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Total Berat',
+                                  style: greyTextStyle.copyWith(fontSize: 11),
+                                ),
+                                Text(
+                                  '${schedule.totalWeight?.toStringAsFixed(2) ?? '0'} kg',
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: greyColor.withOpacity(0.3),
+                      ),
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: yellowColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.stars,
+                                size: 20,
+                                color: yellowColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Poin Didapat',
+                                  style: greyTextStyle.copyWith(fontSize: 11),
+                                ),
+                                Text(
+                                  '$pointsEarned pts',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: bold,
+                                    color: yellowColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Photos Count
+                if (schedule.pickupPhotos != null &&
+                    schedule.pickupPhotos!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: blueColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: blueColor.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.photo_library, size: 16, color: blueColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${schedule.pickupPhotos!.length} foto',
+                            style: blueTextStyle.copyWith(
+                              fontSize: 12,
+                              fontWeight: medium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

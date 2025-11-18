@@ -61,7 +61,10 @@ class _MitraHomePageState extends State<MitraHomePage>
                         ),
                         const Spacer(),
                         IconButton(
-                          icon: Icon(Icons.notifications_outlined, color: blackColor),
+                          icon: Icon(
+                            Icons.notifications_outlined,
+                            color: blackColor,
+                          ),
                           onPressed: () {
                             // Handle notification
                           },
@@ -74,7 +77,10 @@ class _MitraHomePageState extends State<MitraHomePage>
                   Container(
                     decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: greyColor.withOpacity(0.3), width: 1),
+                        bottom: BorderSide(
+                          color: greyColor.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                     ),
                     child: TabBar(
@@ -83,10 +89,7 @@ class _MitraHomePageState extends State<MitraHomePage>
                       unselectedLabelColor: greyColor,
                       indicatorColor: greenColor,
                       indicatorWeight: 3,
-                      labelStyle: TextStyle(
-                        fontSize: 15,
-                        fontWeight: semiBold,
-                      ),
+                      labelStyle: TextStyle(fontSize: 15, fontWeight: semiBold),
                       unselectedLabelStyle: TextStyle(
                         fontSize: 15,
                         fontWeight: regular,

@@ -692,7 +692,7 @@ class _ScheduleCard extends StatelessWidget {
                   const Icon(Icons.access_time, size: 20, color: Colors.blue),
                   const SizedBox(width: 8),
                   Text(
-                    '${schedule.scheduleDay}, ${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
+                    '${schedule.scheduleDay}, ${schedule.pickupTimeStart}',
                     style: const TextStyle(fontSize: 14),
                   ),
                 ],

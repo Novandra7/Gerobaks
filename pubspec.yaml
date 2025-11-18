@@ -65,6 +65,10 @@ dependencies:
   uuid: ^4.3.5
   logger: ^2.0.2+1
 
+  # Firebase for push notifications
+  firebase_core: ^3.1.0
+  firebase_messaging: ^15.0.1
+
   # Chart library for statistics
   fl_chart: ^0.69.0
 

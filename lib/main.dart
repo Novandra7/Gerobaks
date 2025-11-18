@@ -8,6 +8,7 @@ import 'package:bank_sha/ui/pages/end_user/tracking/tracking_full_screen.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_full_screen.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
 import 'package:bank_sha/ui/pages/end_user/chat/chat_list_page.dart';
+import 'package:bank_sha/ui/pages/debug/debug_notification_page.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/subscription_plans_page.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/my_subscription_page.dart';
 import 'package:bank_sha/ui/pages/end_user/payment/qris_payment_page.dart';
@@ -63,6 +64,7 @@ import 'package:bank_sha/services/gemini_ai_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/global_notification_polling_service.dart';
 import 'package:bank_sha/controllers/profile_controller.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/app_config.dart';
@@ -221,10 +223,31 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  // Global navigator key untuk notification service
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Initialize global notification polling service
+    _initializeGlobalNotification();
+  }
+
+  Future<void> _initializeGlobalNotification() async {
+    try {
+      final GlobalNotificationPollingService notificationService =
+          GlobalNotificationPollingService();
+
+      // Wait for first frame to ensure navigator is ready
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await notificationService.initialize(_navigatorKey);
+        print('✅ Global notification service initialized');
+      });
+    } catch (e) {
+      print('❌ Error initializing global notification: $e');
+    }
   }
 
   @override
@@ -273,6 +296,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorKey:
+            _navigatorKey, // ✅ Add navigator key untuk global notification
         routes: {
           '/': (context) => const SplashPage(),
           '/onboarding': (context) => OnboardingPage(),
@@ -301,6 +326,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/notifications': (context) =>
               const NotificationScreen(), // New notification feature
           '/chat': (context) => ChatListPage(),
+          '/debug-notification': (context) => const DebugNotificationPage(), // Debug test banner
           '/subscription-plans': (context) => SubscriptionPlansPage(),
           '/my-subscription': (context) => MySubscriptionPage(),
           '/tambah-jadwal': (context) => const TambahJadwalPage(),

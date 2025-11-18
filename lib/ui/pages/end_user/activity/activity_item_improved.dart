@@ -6,10 +6,7 @@ import 'package:flutter/material.dart';
 class ActivityItemImproved extends StatelessWidget {
   final ActivityModel activity;
 
-  const ActivityItemImproved({
-    super.key,
-    required this.activity,
-  });
+  const ActivityItemImproved({super.key, required this.activity});
 
   Color getStatusColor() {
     switch (activity.status.toLowerCase()) {
@@ -17,14 +14,17 @@ class ActivityItemImproved extends StatelessWidget {
         return Colors.red;
       case 'dijadwalkan':
         return Colors.orange;
+      case 'sedang diproses': // ✅ Blue for on_progress
+        return Colors.blue;
       case 'menuju lokasi':
+      case 'mitra menuju lokasi':
         return Colors.blue;
       case 'selesai':
       default:
         return greenColor;
     }
   }
-  
+
   // Format datetime string dengan benar, menangani baik '\n' atau '\\n' sebagai separator
   String _formatDateTime(String dateTimeStr) {
     // Cek apakah string mengandung karakter escape '\\n'
@@ -36,7 +36,7 @@ class ActivityItemImproved extends StatelessWidget {
     else if (dateTimeStr.contains('\n')) {
       final parts = dateTimeStr.split('\n');
       return parts.length > 1 ? '${parts[0]}, ${parts[1]}' : dateTimeStr;
-    } 
+    }
     // Jika tidak ada separator, kembalikan string asli
     else {
       return dateTimeStr;
@@ -78,12 +78,14 @@ class ActivityItemImproved extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              child: Image.asset(
-                activity.getIcon(),
-                width: 24,
-                height: 24,
-                color: statusColor, // Warna ikon sesuai dengan status
-              ),
+              child: activity.status.toLowerCase() == 'selesai'
+                  ? Icon(Icons.check_circle, size: 24, color: statusColor)
+                  : Image.asset(
+                      activity.getIcon(),
+                      width: 24,
+                      height: 24,
+                      color: statusColor, // Warna ikon sesuai dengan status
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -102,11 +104,7 @@ class ActivityItemImproved extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 12,
-                        color: greyColor,
-                      ),
+                      Icon(Icons.location_on, size: 12, color: greyColor),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -122,11 +120,7 @@ class ActivityItemImproved extends StatelessWidget {
                   // Tampilkan tanggal dan waktu dalam satu baris dengan formatting yang lebih baik
                   Row(
                     children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 12,
-                        color: greyColor,
-                      ),
+                      Icon(Icons.access_time, size: 12, color: greyColor),
                       const SizedBox(width: 4),
                       Text(
                         _formatDateTime(activity.dateTime),
@@ -148,18 +142,34 @@ class ActivityItemImproved extends StatelessWidget {
                               color: statusColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Text(
-                              activity.status,
-                              style: blackTextStyle.copyWith(
-                                color: statusColor,
-                                fontSize: 10,
-                                fontWeight: medium,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Icon ceklis untuk status selesai
+                                if (activity.status.toLowerCase() == 'selesai')
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      size: 12,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                Text(
+                                  activity.status,
+                                  style: blackTextStyle.copyWith(
+                                    color: statusColor,
+                                    fontSize: 10,
+                                    fontWeight: medium,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          
+
                           // Tampilkan badge poin jika aktivitas sudah selesai dan memiliki total poin
-                          if (activity.status.toLowerCase() == 'selesai' && activity.totalPoints != null)
+                          if (activity.status.toLowerCase() == 'selesai' &&
+                              activity.totalPoints != null)
                             Container(
                               margin: const EdgeInsets.only(left: 4),
                               padding: const EdgeInsets.symmetric(
@@ -193,7 +203,8 @@ class ActivityItemImproved extends StatelessWidget {
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () => showActivityDetailModal(context, activity),
+                        onPressed: () =>
+                            showActivityDetailModal(context, activity),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,

@@ -71,17 +71,50 @@ class MitraScheduleCard extends StatelessWidget {
     final dateFormat = DateFormat('EEEE, dd MMM yyyy', 'id_ID');
     final timeFormat = DateFormat('HH:mm');
 
-    return Row(
-      children: [
-        Icon(Icons.calendar_today, size: 16, color: greyColor),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            '${dateFormat.format(schedule.scheduledDate)} • ${timeFormat.format(DateTime(schedule.scheduledDate.year, schedule.scheduledDate.month, schedule.scheduledDate.day, schedule.timeSlot.hour, schedule.timeSlot.minute))} WIB',
-            style: blackTextStyle.copyWith(fontSize: 12, fontWeight: medium),
+    // Gabungkan scheduledDate dengan timeSlot untuk mendapatkan waktu lengkap
+    final fullDateTime = DateTime(
+      schedule.scheduledDate.year,
+      schedule.scheduledDate.month,
+      schedule.scheduledDate.day,
+      schedule.timeSlot.hour,
+      schedule.timeSlot.minute,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: lightBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: greyColor.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.access_time, size: 18, color: purpleColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateFormat.format(fullDateTime),
+                  style: blackTextStyle.copyWith(
+                    fontSize: 13,
+                    fontWeight: semiBold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${timeFormat.format(fullDateTime)} WIB',
+                  style: greyTextStyle.copyWith(
+                    fontSize: 12,
+                    fontWeight: medium,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

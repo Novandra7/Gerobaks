@@ -252,6 +252,55 @@ class NotificationApiService {
     }
   }
 
+  /// Register FCM Token
+  /// POST /api/user/fcm-token
+  Future<bool> registerFcmToken({
+    required String fcmToken,
+    required String deviceType,
+    String? deviceName,
+  }) async {
+    try {
+      print('📤 Registering FCM token...');
+      print('   - Device type: $deviceType');
+
+      final response = await _dio.post(
+        '$baseUrl/user/fcm-token',
+        data: {
+          'fcm_token': fcmToken,
+          'device_type': deviceType,
+          if (deviceName != null) 'device_name': deviceName,
+        },
+      );
+
+      print('✅ FCM token registered: ${response.data}');
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      print('❌ Error registering FCM token: ${e.message}');
+      _handleError(e, 'registering FCM token');
+      rethrow;
+    }
+  }
+
+  /// Remove FCM Token (logout)
+  /// DELETE /api/user/fcm-token
+  Future<bool> removeFcmToken(String fcmToken) async {
+    try {
+      print('🗑️ Removing FCM token...');
+
+      final response = await _dio.delete(
+        '$baseUrl/user/fcm-token',
+        data: {'fcm_token': fcmToken},
+      );
+
+      print('✅ FCM token removed: ${response.data}');
+      return response.data['success'] == true;
+    } on DioException catch (e) {
+      print('❌ Error removing FCM token: ${e.message}');
+      _handleError(e, 'removing FCM token');
+      rethrow;
+    }
+  }
+
   /// Helper untuk format error message untuk UI
   String getErrorMessage(dynamic error) {
     if (error is DioException) {

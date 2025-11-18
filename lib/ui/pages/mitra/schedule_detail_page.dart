@@ -340,8 +340,7 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                           icon: Icons.access_time,
                           iconColor: Colors.orange,
                           label: 'Waktu',
-                          value:
-                              '${widget.schedule.pickupTimeStart} - ${widget.schedule.pickupTimeEnd}',
+                          value: widget.schedule.pickupTimeStart,
                         ),
                       ],
                     ),

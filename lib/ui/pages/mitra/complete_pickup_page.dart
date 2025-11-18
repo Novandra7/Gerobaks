@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../models/mitra_pickup_schedule.dart';
@@ -137,32 +138,73 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
   void _showImageSourceDialog() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                title: const Text('Ambil Foto dari Kamera'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.green),
-                title: const Text('Pilih dari Galeri'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-            ],
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: whiteColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: greyColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Text(
+                  'Pilih Sumber Foto',
+                  style: blackTextStyle.copyWith(
+                    fontSize: 18,
+                    fontWeight: bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: blueColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.camera_alt, color: blueColor),
+                  ),
+                  title: Text(
+                    'Ambil Foto dari Kamera',
+                    style: blackTextStyle.copyWith(fontWeight: medium),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: greenColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.photo_library, color: greenColor),
+                  ),
+                  title: Text(
+                    'Pilih dari Galeri',
+                    style: blackTextStyle.copyWith(fontWeight: medium),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -219,27 +261,93 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Konfirmasi Penyelesaian'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Konfirmasi Penyelesaian',
+          style: blackTextStyle.copyWith(fontWeight: bold, fontSize: 18),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Detail pengambilan:'),
+            Text(
+              'Detail pengambilan:',
+              style: greyTextStyle.copyWith(fontSize: 14),
+            ),
             const SizedBox(height: 12),
-            Text('Total Berat: ${totalWeight.toStringAsFixed(2)} kg'),
-            Text('Jumlah Foto: ${_photos.length}'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: greenColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: greenColor.withOpacity(0.3)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Berat:',
+                        style: blackTextStyle.copyWith(fontWeight: medium),
+                      ),
+                      Text(
+                        '${totalWeight.toStringAsFixed(2)} kg',
+                        style: greenTextStyle.copyWith(
+                          fontWeight: bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Jumlah Foto:',
+                        style: blackTextStyle.copyWith(fontWeight: medium),
+                      ),
+                      Text(
+                        '${_photos.length}',
+                        style: blueTextStyle.copyWith(
+                          fontWeight: bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
-            const Text('Yakin ingin menyelesaikan pengambilan?'),
+            Text(
+              'Yakin ingin menyelesaikan pengambilan?',
+              style: blackTextStyle.copyWith(fontSize: 14),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Periksa Kembali'),
+            child: Text(
+              'Periksa Kembali',
+              style: greyTextStyle.copyWith(fontWeight: semiBold),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya, Selesaikan'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: greenColor,
+              foregroundColor: whiteColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Ya, Selesaikan',
+              style: whiteTextStyle.copyWith(fontWeight: semiBold),
+            ),
           ),
         ],
       ),
@@ -262,9 +370,16 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Pengambilan berhasil diselesaikan!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(
+              '✅ Pengambilan berhasil diselesaikan!',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: greenColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         Navigator.pop(context, true); // Return true to refresh previous screen
@@ -273,8 +388,15 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Gagal menyelesaikan: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              '❌ Gagal menyelesaikan: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -288,7 +410,17 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Selesaikan Pengambilan')),
+      backgroundColor: uicolor,
+      appBar: AppBar(
+        title: Text(
+          'Selesaikan Pengambilan',
+          style: blackTextStyle.copyWith(fontWeight: semiBold, fontSize: 18),
+        ),
+        backgroundColor: whiteColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: blackColor),
+        centerTitle: true,
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -296,66 +428,88 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
           children: [
             // Schedule Info Card
             Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Informasi Jadwal',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+              elevation: 2,
+              shadowColor: greenColor.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: greenColor.withOpacity(0.1)),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [whiteColor, greenui],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Informasi Jadwal',
+                        style: blackTextStyle.copyWith(
+                          fontSize: 18,
+                          fontWeight: bold,
+                        ),
                       ),
-                    ),
-                    const Divider(height: 24),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.green[100],
-                          child: const Icon(Icons.person, color: Colors.green),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.schedule.userName,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                      Divider(height: 24, color: greenColor.withOpacity(0.2)),
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: greenColor.withOpacity(0.3),
+                                width: 2,
                               ),
-                              Text(
-                                widget.schedule.pickupAddress,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 14,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                            ),
+                            child: CircleAvatar(
+                              backgroundColor: greenColor.withOpacity(0.1),
+                              child: Icon(Icons.person, color: greenColor),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.schedule.userName,
+                                  style: blackTextStyle.copyWith(
+                                    fontWeight: bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  widget.schedule.pickupAddress,
+                                  style: greyTextStyle.copyWith(fontSize: 14),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
 
             // Photos Section
-            const Text(
+            Text(
               'Foto Pengambilan *',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: blackTextStyle.copyWith(fontSize: 16, fontWeight: bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Upload minimal 1 foto sampah yang diambil',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: greyTextStyle.copyWith(fontSize: 14),
             ),
             const SizedBox(height: 12),
 
@@ -366,8 +520,8 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                 ),
                 itemCount: _photos.length,
                 itemBuilder: (context, index) {
@@ -375,7 +529,18 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: greenColor.withOpacity(0.2),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: greenColor.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                           image: DecorationImage(
                             image: FileImage(File(_photos[index].path)),
                             fit: BoxFit.cover,
@@ -389,9 +554,15 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
                           onTap: () => _removePhoto(index),
                           child: Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
+                            decoration: BoxDecoration(
+                              color: redcolor,
                               shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.close,
@@ -409,20 +580,31 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
 
             OutlinedButton.icon(
               onPressed: _showImageSourceDialog,
-              icon: const Icon(Icons.add_photo_alternate),
-              label: Text(_photos.isEmpty ? 'Tambah Foto' : 'Tambah Foto Lagi'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: blueColor,
+                side: BorderSide(color: blueColor.withOpacity(0.5)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              icon: Icon(Icons.add_photo_alternate, color: blueColor),
+              label: Text(
+                _photos.isEmpty ? 'Tambah Foto' : 'Tambah Foto Lagi',
+                style: blueTextStyle.copyWith(fontWeight: semiBold),
+              ),
             ),
             const SizedBox(height: 24),
 
             // Weight Inputs Section
-            const Text(
+            Text(
               'Berat Sampah (kg) *',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: blackTextStyle.copyWith(fontSize: 16, fontWeight: bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Isi berat untuk ${_displayedWasteTypes.length} jenis sampah',
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
+              style: greyTextStyle.copyWith(fontSize: 14),
             ),
             const SizedBox(height: 8),
 
@@ -433,12 +615,17 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
               children: _displayedWasteTypes.map((type) {
                 return Chip(
                   label: Text(type),
-                  backgroundColor: Colors.green[50],
+                  backgroundColor: greenColor.withOpacity(0.1),
                   labelStyle: TextStyle(
-                    color: Colors.green[800],
-                    fontWeight: FontWeight.w500,
+                    color: greenColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
                   ),
-                  side: BorderSide(color: Colors.green[200]!),
+                  side: BorderSide(color: greenColor.withOpacity(0.3)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                 );
               }).toList(),
             ),
@@ -453,51 +640,109 @@ class _CompletePickupPageState extends State<CompletePickupPage> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: type,
-                    suffixText: 'kg',
-                    border: const OutlineInputBorder(),
-                    hintText: '0.00',
+                    labelText: 'Berat $type (kg)',
+                    labelStyle: greyTextStyle,
+                    hintText: 'Contoh: 2.5',
+                    hintStyle: greyTextStyle.copyWith(fontSize: 14),
+                    prefixIcon: Icon(Icons.monitor_weight, color: greenColor),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: greenColor, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: redcolor, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: whiteColor,
                   ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Berat wajib diisi';
+                    }
+                    final weight = double.tryParse(value);
+                    if (weight == null || weight <= 0) {
+                      return 'Masukkan berat yang valid (> 0)';
+                    }
+                    return null;
+                  },
                 ),
               );
             }),
             const SizedBox(height: 24),
 
             // Notes Section
-            const Text(
+            Text(
               'Catatan (Opsional)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: blackTextStyle.copyWith(fontSize: 16, fontWeight: bold),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _notesController,
               maxLines: 4,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
+              style: blackTextStyle,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: greenColor, width: 2),
+                ),
                 hintText: 'Tambahkan catatan jika diperlukan...',
+                hintStyle: greyTextStyle.copyWith(fontSize: 14),
+                filled: true,
+                fillColor: whiteColor,
               ),
             ),
             const SizedBox(height: 32),
 
             // Submit Button
             SizedBox(
-              height: 50,
+              width: double.infinity,
+              height: 54,
               child: ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _submitCompletion,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: greenColor,
+                  foregroundColor: whiteColor,
+                  disabledBackgroundColor: greyColor.withOpacity(0.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                  shadowColor: greenColor.withOpacity(0.3),
+                ),
                 icon: _isSubmitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: whiteColor,
                         ),
                       )
-                    : const Icon(Icons.check_circle),
+                    : Icon(Icons.check_circle, color: whiteColor),
                 label: Text(
                   _isSubmitting ? 'Memproses...' : 'Selesaikan Pengambilan',
+                  style: whiteTextStyle.copyWith(
+                    fontWeight: semiBold,
+                    fontSize: 16,
+                  ),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               ),
             ),
             const SizedBox(height: 32),

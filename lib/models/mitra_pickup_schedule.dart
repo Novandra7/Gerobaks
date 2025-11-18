@@ -217,15 +217,15 @@ class MitraPickupSchedule {
   Color get statusColor {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return const Color(0xFFFF8C00); // orangeColor
       case 'on_progress':
-        return Colors.blue;
+        return const Color(0xFF53C1F9); // blueColor
       case 'completed':
-        return Colors.green;
+        return const Color(0xFF00BB38); // greenColor
       case 'cancelled':
-        return Colors.red;
+        return const Color(0xFFF30303); // redcolor
       default:
-        return Colors.grey;
+        return const Color(0xFFA4A8AE); // greyColor
     }
   }
 

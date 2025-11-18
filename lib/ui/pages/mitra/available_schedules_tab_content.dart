@@ -1,3 +1,4 @@
+import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/mitra_pickup_schedule.dart';
@@ -298,18 +299,65 @@ class _AvailableSchedulesTabContentState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Terima Jadwal?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: whiteColor,
+        title: Text(
+          'Terima Jadwal?',
+          style: blackTextStyle.copyWith(fontSize: 20, fontWeight: bold),
+          textAlign: TextAlign.center,
+        ),
         content: Text(
           'Apakah Anda yakin ingin menerima jadwal pengambilan dari ${schedule.userName}?',
+          style: blackTextStyle.copyWith(fontSize: 15, fontWeight: regular),
+          textAlign: TextAlign.center,
         ),
+        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ya, Terima'),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(
+                      color: blueColor,
+                      fontWeight: semiBold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: greenColor,
+                    foregroundColor: whiteColor,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Ya, Terima',
+                    style: whiteTextStyle.copyWith(
+                      fontWeight: semiBold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -323,8 +371,26 @@ class _AvailableSchedulesTabContentState
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) =>
-              const Center(child: CircularProgressIndicator()),
+          builder: (context) => Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: whiteColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: greenColor),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Menerima jadwal...',
+                    style: blackTextStyle.copyWith(fontWeight: medium),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       }
 
@@ -333,9 +399,16 @@ class _AvailableSchedulesTabContentState
       if (mounted) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Jadwal berhasil diterima'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(
+              '✅ Jadwal berhasil diterima',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: greenColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         _loadSchedules(); // Refresh list
@@ -345,8 +418,15 @@ class _AvailableSchedulesTabContentState
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Gagal menerima jadwal: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              '❌ Gagal menerima jadwal: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -433,17 +513,41 @@ class _AvailableSchedulesTabContentState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
-              'Tidak ada jadwal tersedia',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: greyColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.inbox_outlined,
+                size: 64,
+                color: greyColor.withOpacity(0.6),
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            Text(
+              'Tidak ada jadwal tersedia',
+              style: greyTextStyle.copyWith(fontSize: 16, fontWeight: medium),
+            ),
+            const SizedBox(height: 32),
+            OutlinedButton.icon(
               onPressed: _loadSchedules,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
+              icon: Icon(Icons.refresh, color: blueColor),
+              label: Text(
+                'Refresh',
+                style: blueTextStyle.copyWith(fontWeight: semiBold),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: blueColor),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -458,37 +562,11 @@ class _AvailableSchedulesTabContentState
         itemCount: _schedules.length + (_isLoadingMore ? 1 : 1),
         itemBuilder: (context, index) {
           if (index == _schedules.length) {
-            // Loading indicator or end message
+            // Loading indicator
             if (_isLoadingMore) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            if (!_hasMorePages && _schedules.isNotEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: Colors.green[400],
-                        size: 40,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '✅ Semua jadwal telah ditampilkan',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               );
             }
 
@@ -522,152 +600,214 @@ class _ScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      shadowColor: greenColor.withOpacity(0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: greenColor.withOpacity(0.1), width: 1),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Info
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.green[100],
-                    child: const Icon(Icons.person, color: Colors.green),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          schedule.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [whiteColor, greenui],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // User Info
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: greenColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: greenColor.withOpacity(0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Icon(Icons.person, color: greenColor, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            schedule.userName,
+                            style: blackTextStyle.copyWith(
+                              fontWeight: bold,
+                              fontSize: 16,
+                            ),
                           ),
-                        ),
-                        Text(
-                          schedule.userPhone,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          const SizedBox(height: 2),
+                          Text(
+                            schedule.userPhone,
+                            style: greyTextStyle.copyWith(fontSize: 14),
                           ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: schedule.statusColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: schedule.statusColor.withOpacity(0.3),
+                          width: 1,
                         ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: schedule.statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          schedule.statusIcon,
-                          size: 16,
-                          color: schedule.statusColor,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          schedule.statusDisplay,
-                          style: TextStyle(
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            schedule.statusIcon,
+                            size: 16,
                             color: schedule.statusColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Text(
+                            schedule.statusDisplay,
+                            style: TextStyle(
+                              color: schedule.statusColor,
+                              fontWeight: semiBold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
+                  ],
+                ),
+                Divider(height: 24, color: greyColor.withOpacity(0.3)),
 
-              // Address
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.location_on, size: 20, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      schedule.pickupAddress,
-                      style: const TextStyle(fontSize: 14),
+                // Address
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on, size: 20, color: redcolor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        schedule.pickupAddress,
+                        style: blackTextStyle.copyWith(fontSize: 14),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-              // Schedule Time
-              Row(
-                children: [
-                  const Icon(Icons.access_time, size: 20, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${schedule.scheduleDay}, ${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Waste Types
-              if (schedule.wasteSummary.isNotEmpty)
+                // Schedule Time
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.orange[50],
+                    color: blueColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: blueColor.withOpacity(0.2)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.delete_outline,
-                        size: 20,
-                        color: Colors.orange,
-                      ),
+                      Icon(Icons.access_time, size: 20, color: blueColor),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          schedule.wasteSummary,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              schedule.scheduleDay,
+                              style: blackTextStyle.copyWith(
+                                fontSize: 14,
+                                fontWeight: semiBold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              schedule.pickupTimeStart,
+                              style: greyTextStyle.copyWith(
+                                fontSize: 13,
+                                fontWeight: medium,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-              // Accept Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onAccept,
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Terima Jadwal'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
+                // Waste Types
+                if (schedule.wasteSummary.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: orangeColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: orangeColor.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: orangeColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            schedule.wasteSummary,
+                            style: blackTextStyle.copyWith(
+                              fontSize: 14,
+                              fontWeight: medium,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // Accept Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onAccept,
+                    icon: const Icon(Icons.check_circle),
+                    label: Text(
+                      'Terima Jadwal',
+                      style: whiteTextStyle.copyWith(fontWeight: semiBold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      foregroundColor: whiteColor,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                      shadowColor: greenColor.withOpacity(0.3),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

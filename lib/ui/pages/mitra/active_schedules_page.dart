@@ -1,3 +1,4 @@
+import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/mitra_pickup_schedule.dart';
@@ -71,47 +72,6 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
     }
   }
 
-  Future<void> _confirmArrival(MitraPickupSchedule schedule) async {
-    // TODO: Get current location
-    final double currentLat = schedule.latitude; // Placeholder
-    final double currentLong = schedule.longitude; // Placeholder
-
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      await _apiService.confirmArrival(
-        schedule.id,
-        latitude: currentLat,
-        longitude: currentLong,
-      );
-
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Kedatangan berhasil dikonfirmasi'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _loadSchedules(); // Refresh
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Gagal konfirmasi kedatangan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _goToCompletePickup(MitraPickupSchedule schedule) async {
     final result = await Navigator.push(
       context,
@@ -131,19 +91,55 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Batalkan Jadwal'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: redcolor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.warning_rounded, color: redcolor, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Batalkan Jadwal',
+              style: blackTextStyle.copyWith(fontSize: 18, fontWeight: bold),
+            ),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Anda yakin ingin membatalkan jadwal ini?'),
+            Text(
+              'Anda yakin ingin membatalkan jadwal ini?',
+              style: greyTextStyle.copyWith(fontSize: 14),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: reasonController,
-              decoration: const InputDecoration(
+              style: blackTextStyle,
+              decoration: InputDecoration(
                 labelText: 'Alasan pembatalan',
-                border: OutlineInputBorder(),
+                labelStyle: greyTextStyle,
                 hintText: 'Masukkan alasan...',
+                hintStyle: greyTextStyle.copyWith(fontSize: 14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: greyColor.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: redcolor, width: 2),
+                ),
+                filled: true,
+                fillColor: whiteColor,
               ),
               maxLines: 3,
             ),
@@ -152,12 +148,25 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Tidak'),
+            child: Text(
+              'Tidak',
+              style: greyTextStyle.copyWith(fontWeight: semiBold),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Ya, Batalkan'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: redcolor,
+              foregroundColor: whiteColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Ya, Batalkan',
+              style: whiteTextStyle.copyWith(fontWeight: semiBold),
+            ),
           ),
         ],
       ),
@@ -169,7 +178,26 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: whiteColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: redcolor),
+                const SizedBox(height: 16),
+                Text(
+                  'Membatalkan jadwal...',
+                  style: blackTextStyle.copyWith(fontWeight: medium),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
 
       await _apiService.cancelSchedule(schedule.id, reasonController.text);
@@ -177,9 +205,16 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
       if (mounted) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Jadwal berhasil dibatalkan'),
-            backgroundColor: Colors.orange,
+          SnackBar(
+            content: Text(
+              '✅ Jadwal berhasil dibatalkan',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: orangeColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         _loadSchedules(); // Refresh
@@ -189,8 +224,15 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Gagal membatalkan jadwal: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              '❌ Gagal membatalkan jadwal: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }
@@ -230,16 +272,27 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.work_off_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: greyColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.work_off_outlined,
+                size: 64,
+                color: greyColor.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
               'Tidak ada jadwal aktif',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: greyTextStyle.copyWith(fontSize: 16, fontWeight: medium),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Terima jadwal dari tab "Tersedia"',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: greyTextStyle.copyWith(fontSize: 14),
             ),
           ],
         ),
@@ -257,7 +310,6 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
             schedule: schedule,
             onNavigate: () => _openGoogleMaps(schedule),
             onCall: () => _callUser(schedule),
-            onConfirmArrival: () => _confirmArrival(schedule),
             onComplete: () => _goToCompletePickup(schedule),
             onCancel: () => _cancelSchedule(schedule),
           );
@@ -271,7 +323,6 @@ class _ActiveScheduleCard extends StatelessWidget {
   final MitraPickupSchedule schedule;
   final VoidCallback onNavigate;
   final VoidCallback onCall;
-  final VoidCallback onConfirmArrival;
   final VoidCallback onComplete;
   final VoidCallback onCancel;
 
@@ -279,7 +330,6 @@ class _ActiveScheduleCard extends StatelessWidget {
     required this.schedule,
     required this.onNavigate,
     required this.onCall,
-    required this.onConfirmArrival,
     required this.onComplete,
     required this.onCancel,
   });
@@ -288,210 +338,286 @@ class _ActiveScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Jadwal Aktif',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: schedule.statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        schedule.statusIcon,
-                        size: 14,
-                        color: schedule.statusColor,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        schedule.statusDisplay,
-                        style: TextStyle(
-                          color: schedule.statusColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-
-            // User Info
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.green[100],
-                  child: const Icon(Icons.person, color: Colors.green),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        schedule.userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        schedule.userPhone,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.phone, color: Colors.blue),
-                  onPressed: onCall,
-                  tooltip: 'Telepon',
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Address
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.location_on, size: 20, color: Colors.red),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    schedule.pickupAddress,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Schedule
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 20, color: Colors.blue),
-                const SizedBox(width: 8),
-                Text(
-                  '${schedule.scheduleDay}, ${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Waste Summary
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+      shadowColor: blueColor.withOpacity(0.2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: blueColor.withOpacity(0.1), width: 1),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [whiteColor, lightBackgroundColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with Status
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(
-                    Icons.delete_outline,
-                    size: 20,
-                    color: Colors.orange,
+                  Text(
+                    'Jadwal Aktif',
+                    style: greyTextStyle.copyWith(
+                      fontSize: 12,
+                      fontWeight: medium,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: schedule.statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: schedule.statusColor.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          schedule.statusIcon,
+                          size: 14,
+                          color: schedule.statusColor,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          schedule.statusDisplay,
+                          style: TextStyle(
+                            color: schedule.statusColor,
+                            fontWeight: semiBold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              Divider(height: 24, color: greyColor.withOpacity(0.3)),
+
+              // User Info
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: greenColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: greenColor.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(Icons.person, color: greenColor, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schedule.userName,
+                          style: blackTextStyle.copyWith(
+                            fontWeight: bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          schedule.userPhone,
+                          style: greyTextStyle.copyWith(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: blueColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.phone, color: blueColor),
+                      onPressed: onCall,
+                      tooltip: 'Telepon',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Address
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: redcolor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: redcolor.withOpacity(0.1)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.location_on, size: 20, color: redcolor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        schedule.pickupAddress,
+                        style: blackTextStyle.copyWith(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Schedule
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: blueColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: blueColor.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, size: 20, color: blueColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            schedule.scheduleDay,
+                            style: blackTextStyle.copyWith(
+                              fontSize: 14,
+                              fontWeight: semiBold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            schedule.pickupTimeStart,
+                            style: greyTextStyle.copyWith(
+                              fontSize: 13,
+                              fontWeight: medium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Waste Summary
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: orangeColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: orangeColor.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 20, color: orangeColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        schedule.wasteSummary,
+                        style: blackTextStyle.copyWith(
+                          fontSize: 14,
+                          fontWeight: medium,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onNavigate,
+                      icon: Icon(Icons.map, size: 18, color: blueColor),
+                      label: Text(
+                        'Navigasi',
+                        style: blueTextStyle.copyWith(
+                          fontSize: 13,
+                          fontWeight: semiBold,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: blueColor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      schedule.wasteSummary,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                    child: OutlinedButton.icon(
+                      onPressed: onCancel,
+                      icon: Icon(Icons.cancel, size: 18, color: redcolor),
+                      label: Text(
+                        'Batalkan',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: redcolor,
+                          fontWeight: semiBold,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: redcolor),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onNavigate,
-                    icon: const Icon(Icons.map, size: 18),
-                    label: const Text(
-                      'Navigasi',
-                      style: TextStyle(fontSize: 13),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onComplete,
+                  icon: const Icon(Icons.done_all, size: 18),
+                  label: Text(
+                    'Selesaikan',
+                    style: whiteTextStyle.copyWith(
+                      fontSize: 13,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: greenColor,
+                    foregroundColor: whiteColor,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onConfirmArrival,
-                    icon: const Icon(Icons.check_circle, size: 18),
-                    label: const Text('Sampai', style: TextStyle(fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onCancel,
-                    icon: const Icon(Icons.cancel, size: 18, color: Colors.red),
-                    label: const Text(
-                      'Batalkan',
-                      style: TextStyle(fontSize: 13, color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onComplete,
-                    icon: const Icon(Icons.done_all, size: 18),
-                    label: const Text(
-                      'Selesaikan',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

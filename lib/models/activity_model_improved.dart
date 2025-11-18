@@ -54,6 +54,8 @@ class ActivityModel {
         return 'Dijadwalkan';
       case 'diterima mitra':
         return 'Diterima Mitra';
+      case 'sedang diproses': // ✅ Added on_progress case
+        return 'Sedang Diproses';
       case 'menuju lokasi':
       case 'mitra menuju lokasi':
         return 'Menuju Lokasi';
@@ -75,6 +77,8 @@ class ActivityModel {
         return 'assets/ic_calender_search.png';
       case 'diterima mitra':
         return 'assets/ic_check.png';
+      case 'sedang diproses': // ✅ Added on_progress case with processing icon
+        return 'assets/ic_tracking.png';
       case 'menuju lokasi':
       case 'mitra menuju lokasi':
         return 'assets/ic_truck_otw.png';

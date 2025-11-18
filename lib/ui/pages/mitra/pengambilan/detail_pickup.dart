@@ -110,8 +110,16 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('ID jadwal tidak valid untuk memperbarui status.'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'ID jadwal tidak valid untuk memperbarui status.',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
           ),
         );
       }
@@ -164,9 +172,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(successMessage ?? 'Status jadwal diperbarui.'),
+            content: Text(
+              successMessage ?? 'Status jadwal diperbarui.',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
             backgroundColor: greenColor,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
           ),
         );
@@ -176,9 +190,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memperbarui status: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Gagal memperbarui status: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
           ),
         );
@@ -228,20 +248,23 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'Mulai Pengambilan',
-            style: blackTextStyle.copyWith(fontWeight: semiBold),
+            style: blackTextStyle.copyWith(fontWeight: bold, fontSize: 18),
           ),
           content: Text(
             'Pilih metode navigasi yang ingin digunakan untuk menuju lokasi.',
-            style: blackTextStyle.copyWith(fontSize: 14),
+            style: greyTextStyle.copyWith(fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Batal',
-                style: blackTextStyle.copyWith(color: Colors.red),
+                style: TextStyle(color: redcolor, fontWeight: semiBold),
               ),
             ),
             TextButton(
@@ -250,7 +273,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
                 'Navigasi Dalam Aplikasi',
                 style: greenTextStyle.copyWith(
                   fontSize: 14,
-                  fontWeight: medium,
+                  fontWeight: semiBold,
                 ),
               ),
             ),
@@ -258,9 +281,9 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               onPressed: () => Navigator.of(context).pop('google'),
               child: Text(
                 'Google Maps',
-                style: greenTextStyle.copyWith(
+                style: blueTextStyle.copyWith(
                   fontSize: 14,
-                  fontWeight: medium,
+                  fontWeight: semiBold,
                 ),
               ),
             ),
@@ -268,9 +291,10 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               onPressed: () => Navigator.of(context).pop('alternative'),
               child: Text(
                 'Aplikasi Lain',
-                style: greenTextStyle.copyWith(
+                style: TextStyle(
+                  color: orangeColor,
                   fontSize: 14,
-                  fontWeight: medium,
+                  fontWeight: semiBold,
                 ),
               ),
             ),
@@ -327,9 +351,16 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Pilih Navigasi'),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Pilih Navigasi',
+              style: blackTextStyle.copyWith(fontWeight: bold, fontSize: 18),
+            ),
             content: Text(
               'Tidak dapat membuka Google Maps secara otomatis. Silakan pilih opsi navigasi lain atau buka di browser.',
+              style: greyTextStyle.copyWith(fontSize: 14),
             ),
             actions: [
               TextButton(
@@ -337,7 +368,10 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
                   Navigator.pop(context);
                   _openAlternativeMaps();
                 },
-                child: Text('Aplikasi Navigasi Lain'),
+                child: Text(
+                  'Aplikasi Navigasi Lain',
+                  style: blueTextStyle.copyWith(fontWeight: semiBold),
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -349,11 +383,17 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
                     mode: LaunchMode.inAppWebView,
                   );
                 },
-                child: Text('Buka di Browser'),
+                child: Text(
+                  'Buka di Browser',
+                  style: greenTextStyle.copyWith(fontWeight: semiBold),
+                ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+                child: Text(
+                  'Batal',
+                  style: TextStyle(color: redcolor, fontWeight: semiBold),
+                ),
               ),
             ],
           ),
@@ -367,8 +407,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error membuka Google Maps: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Error membuka Google Maps: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: Duration(seconds: 4),
           ),
         );
@@ -417,8 +464,13 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               SnackBar(
                 content: Text(
                   'Tidak ada aplikasi navigasi yang tersedia pada perangkat ini.',
+                  style: whiteTextStyle.copyWith(fontWeight: medium),
                 ),
-                backgroundColor: Colors.red,
+                backgroundColor: redcolor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 duration: Duration(seconds: 3),
               ),
             );
@@ -435,7 +487,13 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text('Pilih Aplikasi Navigasi'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                'Pilih Aplikasi Navigasi',
+                style: blackTextStyle.copyWith(fontWeight: bold, fontSize: 18),
+              ),
               content: SizedBox(
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -455,7 +513,22 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
                     }
 
                     return ListTile(
-                      title: Text(appName),
+                      leading: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: blueColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.navigation,
+                          color: blueColor,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        appName,
+                        style: blackTextStyle.copyWith(fontWeight: medium),
+                      ),
                       onTap: () async {
                         Navigator.pop(context);
                         final uri = Uri.parse(appOptions[appKey]!);
@@ -471,7 +544,10 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Batal'),
+                  child: Text(
+                    'Batal',
+                    style: TextStyle(color: redcolor, fontWeight: semiBold),
+                  ),
                 ),
               ],
             ),
@@ -485,8 +561,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Error: $e',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -510,8 +593,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Tidak dapat membuka navigasi: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Tidak dapat membuka navigasi: ${e.toString()}',
+              style: whiteTextStyle.copyWith(fontWeight: medium),
+            ),
+            backgroundColor: redcolor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -520,8 +610,15 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Data lokasi pengambilan tidak tersedia.'),
-          backgroundColor: Colors.red,
+          content: Text(
+            'Data lokasi pengambilan tidak tersedia.',
+            style: whiteTextStyle.copyWith(fontWeight: medium),
+          ),
+          backgroundColor: redcolor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -535,6 +632,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
     final isSmallScreen = screenWidth < 360;
 
     return Scaffold(
+      backgroundColor: uicolor,
       appBar: AppBar(
         title: Text(
           'Detail Pengambilan',
@@ -543,7 +641,7 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
             fontWeight: semiBold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: whiteColor,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: blackColor),
@@ -576,33 +674,57 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
           Container(
             width: double.infinity,
             margin: EdgeInsets.only(bottom: isSmallScreen ? 14 : 16),
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: _getStatusColor(
-                scheduleData!['status'],
-              ).withValues(alpha: 0.15),
+              gradient: LinearGradient(
+                colors: [
+                  _getStatusColor(scheduleData!['status']).withOpacity(0.15),
+                  _getStatusColor(scheduleData!['status']).withOpacity(0.05),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _getStatusColor(
                   scheduleData!['status'],
-                ).withValues(alpha: 0.3),
-                width: 1,
+                ).withOpacity(0.3),
+                width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: _getStatusColor(
+                    scheduleData!['status'],
+                  ).withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  _getStatusIcon(scheduleData!['status']),
-                  color: _getStatusColor(scheduleData!['status']),
-                  size: 18,
+                Container(
+                  padding: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(
+                      scheduleData!['status'],
+                    ).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _getStatusIcon(scheduleData!['status']),
+                    color: _getStatusColor(scheduleData!['status']),
+                    size: 18,
+                  ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 12),
                 Text(
                   'Status: ${_getStatusText(scheduleData!['status'])}',
                   style: TextStyle(
                     color: _getStatusColor(scheduleData!['status']),
-                    fontWeight: semiBold,
-                    fontSize: isSmallScreen ? 13 : 14,
+                    fontWeight: bold,
+                    fontSize: isSmallScreen ? 14 : 15,
                   ),
                 ),
               ],
@@ -610,123 +732,151 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
           ),
 
           // Customer info card
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
-                ),
-              ],
+          Card(
+            elevation: 2,
+            shadowColor: blueColor.withOpacity(0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: blueColor.withOpacity(0.1)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline,
-                      size: isSmallScreen ? 16 : 18,
-                      color: greenColor,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Informasi Pelanggan',
-                      style: blackTextStyle.copyWith(
-                        fontSize: isSmallScreen ? 14 : 16,
-                        fontWeight: semiBold,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [whiteColor, blueColor.withOpacity(0.03)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: blueColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.person_outline,
+                          size: isSmallScreen ? 18 : 20,
+                          color: blueColor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: isSmallScreen ? 12 : 16),
-                _buildInfoRow(
-                  'Nama',
-                  scheduleData!['customer_name'],
-                  isSmallScreen,
-                ),
-                _buildInfoRow(
-                  'No. Telepon',
-                  scheduleData!['phone'],
-                  isSmallScreen,
-                ),
-                _buildInfoRow(
-                  'Alamat',
-                  scheduleData!['address'],
-                  isSmallScreen,
-                ),
-              ],
+                      SizedBox(width: 12),
+                      Text(
+                        'Informasi Pelanggan',
+                        style: blackTextStyle.copyWith(
+                          fontSize: isSmallScreen ? 15 : 17,
+                          fontWeight: bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
+                  _buildInfoRow(
+                    'Nama',
+                    scheduleData!['customer_name'],
+                    isSmallScreen,
+                  ),
+                  _buildInfoRow(
+                    'No. Telepon',
+                    scheduleData!['phone'],
+                    isSmallScreen,
+                  ),
+                  _buildInfoRow(
+                    'Alamat',
+                    scheduleData!['address'],
+                    isSmallScreen,
+                  ),
+                ],
+              ),
             ),
           ),
 
           SizedBox(height: isSmallScreen ? 12 : 16),
 
           // Pickup details card
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 6,
-                  offset: Offset(0, 3),
-                ),
-              ],
+          Card(
+            elevation: 2,
+            shadowColor: greenColor.withOpacity(0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: greenColor.withOpacity(0.1)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: isSmallScreen ? 16 : 18,
-                      color: greenColor,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Detail Pengambilan',
-                      style: blackTextStyle.copyWith(
-                        fontSize: isSmallScreen ? 14 : 16,
-                        fontWeight: semiBold,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(isSmallScreen ? 14 : 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [whiteColor, greenui],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: greenColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          size: isSmallScreen ? 18 : 20,
+                          color: greenColor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: isSmallScreen ? 12 : 16),
-                _buildInfoRow('ID Jadwal', scheduleData!['id'], isSmallScreen),
-                _buildInfoRow('Waktu', scheduleData!['time'], isSmallScreen),
-                _buildInfoRow(
-                  'Jenis Sampah',
-                  scheduleData!['waste_type'],
-                  isSmallScreen,
-                ),
-                _buildInfoRow(
-                  'Berat Sampah',
-                  scheduleData!['waste_weight'],
-                  isSmallScreen,
-                ),
-                _buildInfoRow(
-                  'Status',
-                  _getStatusText(scheduleData!['status']),
-                  isSmallScreen,
-                ),
-                if (scheduleData!['notes'] != null &&
-                    scheduleData!['notes'].isNotEmpty)
+                      SizedBox(width: 12),
+                      Text(
+                        'Detail Pengambilan',
+                        style: blackTextStyle.copyWith(
+                          fontSize: isSmallScreen ? 15 : 17,
+                          fontWeight: bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isSmallScreen ? 12 : 16),
                   _buildInfoRow(
-                    'Catatan',
-                    scheduleData!['notes'],
+                    'ID Jadwal',
+                    scheduleData!['id'],
                     isSmallScreen,
                   ),
-              ],
+                  _buildInfoRow('Waktu', scheduleData!['time'], isSmallScreen),
+                  _buildInfoRow(
+                    'Jenis Sampah',
+                    scheduleData!['waste_type'],
+                    isSmallScreen,
+                  ),
+                  _buildInfoRow(
+                    'Berat Sampah',
+                    scheduleData!['waste_weight'],
+                    isSmallScreen,
+                  ),
+                  _buildInfoRow(
+                    'Status',
+                    _getStatusText(scheduleData!['status']),
+                    isSmallScreen,
+                  ),
+                  if (scheduleData!['notes'] != null &&
+                      scheduleData!['notes'].isNotEmpty)
+                    _buildInfoRow(
+                      'Catatan',
+                      scheduleData!['notes'],
+                      isSmallScreen,
+                    ),
+                ],
+              ),
             ),
           ),
 
@@ -748,15 +898,19 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
 
               return SizedBox(
                 width: double.infinity,
-                height: isSmallScreen ? 50 : 56,
+                height: isSmallScreen ? 52 : 56,
                 child: ElevatedButton(
                   onPressed: (_isUpdatingStatus || isCompleted)
                       ? null
                       : () => _handlePrimaryAction(),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isCompleted ? Colors.grey : greenColor,
-                    foregroundColor: Colors.white,
-                    elevation: 2,
+                    backgroundColor: isCompleted
+                        ? greyColor.withOpacity(0.5)
+                        : greenColor,
+                    foregroundColor: whiteColor,
+                    disabledBackgroundColor: greyColor.withOpacity(0.5),
+                    elevation: isCompleted ? 0 : 3,
+                    shadowColor: greenColor.withOpacity(0.3),
                     padding: EdgeInsets.zero,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -769,20 +923,24 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
                           child: CircularProgressIndicator(
                             strokeWidth: 3,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
+                              whiteColor,
                             ),
                           ),
                         )
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(buttonIcon, size: isSmallScreen ? 18 : 20),
-                            SizedBox(width: 8),
+                            Icon(
+                              buttonIcon,
+                              size: isSmallScreen ? 20 : 22,
+                              color: whiteColor,
+                            ),
+                            SizedBox(width: 10),
                             Text(
                               buttonLabel,
                               style: whiteTextStyle.copyWith(
-                                fontSize: isSmallScreen ? 14 : 16,
-                                fontWeight: semiBold,
+                                fontSize: isSmallScreen ? 15 : 16,
+                                fontWeight: bold,
                               ),
                             ),
                           ],
@@ -806,19 +964,19 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
             width: isSmallScreen ? 90 : 100,
             child: Text(
               label,
-              style: blackTextStyle.copyWith(fontSize: isSmallScreen ? 12 : 14),
+              style: greyTextStyle.copyWith(fontSize: isSmallScreen ? 12 : 14),
             ),
           ),
           Text(
             ': ',
-            style: blackTextStyle.copyWith(fontSize: isSmallScreen ? 12 : 14),
+            style: greyTextStyle.copyWith(fontSize: isSmallScreen ? 12 : 14),
           ),
           Expanded(
             child: Text(
               value,
               style: blackTextStyle.copyWith(
                 fontSize: isSmallScreen ? 12 : 14,
-                fontWeight: medium,
+                fontWeight: semiBold,
               ),
             ),
           ),
@@ -843,13 +1001,13 @@ class _DetailPickupPageState extends State<DetailPickupPage> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return orangeColor;
       case 'in_progress':
-        return Colors.blue;
+        return blueColor;
       case 'completed':
-        return Colors.green;
+        return greenColor;
       default:
-        return Colors.grey;
+        return greyColor;
     }
   }
 
