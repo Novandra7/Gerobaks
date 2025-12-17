@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/blocs.dart';
 import 'package:bank_sha/ui/pages/sign_in/sign_in_page.dart';
 import 'package:bank_sha/ui/pages/end_user/home/home_page.dart';
-import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page.dart';
+import 'package:bank_sha/ui/pages/mitra/dashboard/mitra_dashboard_page_new.dart';
 
 /// AuthWrapper - Routes users based on authentication status
 ///
@@ -41,7 +41,7 @@ class AuthWrapper extends StatelessWidget {
             case 'end_user':
               return HomePage();
             case 'mitra':
-              return const MitraDashboardPage();
+              return const MitraDashboardPageNew();
             case 'admin':
               // TODO: Create AdminDashboard page
               return const Scaffold(

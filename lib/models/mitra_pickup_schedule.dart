@@ -195,7 +195,11 @@ class MitraPickupSchedule {
 
   // Helpers
   bool get isPending => status == 'pending';
+  bool get isAccepted =>
+      status == 'accepted'; // NEW: Status accepted dari backend
   bool get isOnProgress => status == 'on_progress';
+  bool get isOnTheWay => status == 'on_the_way'; // NEW: Status on_the_way
+  bool get isArrived => status == 'arrived'; // NEW: Status arrived
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
 
@@ -203,6 +207,12 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return 'Menunggu';
+      case 'accepted':
+        return 'Diterima'; // NEW
+      case 'on_the_way':
+        return 'Menuju Lokasi'; // NEW
+      case 'arrived':
+        return 'Sudah Sampai'; // NEW
       case 'on_progress':
         return 'Dalam Proses';
       case 'completed':
@@ -218,6 +228,12 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return const Color(0xFFFF8C00); // orangeColor
+      case 'accepted':
+        return const Color(0xFF00BB38); // greenColor - NEW
+      case 'on_the_way':
+        return const Color(0xFF53C1F9); // blueColor - NEW
+      case 'arrived':
+        return const Color(0xFF9C27B0); // purpleColor - NEW
       case 'on_progress':
         return const Color(0xFF53C1F9); // blueColor
       case 'completed':
@@ -233,6 +249,12 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return Icons.schedule;
+      case 'accepted':
+        return Icons.check_circle_outline; // NEW
+      case 'on_the_way':
+        return Icons.directions_car; // NEW
+      case 'arrived':
+        return Icons.location_on; // NEW
       case 'on_progress':
         return Icons.local_shipping;
       case 'completed':

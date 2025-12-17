@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/services/end_user_api_service.dart';
 import 'package:bank_sha/services/in_app_notification_service.dart';
-import 'package:bank_sha/services/schedule_notification_popup.dart';
+import 'package:bank_sha/services/schedule_notification_overlay.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 
 /// Global Notification Polling Service
@@ -22,9 +22,13 @@ class GlobalNotificationPollingService {
   Timer? _pollingTimer;
   bool _isPolling = false;
   bool _isInitialized = false;
+  bool _isStarting = false; // ✅ ADD: Prevent concurrent startPolling calls
 
   // Cache untuk detect changes
   List<Map<String, dynamic>> _cachedSchedules = [];
+
+  // ✅ ADD: Track which schedule IDs have been notified
+  final Set<String> _notifiedScheduleChanges = {};
 
   // Navigation key untuk show banner dari mana saja
   GlobalKey<NavigatorState>? _navigatorKey;
@@ -57,47 +61,90 @@ class GlobalNotificationPollingService {
 
   /// Start polling (dipanggil setelah user login)
   Future<void> startPolling() async {
-    if (!_isInitialized) {
+    // ✅ Prevent concurrent calls
+    if (_isStarting) {
       if (_debugMode) {
-        print(
-          '⚠️ [GlobalNotification] Not initialized, call initialize() first',
-        );
+        print('⚠️ [GlobalNotification] Start already in progress, skipping...');
       }
       return;
     }
 
     if (_isPolling) {
       if (_debugMode) {
-        print('⚠️ [GlobalNotification] Already polling');
+        print('⚠️ [GlobalNotification] Already polling, skipping...');
       }
       return;
     }
 
-    // Check if user is logged in
-    final authService = AuthApiService();
-    final token = await authService.getToken();
+    _isStarting = true; // ✅ Lock
 
-    if (token == null) {
+    try {
+      // Auto-initialize if not initialized yet
+      if (!_isInitialized) {
+        if (_debugMode) {
+          print(
+            '⚠️ [GlobalNotification] Not initialized yet, initializing now...',
+          );
+        }
+
+        // Try to get navigator key from existing instance or wait
+        if (_navigatorKey == null) {
+          if (_debugMode) {
+            print(
+              '❌ [GlobalNotification] Navigator key not set, cannot start polling',
+            );
+            print(
+              '   Make sure initialize() is called in main.dart with navigator key',
+            );
+          }
+          return;
+        }
+
+        // Try to initialize
+        try {
+          _apiService = EndUserApiService();
+          await _apiService!.initialize();
+          _isInitialized = true;
+
+          if (_debugMode) {
+            print('✅ [GlobalNotification] Auto-initialized successfully');
+          }
+        } catch (e) {
+          if (_debugMode) {
+            print('❌ [GlobalNotification] Auto-init error: $e');
+          }
+          return;
+        }
+      }
+
+      // Check if user is logged in
+      final authService = AuthApiService();
+      final token = await authService.getToken();
+
+      if (token == null) {
+        if (_debugMode) {
+          print('⚠️ [GlobalNotification] No token, user not logged in');
+        }
+        return;
+      }
+
+      _isPolling = true;
+
       if (_debugMode) {
-        print('⚠️ [GlobalNotification] No token, user not logged in');
+        print('🚀 [GlobalNotification] Polling started (every 30 seconds)');
       }
-      return;
+
+      // Load initial schedules
+      await _loadInitialSchedules();
+
+      // Start periodic polling
+      _pollingTimer?.cancel();
+      _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+        _checkForUpdates();
+      });
+    } finally {
+      _isStarting = false; // ✅ Unlock
     }
-
-    _isPolling = true;
-
-    if (_debugMode) {
-      print('🚀 [GlobalNotification] Polling started (every 30 seconds)');
-    }
-
-    // Load initial schedules
-    await _loadInitialSchedules();
-
-    // Start periodic polling
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _checkForUpdates();
-    });
   }
 
   /// Stop polling (dipanggil saat logout)
@@ -171,7 +218,9 @@ class GlobalNotificationPollingService {
     if (_cachedSchedules.isEmpty) {
       // First load, no comparison needed
       if (_debugMode) {
-        print('📋 [GlobalNotification] First load (cache empty), no comparison');
+        print(
+          '📋 [GlobalNotification] First load (cache empty), no comparison',
+        );
         print('   New schedules: ${newSchedules.length}');
         for (var schedule in newSchedules) {
           print('   - ID: ${schedule['id']}, Status: ${schedule['status']}');
@@ -252,13 +301,34 @@ class GlobalNotificationPollingService {
       print('📱 [GlobalNotification] _showNotificationBanner called');
       print('   Old Status: "$oldStatus"');
       print('   New Status: "$newStatus"');
+      print(
+        '   Navigator Key: ${_navigatorKey != null ? "✅ Available" : "❌ NULL"}',
+      );
     }
 
     // Get current context from navigator key
     final context = _navigatorKey?.currentContext;
     if (context == null) {
       if (_debugMode) {
-        print('⚠️ [GlobalNotification] No context available for notification');
+        print('❌ [GlobalNotification] No context available for notification');
+        print('   This means:');
+        print('   1. Navigator key not properly set in main.dart');
+        print('   2. MaterialApp not yet built');
+        print('   3. App in background/not mounted');
+      }
+      return;
+    }
+
+    if (_debugMode) {
+      print('✅ [GlobalNotification] Context obtained successfully');
+      print('   Context widget: ${context.widget.runtimeType}');
+      print('   Context mounted: ${context.mounted}');
+    }
+
+    // Double check context is still mounted
+    if (!context.mounted) {
+      if (_debugMode) {
+        print('⚠️ [GlobalNotification] Context not mounted, cannot show popup');
       }
       return;
     }
@@ -275,64 +345,79 @@ class GlobalNotificationPollingService {
     }
 
     // Determine notification type dan message based on backend status flow
-    // Status flow: pending → on_progress → on_the_way → arrived → completed
-    
-    if (oldStatus == 'pending' && newStatus == 'on_progress') {
+    // Status flow: pending → accepted/on_progress → on_the_way → arrived → completed
+
+    if ((oldStatus == 'pending' && newStatus == 'accepted') ||
+        (oldStatus == 'pending' && newStatus == 'on_progress')) {
       // Mitra accept jadwal - SHOW POP-UP DIALOG
+      // Backend bisa pakai 'accepted' atau 'on_progress'
       if (_debugMode) {
         print('');
-        print('🎉 [GlobalNotification] ===== SHOWING "JADWAL DITERIMA" POPUP =====');
+        print(
+          '🎉 [GlobalNotification] ===== SHOWING "JADWAL DITERIMA" POPUP =====',
+        );
         print('');
       }
 
-      ScheduleNotificationPopup.show(
+      ScheduleNotificationOverlay.show(
         context: context,
         title: 'Jadwal Diterima! 🎉',
-        message: mitraName != null 
+        message: mitraName != null
             ? 'Mitra $mitraName telah menerima jadwal penjemputan Anda'
             : 'Mitra telah menerima jadwal penjemputan Anda',
         subtitle: '$scheduleDay • $pickupTime',
-        type: ScheduleNotificationPopupType.accepted,
+        type: ScheduleNotificationOverlayType.accepted,
         onTap: () {
           // Optional: Navigate to activity page
           // Navigator.pushNamed(context, '/jadwal');
         },
       );
-    } else if (oldStatus == 'on_progress' && newStatus == 'on_the_way') {
+    } else if ((oldStatus == 'accepted' && newStatus == 'on_the_way') ||
+        (oldStatus == 'on_progress' && newStatus == 'on_the_way')) {
       // Mitra sedang dalam perjalanan - SHOW POP-UP DIALOG
       if (_debugMode) {
         print('');
-        print('🚛 [GlobalNotification] ===== SHOWING "MITRA ON THE WAY" POPUP =====');
+        print(
+          '🚛 [GlobalNotification] ===== SHOWING "MITRA ON THE WAY" POPUP =====',
+        );
         print('');
       }
 
-      ScheduleNotificationPopup.show(
+      ScheduleNotificationOverlay.show(
         context: context,
         title: 'Mitra Dalam Perjalanan 🚛',
         message: 'Mitra sedang menuju ke $address',
         subtitle: '$scheduleDay • $pickupTime',
-        type: ScheduleNotificationPopupType.onTheWay,
+        type: ScheduleNotificationOverlayType.onTheWay,
       );
     } else if (oldStatus == 'on_the_way' && newStatus == 'arrived') {
       // Mitra sudah sampai - SHOW POP-UP DIALOG
       if (_debugMode) {
         print('');
-        print('📍 [GlobalNotification] ===== SHOWING "MITRA ARRIVED" POPUP =====');
+        print(
+          '📍 [GlobalNotification] ===== SHOWING "MITRA ARRIVED" POPUP =====',
+        );
         print('');
       }
 
-      ScheduleNotificationPopup.show(
+      ScheduleNotificationOverlay.show(
         context: context,
         title: 'Mitra Sudah Tiba! 📍',
         message: 'Mitra sudah sampai di lokasi penjemputan',
         subtitle: '$scheduleDay • $pickupTime',
-        type: ScheduleNotificationPopupType.arrived,
+        type: ScheduleNotificationOverlayType.arrived,
       );
-    } else if (oldStatus == 'arrived' && newStatus == 'completed') {
+    } else if ((oldStatus == 'arrived' && newStatus == 'completed') ||
+        (oldStatus == 'on_the_way' && newStatus == 'completed') ||
+        (oldStatus == 'accepted' && newStatus == 'completed') ||
+        (oldStatus == 'on_progress' && newStatus == 'completed')) {
       // Penjemputan selesai - SHOW POP-UP DIALOG
+      // Bisa dari berbagai status sebelumnya ke completed
       if (_debugMode) {
         print('');
-        print('✅ [GlobalNotification] ===== SHOWING "PICKUP COMPLETED" POPUP =====');
+        print(
+          '✅ [GlobalNotification] ===== SHOWING "PICKUP COMPLETED" POPUP =====',
+        );
         print('');
       }
 
@@ -342,12 +427,12 @@ class GlobalNotificationPollingService {
           ? '$totalWeight kg • +$points poin'
           : '$scheduleDay • $pickupTime';
 
-      ScheduleNotificationPopup.show(
+      ScheduleNotificationOverlay.show(
         context: context,
         title: 'Penjemputan Selesai! ✅',
         message: 'Terima kasih telah menggunakan layanan kami',
         subtitle: subtitle,
-        type: ScheduleNotificationPopupType.completed,
+        type: ScheduleNotificationOverlayType.completed,
       );
     } else if (newStatus == 'cancelled') {
       // Jadwal dibatalkan - SHOW BANNER (tidak perlu popup untuk cancel)

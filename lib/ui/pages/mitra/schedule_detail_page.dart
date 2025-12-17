@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/mitra_pickup_schedule.dart';
 import '../../../services/mitra_api_service.dart';
+import '../../../services/location_service.dart';
+import '../../../services/tracking_api_service.dart';
 
 class ScheduleDetailPage extends StatefulWidget {
   final MitraPickupSchedule schedule;
@@ -14,6 +16,8 @@ class ScheduleDetailPage extends StatefulWidget {
 
 class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
   final MitraApiService _apiService = MitraApiService();
+  final LocationService _locationService = LocationService();
+  final TrackingApiService _trackingApi = TrackingApiService();
   bool _isProcessing = false;
 
   @override
@@ -65,6 +69,171 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Gagal menerima jadwal: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  Future<void> _startJourney() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('🚗 Berangkat Sekarang?'),
+        content: Text(
+          'Apakah Anda yakin ingin memulai perjalanan ke lokasi ${widget.schedule.userName}?\n\n'
+          '📍 GPS tracking akan aktif\n'
+          '⏱️ User dapat melacak lokasi Anda secara real-time',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Ya, Berangkat!'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      // 1. Update status ke backend
+      await _apiService.startJourney(widget.schedule.id);
+
+      // 2. Start GPS tracking (auto send every 15 seconds)
+      bool trackingStarted = await _locationService.startTracking(
+        intervalSeconds: 15,
+        onUpdate: (position) async {
+          try {
+            await _trackingApi.updateMitraLocation(position);
+            print(
+              '✅ GPS location sent: ${position.latitude}, ${position.longitude}',
+            );
+          } catch (e) {
+            print('❌ Failed to send GPS: $e');
+          }
+        },
+      );
+
+      if (mounted) {
+        if (trackingStarted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Perjalanan dimulai! GPS tracking aktif'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '⚠️ Perjalanan dimulai, tapi GPS gagal aktif. Periksa izin GPS.',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        Navigator.pop(context, true); // Return true to refresh previous screen
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal memulai perjalanan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  Future<void> _cancelSchedule() async {
+    // Show reason input dialog
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        String inputReason = '';
+        return AlertDialog(
+          title: const Text('❌ Batalkan Jadwal'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Berikan alasan pembatalan:'),
+              const SizedBox(height: 12),
+              TextField(
+                autofocus: true,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Contoh: Kendaraan rusak, tidak bisa hadir',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => inputReason = value,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (inputReason.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Alasan tidak boleh kosong')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, inputReason);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Batalkan Jadwal'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (reason == null || reason.trim().isEmpty) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      await _apiService.cancelSchedule(widget.schedule.id, reason);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Jadwal berhasil dibatalkan'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.pop(context, true); // Return true to refresh previous screen
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Gagal membatalkan: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -395,8 +564,8 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
             ),
           ),
 
-          // Bottom Accept Button (Fixed)
-          if (widget.schedule.isPending)
+          // Bottom Action Buttons (Fixed)
+          if (widget.schedule.isPending || widget.schedule.isAccepted)
             Positioned(
               bottom: 0,
               left: 0,
@@ -414,28 +583,104 @@ class _ScheduleDetailPageState extends State<ScheduleDetailPage> {
                   ],
                 ),
                 child: SafeArea(
-                  child: ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : _acceptSchedule,
-                    icon: _isProcessing
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                  child: widget.schedule.isPending
+                      ? ElevatedButton.icon(
+                          onPressed: _isProcessing ? null : _acceptSchedule,
+                          icon: _isProcessing
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.check_circle),
+                          label: Text(
+                            _isProcessing ? 'Memproses...' : 'Terima Jadwal',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          )
-                        : const Icon(Icons.check_circle),
-                    label: Text(
-                      _isProcessing ? 'Memproses...' : 'Terima Jadwal',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
+                          ),
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Tombol Navigasi
+                            OutlinedButton.icon(
+                              onPressed: _isProcessing ? null : _openGoogleMaps,
+                              icon: const Icon(Icons.navigation),
+                              label: const Text('Navigasi'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                foregroundColor: Colors.blue,
+                                side: const BorderSide(color: Colors.blue),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Tombol Berangkat + Batalkan
+                            Row(
+                              children: [
+                                // Tombol Batalkan
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : _cancelSchedule,
+                                    icon: const Icon(Icons.cancel),
+                                    label: const Text('Batalkan'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Tombol BERANGKAT
+                                Expanded(
+                                  flex: 2,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isProcessing
+                                        ? null
+                                        : _startJourney,
+                                    icon: _isProcessing
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.directions_car),
+                                    label: Text(
+                                      _isProcessing
+                                          ? 'Loading...'
+                                          : 'BERANGKAT',
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),

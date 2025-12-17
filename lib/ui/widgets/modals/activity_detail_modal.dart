@@ -8,11 +8,8 @@ import 'package:bank_sha/ui/widgets/shared/reschedule_dialog.dart';
 class ActivityDetailModal extends StatelessWidget {
   final ActivityModel activity;
 
-  const ActivityDetailModal({
-    super.key,
-    required this.activity,
-  });
-  
+  const ActivityDetailModal({super.key, required this.activity});
+
   // Format datetime string dengan benar, menangani baik '\n' atau '\\n' sebagai separator
   String _formatDateTime(String dateTimeStr) {
     // Cek apakah string mengandung karakter escape '\\n'
@@ -24,17 +21,43 @@ class ActivityDetailModal extends StatelessWidget {
     else if (dateTimeStr.contains('\n')) {
       final parts = dateTimeStr.split('\n');
       return parts.length > 1 ? '${parts[0]}, ${parts[1]}' : dateTimeStr;
-    } 
+    }
     // Jika tidak ada separator, kembalikan string asli
     else {
       return dateTimeStr;
     }
   }
-  
+
   // Format methods moved to RescheduleDialog class
 
   @override
   Widget build(BuildContext context) {
+    // 🔍 DEBUG LOGGING - Cek kenapa tombol tracking tidak muncul
+    print('🔍 ===== ACTIVITY DETAIL DEBUG =====');
+    print('🔍 ID: ${activity.id}');
+    print('🔍 Status (original): "${activity.status}"');
+    print('🔍 Status (lowercase): "${activity.status.toLowerCase()}"');
+    print('🔍 Status (trimmed): "${activity.status.toLowerCase().trim()}"');
+    print('🔍 Is Active: ${activity.isActive}');
+
+    // Check tracking button condition
+    final isMenujuLokasi =
+        activity.status.toLowerCase().trim() == 'menuju lokasi';
+    final isSedangDiproses =
+        activity.status.toLowerCase().trim() == 'sedang diproses';
+    final isOnTheWay = activity.status.toLowerCase().trim() == 'on_the_way';
+    final isArrived = activity.status.toLowerCase().trim() == 'arrived';
+
+    print('🔍 Check conditions:');
+    print('   - Is "menuju lokasi": $isMenujuLokasi');
+    print('   - Is "sedang diproses": $isSedangDiproses');
+    print('   - Is "on_the_way": $isOnTheWay');
+    print('   - Is "arrived": $isArrived');
+    print(
+      '🔍 Should show tracking button: ${activity.isActive && (isMenujuLokasi || isSedangDiproses || isOnTheWay || isArrived)}',
+    );
+    print('🔍 ===================================');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -60,7 +83,7 @@ class ActivityDetailModal extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Header
           Row(
             children: [
@@ -81,7 +104,7 @@ class ActivityDetailModal extends StatelessWidget {
             ],
           ),
           const Divider(height: 24),
-          
+
           // Status Badge
           Align(
             alignment: Alignment.center,
@@ -95,11 +118,7 @@ class ActivityDetailModal extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(
-                    activity.getIcon(),
-                    width: 20,
-                    height: 20,
-                  ),
+                  Image.asset(activity.getIcon(), width: 20, height: 20),
                   const SizedBox(width: 8),
                   Text(
                     activity.status,
@@ -113,23 +132,39 @@ class ActivityDetailModal extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Info Section
           _buildInfoItem('Judul', activity.title),
           _buildInfoItem('Alamat', activity.address),
           _buildInfoItem('Waktu', _formatDateTime(activity.dateTime)),
-          
+
           const SizedBox(height: 20),
-          
+
           // Action Buttons
           Row(
             children: [
-              if (activity.isActive && activity.status.toLowerCase() == 'menuju lokasi')
+              // ✅ NEW: Button tracking untuk status trackable (support backend status)
+              if (activity.isActive && _isTrackableStatus(activity.status))
                 Expanded(
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/tracking_full');
+                      // Navigate langsung ke halaman tracking dengan scheduleId
+                      final scheduleId = int.tryParse(activity.id);
+                      if (scheduleId != null) {
+                        Navigator.pushNamed(
+                          context,
+                          '/user-tracking-by-id',
+                          arguments: scheduleId,
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('ID jadwal tidak valid'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: greenColor,
@@ -139,11 +174,13 @@ class ActivityDetailModal extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text('Lacak Pengambilan'),
+                    icon: Icon(Icons.gps_fixed, size: 20),
+                    label: Text('Lacak Mitra'),
                   ),
                 ),
-              
-              if (activity.isActive && activity.status.toLowerCase() == 'dijadwalkan')
+
+              if (activity.isActive &&
+                  activity.status.toLowerCase() == 'dijadwalkan')
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -161,10 +198,9 @@ class ActivityDetailModal extends StatelessWidget {
                     child: Text('Atur Ulang Jadwal'),
                   ),
                 ),
-              
-              if (activity.isActive)
-                const SizedBox(width: 12),
-              
+
+              if (activity.isActive) const SizedBox(width: 12),
+
               if (activity.isActive)
                 Expanded(
                   child: TextButton(
@@ -189,8 +225,9 @@ class ActivityDetailModal extends StatelessWidget {
                     ),
                   ),
                 ),
-                
-              if (!activity.isActive && activity.status.toLowerCase() == 'selesai')
+
+              if (!activity.isActive &&
+                  activity.status.toLowerCase() == 'selesai')
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -208,8 +245,9 @@ class ActivityDetailModal extends StatelessWidget {
                     child: Text('Lihat Detail Lengkap'),
                   ),
                 ),
-              
-              if (!activity.isActive && activity.status.toLowerCase() != 'selesai')
+
+              if (!activity.isActive &&
+                  activity.status.toLowerCase() != 'selesai')
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -239,17 +277,11 @@ class ActivityDetailModal extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: greyTextStyle.copyWith(fontSize: 12),
-          ),
+          Text(label, style: greyTextStyle.copyWith(fontSize: 12)),
           const SizedBox(height: 4),
           Text(
             value,
-            style: blackTextStyle.copyWith(
-              fontSize: 14,
-              fontWeight: medium,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 14, fontWeight: medium),
           ),
         ],
       ),
@@ -269,7 +301,18 @@ class ActivityDetailModal extends StatelessWidget {
         return greenColor;
     }
   }
-  
+
+  // ✅ Helper method untuk cek apakah status trackable
+  bool _isTrackableStatus(String status) {
+    final trackableStatuses = [
+      'menuju lokasi', // Frontend status
+      'sedang diproses', // Frontend status
+      'on_the_way', // Backend status
+      'arrived', // Backend status
+    ];
+    return trackableStatuses.contains(status.toLowerCase().trim());
+  }
+
   void _showRescheduleDialog(BuildContext context) {
     RescheduleDialog.show(
       context: context,
@@ -283,19 +326,20 @@ class ActivityDetailModal extends StatelessWidget {
           newTime.hour,
           newTime.minute,
         );
-        
+
         // Show success message
         ToastHelper.showToast(
           context: context,
-          message: 'Jadwal berhasil diperbarui ke ${rescheduledDateTime.toString()}',
+          message:
+              'Jadwal berhasil diperbarui ke ${rescheduledDateTime.toString()}',
           isSuccess: true,
         );
-        
+
         // In a real app, you would update the activity in your backend
       },
     );
   }
-  
+
   void _showCancelConfirmationDialog(BuildContext context) {
     DialogHelper.showConfirmDialog(
       context: context,
@@ -316,7 +360,7 @@ class ActivityDetailModal extends StatelessWidget {
       }
     });
   }
-  
+
   void _showCompletedDetails(BuildContext context) {
     if (activity.trashDetails == null || activity.totalPoints == null) {
       ToastHelper.showToast(
@@ -326,7 +370,7 @@ class ActivityDetailModal extends StatelessWidget {
       );
       return;
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -364,7 +408,7 @@ class ActivityDetailModal extends StatelessWidget {
                             ),
                           ),
                         ),
-                        
+
                         // Title
                         Row(
                           children: [
@@ -387,7 +431,7 @@ class ActivityDetailModal extends StatelessWidget {
                       ],
                     ),
                   ),
-                  
+
                   // Content area
                   Expanded(
                     child: ListView(
@@ -413,18 +457,31 @@ class ActivityDetailModal extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                _buildSummaryRow('Total Berat', '${activity.totalWeight} kg'),
-                                _buildSummaryRow('Total Jenis', '${activity.trashDetails!.length} jenis'),
-                                _buildSummaryRow('Total Poin', '${activity.totalPoints} poin', isHighlighted: true),
+                                _buildSummaryRow(
+                                  'Total Berat',
+                                  '${activity.totalWeight} kg',
+                                ),
+                                _buildSummaryRow(
+                                  'Total Jenis',
+                                  '${activity.trashDetails!.length} jenis',
+                                ),
+                                _buildSummaryRow(
+                                  'Total Poin',
+                                  '${activity.totalPoints} poin',
+                                  isHighlighted: true,
+                                ),
                                 if (activity.completedBy != null)
-                                  _buildSummaryRow('Petugas', activity.completedBy!),
+                                  _buildSummaryRow(
+                                    'Petugas',
+                                    activity.completedBy!,
+                                  ),
                               ],
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Trash details
                         Text(
                           'Detail Sampah',
@@ -434,7 +491,7 @@ class ActivityDetailModal extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        
+
                         // List trash details
                         ListView.builder(
                           shrinkWrap: true,
@@ -463,14 +520,19 @@ class ActivityDetailModal extends StatelessWidget {
                                 ),
                                 title: Text(
                                   trashDetail.type,
-                                  style: blackTextStyle.copyWith(fontWeight: medium),
+                                  style: blackTextStyle.copyWith(
+                                    fontWeight: medium,
+                                  ),
                                 ),
                                 subtitle: Text(
                                   '${trashDetail.weight} kg',
                                   style: greyTextStyle,
                                 ),
                                 trailing: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: greenColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(4),
@@ -487,11 +549,12 @@ class ActivityDetailModal extends StatelessWidget {
                             );
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Photo proofs
-                        if (activity.photoProofs != null && activity.photoProofs!.isNotEmpty) ...[
+                        if (activity.photoProofs != null &&
+                            activity.photoProofs!.isNotEmpty) ...[
                           Text(
                             'Bukti Foto',
                             style: blackTextStyle.copyWith(
@@ -500,26 +563,32 @@ class ActivityDetailModal extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          
+
                           // Grid of photos
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                              childAspectRatio: 1.0,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 1.0,
+                                ),
                             itemCount: activity.photoProofs!.length,
                             itemBuilder: (context, index) {
                               return GestureDetector(
-                                onTap: () => _showFullScreenImage(context, activity.photoProofs![index]),
+                                onTap: () => _showFullScreenImage(
+                                  context,
+                                  activity.photoProofs![index],
+                                ),
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(8),
                                     image: DecorationImage(
-                                      image: AssetImage(activity.photoProofs![index]),
+                                      image: AssetImage(
+                                        activity.photoProofs![index],
+                                      ),
                                       fit: BoxFit.cover,
                                     ),
                                   ),
@@ -548,8 +617,9 @@ class ActivityDetailModal extends StatelessWidget {
                             },
                           ),
                         ],
-                        
-                        if (activity.notes != null && activity.notes!.isNotEmpty) ...[
+
+                        if (activity.notes != null &&
+                            activity.notes!.isNotEmpty) ...[
                           const SizedBox(height: 20),
                           Text(
                             'Catatan',
@@ -572,7 +642,7 @@ class ActivityDetailModal extends StatelessWidget {
                             ),
                           ),
                         ],
-                        
+
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -585,17 +655,18 @@ class ActivityDetailModal extends StatelessWidget {
       },
     );
   }
-  
-  Widget _buildSummaryRow(String label, String value, {bool isHighlighted = false}) {
+
+  Widget _buildSummaryRow(
+    String label,
+    String value, {
+    bool isHighlighted = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: greyTextStyle,
-          ),
+          Text(label, style: greyTextStyle),
           Text(
             value,
             style: isHighlighted
@@ -606,7 +677,7 @@ class ActivityDetailModal extends StatelessWidget {
       ),
     );
   }
-  
+
   void _showFullScreenImage(BuildContext context, String imagePath) {
     showDialog(
       context: context,
@@ -622,12 +693,9 @@ class ActivityDetailModal extends StatelessWidget {
                 panEnabled: true,
                 minScale: 0.5,
                 maxScale: 4,
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset(imagePath, fit: BoxFit.contain),
               ),
-              
+
               // Close button
               Positioned(
                 right: 16,
@@ -640,10 +708,7 @@ class ActivityDetailModal extends StatelessWidget {
                       color: Colors.black.withOpacity(0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.close, color: Colors.white),
                   ),
                 ),
               ),

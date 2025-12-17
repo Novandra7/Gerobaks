@@ -4,7 +4,7 @@ import 'package:bank_sha/shared/theme.dart';
 Widget buildStatCard(String label, String value, Color color) {
   return Container(
     decoration: BoxDecoration(
-      color: color.withOpacity(0.08),
+      color: color.withOpacity(0.85), // More opaque for better visibility
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
         BoxShadow(
@@ -21,7 +21,7 @@ Widget buildStatCard(String label, String value, Color color) {
       children: [
         Text(
           value,
-          style: blackTextStyle.copyWith(
+          style: whiteTextStyle.copyWith(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -29,7 +29,7 @@ Widget buildStatCard(String label, String value, Color color) {
         const SizedBox(height: 4),
         Text(
           label,
-          style: greyTextStyle.copyWith(
+          style: whiteTextStyle.copyWith(
             fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
@@ -93,12 +93,7 @@ Widget buildPickupCard(bool isSmallScreen) {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          'JL. Muso Salim B',
-          style: greyTextStyle.copyWith(
-            fontSize: 13,
-          ),
-        ),
+        Text('JL. Muso Salim B', style: greyTextStyle.copyWith(fontSize: 13)),
         const SizedBox(height: 8),
         Row(
           children: [

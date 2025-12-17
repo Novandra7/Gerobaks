@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/shared/route_observer.dart';
 import 'package:bank_sha/ui/pages/mitra/jadwal/jadwal_mitra_page_new.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/profile_mitra_page.dart';
 import 'package:bank_sha/ui/pages/mitra/dashboard/notification_page.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/mitra_api_service.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/ui/widgets/mitra/statistics_grid.dart';
 import 'package:bank_sha/ui/widgets/mitra/schedule_section.dart';
@@ -89,16 +92,23 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
   int _currentIndex = 0;
   Map<String, dynamic>? currentUser;
 
-  final List<Widget> _pages = [
-    const MitraDashboardContentNew(),
-    const JadwalMitraPageNew(),
-    const ProfileMitraPage(),
-  ];
+  // GlobalKey untuk mengakses state dari dashboard content
+  final GlobalKey<_MitraDashboardContentNewState> _dashboardKey =
+      GlobalKey<_MitraDashboardContentNewState>();
+
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUser();
+
+    // Initialize pages with dashboard key
+    _pages = [
+      MitraDashboardContentNew(key: _dashboardKey),
+      const JadwalMitraPageNew(),
+      const ProfileMitraPage(),
+    ];
   }
 
   Future<void> _loadCurrentUser() async {
@@ -123,6 +133,12 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
           setState(() {
             _currentIndex = index;
           });
+
+          // Refresh dashboard statistics ketika kembali ke tab dashboard (index 0)
+          if (index == 0 && _dashboardKey.currentState != null) {
+            print('🔄 Tab switched to dashboard - refreshing statistics...');
+            _dashboardKey.currentState!._loadStatistics();
+          }
         },
       ),
       body: AnimatedSwitcher(
@@ -145,11 +161,22 @@ class MitraDashboardContentNew extends StatefulWidget {
       _MitraDashboardContentNewState();
 }
 
-class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
+class _MitraDashboardContentNewState extends State<MitraDashboardContentNew>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver, RouteAware {
   Map<String, dynamic>? currentUser;
+  Map<String, dynamic>? statistics;
+  bool _isLoadingStats = false;
   final GlobalKey<RefreshIndicatorState> _refreshKey =
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
+
+  // Timer untuk periodic refresh
+  Timer? _refreshTimer;
+  DateTime? _lastRefreshTime;
+
+  // AutomaticKeepAliveClientMixin requirement
+  @override
+  bool get wantKeepAlive => true;
 
   String getTodaySchedule() {
     final now = DateFormat('EEEE', 'id_ID').format(DateTime.now());
@@ -173,13 +200,145 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentUser();
+    _loadStatistics();
+    _startPeriodicRefresh();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to route changes
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
+    routeObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // RouteAware callbacks - dipanggil saat navigation changes
+  @override
+  void didPopNext() {
+    // Called when user returns to this page from another page
+    print('🔙 Returned to dashboard from another page - refreshing...');
+    _loadStatistics();
+    _startPeriodicRefresh(); // Restart timer
+  }
+
+  @override
+  void didPush() {
+    // Called when this route is pushed onto the navigator
+    print('➡️ Dashboard page pushed');
+  }
+
+  @override
+  void didPop() {
+    // Called when this route is popped off the navigator
+    print('⬅️ Dashboard page popped');
+    _refreshTimer?.cancel();
+  }
+
+  @override
+  void didPushNext() {
+    // Called when a new route is pushed on top of this route
+    print('⏸️ Dashboard paused - another page pushed on top');
+    _refreshTimer?.cancel(); // Pause timer saat page lain di atas
+  }
+
+  // Lifecycle callback - refresh ketika app kembali ke foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      print('📱 App resumed - refreshing dashboard statistics...');
+      _loadStatistics();
+      _startPeriodicRefresh(); // Restart timer
+    } else if (state == AppLifecycleState.paused) {
+      _refreshTimer?.cancel(); // Stop timer saat app di background
+    }
+  }
+
+  /// Start periodic refresh every 30 seconds
+  void _startPeriodicRefresh() {
+    _refreshTimer?.cancel(); // Cancel existing timer
+
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        print('⏰ Periodic refresh triggered (every 30s)');
+        _loadStatisticsQuietly(); // Silent refresh tanpa loading indicator
+      }
+    });
+  }
+
+  /// Load statistics tanpa loading indicator (untuk background refresh)
+  Future<void> _loadStatisticsQuietly() async {
+    // Skip jika sedang loading
+    if (_isLoadingStats) return;
+
+    // Skip jika baru saja refresh (< 10 detik)
+    if (_lastRefreshTime != null &&
+        DateTime.now().difference(_lastRefreshTime!) <
+            const Duration(seconds: 10)) {
+      print(
+        '⏸️ Skipping refresh - too soon (${DateTime.now().difference(_lastRefreshTime!).inSeconds}s ago)',
+      );
+      return;
+    }
+
+    try {
+      final apiService = MitraApiService();
+      final stats = await apiService.getStatistics();
+
+      if (mounted) {
+        setState(() {
+          statistics = stats;
+          _lastRefreshTime = DateTime.now();
+        });
+        print('✅ Quiet refresh completed');
+      }
+    } catch (e) {
+      print('⚠️ Quiet refresh error: $e');
+      // Silent error - tidak update UI
+    }
+  }
+
+  Future<void> _loadStatistics() async {
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      final apiService = MitraApiService();
+      final stats = await apiService.getStatistics();
+
+      if (mounted) {
+        setState(() {
+          statistics = stats;
+          _isLoadingStats = false;
+          _lastRefreshTime = DateTime.now();
+        });
+        print('✅ Statistics loaded at $_lastRefreshTime');
+      }
+    } catch (e) {
+      print('❌ Error loading statistics: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+          statistics = {
+            'completed_today': 0,
+            'available_schedules': 0,
+            'active_hours': 0,
+            'pending_pickups': 0,
+          };
+        });
+      }
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -193,12 +352,14 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
   }
 
   Future<void> _refreshData() async {
-    await _loadCurrentUser();
-    return Future.delayed(const Duration(milliseconds: 1500));
+    await Future.wait([_loadCurrentUser(), _loadStatistics()]);
+    return Future.delayed(const Duration(milliseconds: 500));
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required by AutomaticKeepAliveClientMixin
+
     final today = DateFormat('EEEE', 'id_ID').format(DateTime.now());
     final scheduleToday = getTodaySchedule();
 
@@ -380,6 +541,8 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew> {
 
                 /// ====== STATISTICS ======
                 StatisticsGrid(
+                  statistics: statistics,
+                  isLoading: _isLoadingStats,
                   onRefresh: () {
                     _refreshKey.currentState?.show();
                   },

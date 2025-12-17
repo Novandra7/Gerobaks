@@ -130,6 +130,7 @@ class ScheduleApiService {
     required bool hasAdditionalWaste,
     List<Map<String, dynamic>>? additionalWastes,
     String? notes,
+    double? scheduledWeight, // Perkiraan berat sampah terjadwal
   }) async {
     final body = <String, dynamic>{
       'schedule_day': scheduleDay,
@@ -141,7 +142,16 @@ class ScheduleApiService {
       if (additionalWastes != null && additionalWastes.isNotEmpty)
         'additional_wastes': additionalWastes,
       if (notes != null && notes.isNotEmpty) 'notes': notes,
+      if (scheduledWeight != null && scheduledWeight > 0)
+        'scheduled_weight': scheduledWeight,
     };
+
+    // 🔍 DEBUG: Print API request body
+    print('📤 API REQUEST TO BACKEND:');
+    print('   Endpoint: ${ApiRoutes.pickupSchedules}');
+    print('   Body: $body');
+    print('   pickup_time_start value: "$pickupTimeStart"');
+    print('   pickup_time_end value: "$pickupTimeEnd"');
 
     final json = await _api.postJson(ApiRoutes.pickupSchedules, body);
     if (json is Map<String, dynamic>) {

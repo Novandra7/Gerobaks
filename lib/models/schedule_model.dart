@@ -71,6 +71,18 @@ class ScheduleModel {
   String get timeSlotString =>
       '${timeSlot.hour}:${timeSlot.minute.toString().padLeft(2, '0')}';
 
+  // Get the scheduled datetime (combination of scheduledDate + timeSlot)
+  // This should be used instead of createdAt for displaying schedule time
+  DateTime get scheduledDateTime {
+    return DateTime(
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+      timeSlot.hour,
+      timeSlot.minute,
+    );
+  }
+
   // Convert ScheduleModel to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -233,6 +245,30 @@ class ScheduleModel {
   // Helper for parsing status from string
   static ScheduleStatus _parseStatus(String status) {
     final normalized = status.replaceAll(RegExp(r'[\s_-]+'), '').toLowerCase();
+
+    // ✅ Handle specific backend status mappings
+    switch (normalized) {
+      case 'ontheway':
+      case 'onprogress':
+      case 'sedangdiproses':
+      case 'accepted':
+      case 'arrived':
+        return ScheduleStatus.inProgress;
+      case 'completed':
+      case 'selesai':
+        return ScheduleStatus.completed;
+      case 'cancelled':
+      case 'dibatalkan':
+        return ScheduleStatus.cancelled;
+      case 'pending':
+      case 'dijadwalkan':
+        return ScheduleStatus.pending;
+      case 'missed':
+      case 'terlewat':
+        return ScheduleStatus.missed;
+    }
+
+    // Fallback: Try to match enum values
     return ScheduleStatus.values.firstWhere((element) {
       final value = element.toString().split('.').last;
       final normalizedValue = value

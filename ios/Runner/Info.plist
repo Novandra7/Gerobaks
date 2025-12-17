@@ -47,8 +47,16 @@
 	<true/>
 	<!-- Location permission descriptions for Geolocator -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Aplikasi membutuhkan akses lokasi Anda untuk menampilkan posisi truk dan navigasi ke tujuan.</string>
+	<string>Kami memerlukan lokasi Anda untuk tracking pengambilan sampah dan navigasi mitra.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Lokasi digunakan untuk sinkronisasi posisi dan navigasi.</string>
+	<string>Kami memerlukan akses lokasi untuk tracking real-time saat aplikasi di background.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Lokasi background diperlukan untuk update posisi mitra secara real-time.</string>
+	<!-- Background modes for location tracking -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

@@ -12,16 +12,37 @@ class ScheduleNotificationPopup {
     String? subtitle,
     VoidCallback? onTap,
   }) {
+    print('');
+    print('🚀 [ScheduleNotificationPopup] show() called');
+    print('   Title: $title');
+    print('   Message: $message');
+    print('   Subtitle: $subtitle');
+    print('   Type: $type');
+    print('   Context: ${context.widget.runtimeType}');
+    print('   Context mounted: ${context.mounted}');
+    print('   Calling showDialog...');
+    print('');
+
+    // Pastikan context mounted
+    if (!context.mounted) {
+      print('⚠️ [ScheduleNotificationPopup] Context not mounted!');
+      return Future.value();
+    }
+
     return showDialog<void>(
       context: context,
       barrierDismissible: true,
-      builder: (context) => _ScheduleNotificationPopupDialog(
-        title: title,
-        message: message,
-        subtitle: subtitle,
-        type: type,
-        onTap: onTap,
-      ),
+      useRootNavigator: true, // 🔑 PENTING: Muncul di atas semua route
+      builder: (context) {
+        print('📦 [ScheduleNotificationPopup] Dialog builder called');
+        return _ScheduleNotificationPopupDialog(
+          title: title,
+          message: message,
+          subtitle: subtitle,
+          type: type,
+          onTap: onTap,
+        );
+      },
     );
   }
 }
@@ -74,18 +95,12 @@ class _ScheduleNotificationPopupDialogState
     _scaleAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeIn,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
     print('▶️ [PopupNotification] Animation started');
@@ -143,7 +158,10 @@ class _ScheduleNotificationPopupDialogState
           contentPadding: EdgeInsets.zero,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 24,
+          ),
           content: GestureDetector(
             onTap: () {
               print('👆 [PopupNotification] Tapped, dismissing...');
@@ -253,7 +271,9 @@ class _ScheduleNotificationPopupDialogState
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              print('✅ [PopupNotification] Close button tapped');
+                              print(
+                                '✅ [PopupNotification] Close button tapped',
+                              );
                               Navigator.of(context).pop();
                               widget.onTap?.call();
                             },

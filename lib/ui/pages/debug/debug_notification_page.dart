@@ -4,7 +4,7 @@ import 'package:bank_sha/services/schedule_notification_popup.dart';
 
 /// Debug page untuk test notification banner dan popup
 class DebugNotificationPage extends StatelessWidget {
-  const DebugNotificationPage({Key? key}) : super(key: key);
+  const DebugNotificationPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,10 +22,7 @@ class DebugNotificationPage extends StatelessWidget {
             children: [
               const Text(
                 'Test In-App Notification Banner & Popup',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -35,17 +32,14 @@ class DebugNotificationPage extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              
+
               // === POP-UP NOTIFICATIONS ===
               const Text(
                 '🎯 POP-UP DIALOG (Tengah Layar)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               // Success Popup
               _TestButton(
                 title: '🎉 Test Success Popup',
@@ -56,15 +50,16 @@ class DebugNotificationPage extends StatelessWidget {
                   ScheduleNotificationPopup.show(
                     context: context,
                     title: 'Jadwal Diterima! 🎉',
-                    message: 'Mitra Ahmad Kurniawan telah menerima jadwal penjemputan Anda',
+                    message:
+                        'Mitra Ahmad Kurniawan telah menerima jadwal penjemputan Anda',
                     subtitle: 'Sabtu, 15 Nov 2025 • 14:00',
                     type: ScheduleNotificationPopupType.accepted,
                   );
                 },
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // On The Way Popup
               _TestButton(
                 title: '🚛 Test On The Way Popup',
@@ -81,9 +76,9 @@ class DebugNotificationPage extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Arrived Popup
               _TestButton(
                 title: '📍 Test Arrived Popup',
@@ -100,9 +95,9 @@ class DebugNotificationPage extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Completed Popup
               _TestButton(
                 title: '✅ Test Completed Popup',
@@ -119,21 +114,18 @@ class DebugNotificationPage extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
-              
+
               // === BANNER NOTIFICATIONS ===
               const Text(
                 '📋 BANNER (Dari Atas)',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              
+
               // Success Banner
               _TestButton(
                 title: '🎉 Test Success Banner',
@@ -144,16 +136,17 @@ class DebugNotificationPage extends StatelessWidget {
                   InAppNotificationService.show(
                     context: context,
                     title: 'Jadwal Diterima! 🎉',
-                    message: 'Mitra Ahmad Kurniawan telah menerima jadwal penjemputan Anda',
+                    message:
+                        'Mitra Ahmad Kurniawan telah menerima jadwal penjemputan Anda',
                     subtitle: 'Sabtu, 15 Nov 2025 • 14:00',
                     type: InAppNotificationType.success,
                     duration: const Duration(seconds: 5),
                   );
                 },
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Info Banner
               _TestButton(
                 title: '🚛 Test Info Banner',
@@ -171,9 +164,9 @@ class DebugNotificationPage extends StatelessWidget {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -207,9 +200,9 @@ class DebugNotificationPage extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               const Text(
                 '🔍 Check Console Logs',
                 style: TextStyle(
@@ -248,9 +241,7 @@ class _TestButton extends StatelessWidget {
         backgroundColor: color,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 2,
       ),
       child: Column(
@@ -258,10 +249,7 @@ class _TestButton extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(

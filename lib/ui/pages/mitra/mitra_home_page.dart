@@ -39,7 +39,7 @@ class _MitraHomePageState extends State<MitraHomePage>
         children: [
           // Custom AppBar with TabBar
           Container(
-            color: whiteColor,
+            color: uicolor,
             child: SafeArea(
               bottom: false,
               child: Column(

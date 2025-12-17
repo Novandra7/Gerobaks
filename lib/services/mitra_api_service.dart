@@ -11,7 +11,23 @@ class MitraApiService {
   MitraApiService._internal();
 
   final Logger _logger = Logger();
-  late LocalStorageService _localStorage;
+  LocalStorageService? _localStorage;
+
+  // Auto-initialize localStorage on first use
+  Future<LocalStorageService> get _storage async {
+    _localStorage ??= await LocalStorageService.getInstance();
+    return _localStorage!;
+  }
+
+  // Helper method to get token with auto-initialization
+  Future<String> _getToken() async {
+    final localStorage = await _storage;
+    final token = await localStorage.getToken();
+    if (token == null) {
+      throw Exception('Token tidak ditemukan. Silakan login kembali.');
+    }
+    return token;
+  }
 
   Future<void> initialize() async {
     _localStorage = await LocalStorageService.getInstance();
@@ -25,10 +41,7 @@ class MitraApiService {
     String? date,
   }) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan. Silakan login kembali.');
-      }
+      final token = await _getToken();
 
       // Build query parameters
       final queryParams = <String, String>{'page': page.toString()};
@@ -112,10 +125,7 @@ class MitraApiService {
   /// Get schedule detail
   Future<MitraPickupSchedule> getScheduleDetail(int scheduleId) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupDetail(scheduleId)}';
@@ -148,10 +158,7 @@ class MitraApiService {
   /// Accept schedule (Mitra terima jadwal)
   Future<MitraPickupSchedule> acceptSchedule(int scheduleId) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupAccept(scheduleId)}';
@@ -195,10 +202,7 @@ class MitraApiService {
     double? currentLongitude,
   }) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupStartJourney(scheduleId)}';
@@ -238,10 +242,7 @@ class MitraApiService {
     required double longitude,
   }) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupArrive(scheduleId)}';
@@ -277,10 +278,7 @@ class MitraApiService {
     String? notes,
   }) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupComplete(scheduleId)}';
@@ -336,10 +334,7 @@ class MitraApiService {
   /// Cancel schedule
   Future<void> cancelSchedule(int scheduleId, String reason) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url =
           '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupCancel(scheduleId)}';
@@ -370,10 +365,7 @@ class MitraApiService {
   /// Get mitra's active schedules
   Future<List<MitraPickupSchedule>> getMyActiveSchedules() async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final url = '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupMyActive}';
       _logger.i('📋 Fetching active schedules: $url');
@@ -428,10 +420,7 @@ class MitraApiService {
     String? dateTo,
   }) async {
     try {
-      final token = await _localStorage.getToken();
-      if (token == null) {
-        throw Exception('Token tidak ditemukan');
-      }
+      final token = await _getToken();
 
       final queryParams = <String, String>{
         'page': page.toString(),
@@ -501,6 +490,56 @@ class MitraApiService {
       }
     } catch (e) {
       _logger.e('❌ Error fetching history: $e');
+      rethrow;
+    }
+  }
+
+  /// Get mitra dashboard statistics
+  /// Returns real-time statistics from backend
+  ///
+  /// Backend returns: completed_today, available_schedules, active_hours, pending_pickups
+  Future<Map<String, dynamic>> getStatistics() async {
+    try {
+      final localStorage = await _storage;
+      final token = await localStorage.getToken();
+      if (token == null) {
+        throw Exception('Token tidak ditemukan');
+      }
+
+      final url = '${ApiRoutes.baseUrl}${ApiRoutes.mitraStatistics}';
+      _logger.i('📊 Fetching mitra statistics: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      _logger.d('Response status: ${response.statusCode}');
+      _logger.d('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          final stats = data['data'] as Map<String, dynamic>;
+          _logger.i(
+            '✅ Statistics loaded: completed=${stats['completed_today']}, '
+            'available=${stats['available_schedules']}, active_hours=${stats['active_hours']}, '
+            'pending=${stats['pending_pickups']}',
+          );
+          return stats;
+        }
+        throw Exception('Data statistik tidak ditemukan');
+      } else if (response.statusCode == 401) {
+        throw Exception('Sesi telah berakhir. Silakan login kembali.');
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Gagal memuat statistik');
+      }
+    } catch (e) {
+      _logger.e('❌ Error fetching statistics: $e');
       rethrow;
     }
   }

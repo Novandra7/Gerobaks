@@ -33,6 +33,7 @@ class ApiRoutes {
   static const String mitraActivities = '/api/mitra/activities';
   static const String mitraOrders = '/api/mitra/orders';
   static String mitraDashboard(int id) => '/api/dashboard/mitra/$id';
+  static const String mitraStatistics = '/api/mitra/statistics';
 
   // Mitra Pickup System Routes (New)
   static const String mitraPickupAvailable =
@@ -68,11 +69,23 @@ class ApiRoutes {
   static const String pickupSchedules = '/api/pickup-schedules';
   static String pickupSchedule(int id) => '/api/pickup-schedules/$id';
 
-  // Tracking Routes
+  // Tracking Routes (Legacy)
   static const String trackings = '/api/trackings';
   static String tracking(int id) => '/api/trackings/$id';
   static String trackingBySchedule(int scheduleId) =>
       '/api/tracking/schedule/$scheduleId';
+
+  // Real-Time Tracking Routes (New Backend Implementation)
+  // Mitra Tracking
+  static const String mitraTrackingUpdateLocation =
+      '/api/mitra/tracking/update-location';
+  static const String mitraTrackingStop = '/api/mitra/tracking/stop';
+
+  // User Tracking
+  static String userTrackingInfo(int pickupScheduleId) =>
+      '/api/user/tracking/$pickupScheduleId';
+  static String userTrackingHistory(int pickupScheduleId) =>
+      '/api/user/tracking/$pickupScheduleId/history';
 
   // Order Routes
   static const String orders = '/api/orders';

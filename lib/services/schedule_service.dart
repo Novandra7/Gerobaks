@@ -187,6 +187,15 @@ class ScheduleService {
       debugPrint('Remote createSchedule failed: $e');
     }
 
+    // Combine scheduledDate with timeSlot for fallback createdAt
+    final fallbackCreatedAt = DateTime(
+      schedule.scheduledDate.year,
+      schedule.scheduledDate.month,
+      schedule.scheduledDate.day,
+      schedule.timeSlot.hour,
+      schedule.timeSlot.minute,
+    );
+
     final fallbackSchedule = ScheduleModel(
       id: fallbackId,
       userId: schedule.userId,
@@ -198,7 +207,8 @@ class ScheduleService {
       status: schedule.status,
       frequency: schedule.frequency,
       driverId: schedule.driverId,
-      createdAt: DateTime.now(),
+      createdAt:
+          fallbackCreatedAt, // Use scheduled datetime instead of DateTime.now()
       wasteType: schedule.wasteType,
       estimatedWeight: schedule.estimatedWeight,
       isPaid: schedule.isPaid,
@@ -229,6 +239,15 @@ class ScheduleService {
     String? contactName,
     String? contactPhone,
   }) async {
+    // Combine scheduledDate with timeSlot to get the actual scheduled datetime
+    final scheduledDateTime = DateTime(
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+      timeSlot.hour,
+      timeSlot.minute,
+    );
+
     final schedule = ScheduleModel(
       id: null,
       userId: userId,
@@ -240,7 +259,8 @@ class ScheduleService {
       status: ScheduleStatus.pending,
       frequency: frequency,
       driverId: driverId,
-      createdAt: DateTime.now(),
+      createdAt:
+          scheduledDateTime, // Use scheduled datetime instead of DateTime.now()
       wasteType: wasteType,
       estimatedWeight: estimatedWeight,
       isPaid: isPaid,
@@ -730,7 +750,13 @@ class ScheduleService {
       status: ScheduleStatus.pending,
       frequency: ScheduleFrequency.once,
       driverId: null,
-      createdAt: DateTime.now(),
+      createdAt: DateTime(
+        scheduledDate.year,
+        scheduledDate.month,
+        scheduledDate.day,
+        timeSlot.hour,
+        timeSlot.minute,
+      ), // Use scheduled datetime instead of DateTime.now()
       wasteItems: convertedWasteItems,
       isPaid: false,
     );

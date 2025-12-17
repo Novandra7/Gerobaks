@@ -1,6 +1,6 @@
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
-import 'package:bank_sha/services/global_notification_polling_service.dart';
+// import 'package:bank_sha/services/global_notification_polling_service.dart'; // ❌ DISABLED - see FIX_DOUBLE_NOTIFICATION_POPUP.md
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
@@ -158,15 +158,17 @@ class _SignInPageState extends State<SignInPage> {
             // Default to end_user dashboard
             print("✅ Auto-login: Navigating to END USER dashboard");
 
-            // ✅ START GLOBAL NOTIFICATION POLLING for end_user
-            try {
-              final GlobalNotificationPollingService notificationService =
-                  GlobalNotificationPollingService();
-              await notificationService.startPolling();
-              print('✅ Global notification polling started (auto-login)');
-            } catch (e) {
-              print('⚠️ Failed to start notification polling (auto-login): $e');
-            }
+            // ❌ DISABLED: Polling service (menyebabkan duplicate popup)
+            // FCM push notification sudah handle popup, tidak perlu polling
+            // See: FIX_DOUBLE_NOTIFICATION_POPUP.md
+            // try {
+            //   final GlobalNotificationPollingService notificationService =
+            //       GlobalNotificationPollingService();
+            //   await notificationService.startPolling();
+            //   print('✅ Global notification polling started (auto-login)');
+            // } catch (e) {
+            //   print('⚠️ Failed to start notification polling (auto-login): $e');
+            // }
 
             Navigator.pushReplacementNamed(context, '/home');
           }
@@ -444,15 +446,17 @@ class _SignInPageState extends State<SignInPage> {
           default:
             print("✅ Navigating to END USER home");
 
-            // ✅ START GLOBAL NOTIFICATION POLLING for end_user
-            try {
-              final GlobalNotificationPollingService notificationService =
-                  GlobalNotificationPollingService();
-              await notificationService.startPolling();
-              print('✅ Global notification polling started for end_user');
-            } catch (e) {
-              print('⚠️ Failed to start notification polling: $e');
-            }
+            // ❌ DISABLED: Polling service (menyebabkan duplicate popup)
+            // FCM push notification sudah handle popup, tidak perlu polling
+            // See: FIX_DOUBLE_NOTIFICATION_POPUP.md
+            // try {
+            //   final GlobalNotificationPollingService notificationService =
+            //       GlobalNotificationPollingService();
+            //   await notificationService.startPolling();
+            //   print('✅ Global notification polling started for end_user');
+            // } catch (e) {
+            //   print('⚠️ Failed to start notification polling: $e');
+            // }
 
             Navigator.pushNamedAndRemoveUntil(
               context,

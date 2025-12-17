@@ -11,6 +11,7 @@ import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/dashboard_components.d
 import 'package:bank_sha/ui/pages/mitra/dashboard/widgets/detail_pickup_card.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/mitra_api_service.dart';
 import 'package:bank_sha/ui/widgets/shared/navbar_mitra.dart';
 import 'package:bank_sha/ui/widgets/dashboard/dashboard_background.dart';
 import 'package:bank_sha/utils/responsive_helper.dart';
@@ -167,6 +168,17 @@ class _MitraDashboardPageState extends State<MitraDashboardPage> {
             setState(() {
               _currentIndex = index;
             });
+
+            // Refresh dashboard statistics ketika kembali ke tab dashboard (index 0)
+            if (index == 0) {
+              print('🔄 Switching to dashboard - refreshing statistics...');
+              // Trigger refresh pada dashboard content
+              Future.delayed(const Duration(milliseconds: 300), () {
+                final dashboardContent = context
+                    .findAncestorStateOfType<_MitraDashboardContentState>();
+                dashboardContent?._loadStatistics();
+              });
+            }
           },
           isOnline: _isOnline,
           onPowerToggle: (online) {
@@ -194,11 +206,19 @@ class MitraDashboardContent extends StatefulWidget {
   State<MitraDashboardContent> createState() => _MitraDashboardContentState();
 }
 
-class _MitraDashboardContentState extends State<MitraDashboardContent> {
+class _MitraDashboardContentState extends State<MitraDashboardContent>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   Map<String, dynamic>? currentUser;
+  Map<String, dynamic>? statistics;
+  bool _isLoadingStats = true;
   final GlobalKey<RefreshIndicatorState> _refreshKey =
       GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
+  final MitraApiService _apiService = MitraApiService();
+
+  // AutomaticKeepAliveClientMixin requirement
+  @override
+  bool get wantKeepAlive => true;
 
   // Parent index untuk navigasi
 
@@ -215,13 +235,27 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCurrentUser();
+    _loadStatistics();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  // Lifecycle callback - dipanggil ketika app kembali ke foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Auto-refresh ketika app kembali aktif
+      print('📱 App resumed - refreshing dashboard statistics...');
+      _loadStatistics();
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -234,10 +268,96 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
     }
   }
 
+  Future<void> _loadStatistics() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingStats = true;
+    });
+
+    try {
+      await _apiService.initialize();
+
+      // Method 1: Try to get from backend statistics API
+      try {
+        final stats = await _apiService.getStatistics();
+
+        if (mounted) {
+          setState(() {
+            statistics = stats;
+            _isLoadingStats = false;
+          });
+
+          print('✅ Statistics loaded from API:');
+          print('   - Completed today: ${stats['completed_today']}');
+          print('   - Available schedules: ${stats['available_schedules']}');
+          print('   - Active hours: ${stats['active_hours']}');
+          print('   - Pending pickups: ${stats['pending_pickups']}');
+        }
+        return; // Success, exit early
+      } catch (apiError) {
+        print('⚠️ Statistics API error: $apiError');
+        print('🔄 Falling back to manual count from schedules...');
+      }
+
+      // Method 2: Fallback - Count manually from schedule APIs
+      // This ensures count matches with actual jadwal data
+      final availableResult = await _apiService.getAvailableSchedules(page: 1);
+      final availableSchedules = availableResult['schedules'] as List? ?? [];
+
+      // For completed and active, we'll use approximate count
+      // (In real app, backend should provide proper count endpoints)
+
+      if (mounted) {
+        setState(() {
+          statistics = {
+            'completed_today': 0,
+            'available_schedules': availableSchedules.length,
+            'active_hours': 0,
+            'pending_pickups': 0,
+          };
+          _isLoadingStats = false;
+        });
+
+        print('✅ Statistics fallback (partial data):');
+        print('   - Available schedules: ${availableSchedules.length}');
+        print(
+          '   ⚠️ Other fields need API: completed_today, active_hours, pending_pickups',
+        );
+      }
+    } catch (e) {
+      print('❌ Error loading statistics: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+          // Set default values on error
+          statistics ??= {
+            'completed_today': 0,
+            'available_schedules': 0,
+            'active_hours': 0,
+            'pending_pickups': 0,
+          };
+        });
+
+        // Show error snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat statistik: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Coba Lagi',
+              textColor: Colors.white,
+              onPressed: _loadStatistics,
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _refreshData() async {
-    await _loadCurrentUser();
-    // Add additional refresh logic here as needed
-    return Future.delayed(const Duration(milliseconds: 1500));
+    await Future.wait([_loadCurrentUser(), _loadStatistics()]);
   }
 
   String _getGreeting() {
@@ -251,6 +371,35 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
     } else {
       return 'Malam';
     }
+  }
+
+  String _getCurrentDateString() {
+    final now = DateTime.now();
+    final days = [
+      'Minggu',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+    ];
+    final months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
+    ];
+
+    return '${days[now.weekday % 7]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
 
   // Quick Action untuk menu di header
@@ -305,86 +454,91 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
     required Color backgroundColor,
     required Color valueColor,
     required IconData icon,
+    String? suffix,
   }) {
     final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
 
     return Container(
       padding: EdgeInsets.all(
-        ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 6 : 8),
-      ), // Padding lebih kecil
+        ResponsiveHelper.getResponsiveSpacing(context, isSmallScreen ? 12 : 16),
+      ),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(
-          ResponsiveHelper.getResponsiveRadius(context, 12),
+          ResponsiveHelper.getResponsiveRadius(context, 16),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center, // Posisikan elemen di tengah
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon di atas
-          Container(
-            padding: EdgeInsets.all(
-              ResponsiveHelper.getResponsiveSpacing(
-                context,
-                isSmallScreen ? 3 : 4,
+          // Title dan Icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: whiteTextStyle.copyWith(
+                    fontSize: ResponsiveHelper.getResponsiveFontSize(
+                      context,
+                      isSmallScreen ? 12 : 13,
+                    ),
+                    fontWeight: semiBold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            decoration: BoxDecoration(
-              color: valueColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: valueColor,
-              size: ResponsiveHelper.getResponsiveIconSize(
-                context,
-                isSmallScreen ? 12 : 14,
-              ),
-            ),
-          ),
-          SizedBox(
-            height: ResponsiveHelper.getResponsiveSpacing(context, 2),
-          ), // Spacing lebih kecil
-          // Value di tengah (lebih besar)
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: ResponsiveHelper.getResponsiveFontSize(
+              Icon(
+                icon,
+                color: whiteColor.withOpacity(0.9),
+                size: ResponsiveHelper.getResponsiveIconSize(
                   context,
-                  isSmallScreen ? 18 : 22,
-                ), // Font lebih kecil
-                fontWeight: bold,
-                color: valueColor,
+                  isSmallScreen ? 18 : 20,
+                ),
               ),
-            ),
+            ],
           ),
 
-          SizedBox(
-            height: ResponsiveHelper.getResponsiveSpacing(context, 1),
-          ), // Spacing minimal
-          // Title di bawah (lebih kecil)
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: blackTextStyle.copyWith(
-              fontSize: ResponsiveHelper.getResponsiveFontSize(
-                context,
-                isSmallScreen ? 9 : 10,
-              ), // Font lebih kecil
-              fontWeight: medium,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          const Spacer(),
+
+          // Value
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: whiteTextStyle.copyWith(
+                  fontSize: ResponsiveHelper.getResponsiveFontSize(
+                    context,
+                    isSmallScreen ? 32 : 36,
+                  ),
+                  fontWeight: bold,
+                  height: 1,
+                ),
+              ),
+              if (suffix != null && suffix.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 4),
+                  child: Text(
+                    suffix,
+                    style: whiteTextStyle.copyWith(
+                      fontSize: ResponsiveHelper.getResponsiveFontSize(
+                        context,
+                        isSmallScreen ? 16 : 18,
+                      ),
+                      fontWeight: medium,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -393,6 +547,8 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required by AutomaticKeepAliveClientMixin
+
     // Get screen size for responsive design
     final bool isSmallScreen = ResponsiveHelper.isSmallScreen(context);
 
@@ -642,7 +798,11 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                             '12',
                             Colors.blue,
                           ),
-                          buildStatCard('Rating', '4.8', Colors.green),
+                          buildStatCard(
+                            'Jadwal Tersedia',
+                            '8',
+                            const Color(0xFFFBBF24),
+                          ),
                           buildStatCard('Waktu Aktif', '7j', Colors.orange),
                           buildStatCard(
                             'Pengambilan Menunggu',
@@ -781,22 +941,45 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                                   10,
                                 ),
                               ),
-                              Text(
-                                'Stat',
-                                style: blackTextStyle.copyWith(
-                                  fontSize:
-                                      ResponsiveHelper.getResponsiveFontSize(
-                                        context,
-                                        isSmallScreen ? 16 : 18,
-                                      ),
-                                  fontWeight: semiBold,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Statistik Hari Ini',
+                                    style: blackTextStyle.copyWith(
+                                      fontSize:
+                                          ResponsiveHelper.getResponsiveFontSize(
+                                            context,
+                                            isSmallScreen ? 16 : 18,
+                                          ),
+                                      fontWeight: semiBold,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    height:
+                                        ResponsiveHelper.getResponsiveSpacing(
+                                          context,
+                                          2,
+                                        ),
+                                  ),
+                                  Text(
+                                    _getCurrentDateString(),
+                                    style: greyTextStyle.copyWith(
+                                      fontSize:
+                                          ResponsiveHelper.getResponsiveFontSize(
+                                            context,
+                                            11,
+                                          ),
+                                      fontWeight: regular,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                           InkWell(
                             onTap: () {
-                              _refreshKey.currentState?.show();
+                              _loadStatistics();
                             },
                             borderRadius: BorderRadius.circular(
                               ResponsiveHelper.getResponsiveRadius(context, 16),
@@ -892,40 +1075,53 @@ class _MitraDashboardContentState extends State<MitraDashboardContent> {
                         ? 1.0
                         : 1.1, // Rasio yang lebih tinggi untuk vertical layout
                     children: [
-                      // Pengambilan Selesai
+                      // 1. Selesai Hari Ini (Hijau) - completed_today
                       _buildStatCard(
-                        title: 'Pengambilan Selesai',
-                        value: '12',
-                        backgroundColor: Colors.white,
-                        valueColor: const Color(0xFF22C55E),
+                        title: 'Selesai Hari Ini',
+                        value: _isLoadingStats
+                            ? '-'
+                            : (statistics?['completed_today']?.toString() ??
+                                  '0'),
+                        backgroundColor: const Color(0xFF22C55E), // Green
+                        valueColor: Colors.white,
                         icon: Icons.check_circle_outline,
                       ),
 
-                      // Rating
+                      // 2. Jadwal Tersedia (Kuning/Yellow) - available_schedules
                       _buildStatCard(
-                        title: 'Rating',
-                        value: '4.8',
-                        backgroundColor: Colors.white,
-                        valueColor: const Color(0xFFEAB308),
-                        icon: Icons.star_border_rounded,
+                        title: 'Jadwal Tersedia',
+                        value: _isLoadingStats
+                            ? '-'
+                            : (statistics?['available_schedules']?.toString() ??
+                                  '0'),
+                        backgroundColor: const Color(0xFFFBBF24), // Yellow/Gold
+                        valueColor: Colors.white,
+                        icon: Icons.calendar_today_outlined,
+                        suffix: '',
                       ),
 
-                      // Waktu Aktif
+                      // 3. Waktu Aktif (Biru) - active_hours
                       _buildStatCard(
                         title: 'Waktu Aktif',
-                        value: '7j',
-                        backgroundColor: Colors.white,
-                        valueColor: const Color(0xFF3B82F6),
+                        value: _isLoadingStats
+                            ? '-'
+                            : (statistics?['active_hours']?.toString() ?? '0'),
+                        backgroundColor: const Color(0xFF3B82F6), // Blue
+                        valueColor: Colors.white,
                         icon: Icons.access_time_outlined,
+                        suffix: _isLoadingStats ? '' : 'j',
                       ),
 
-                      // Pengambilan Menunggu
+                      // 4. Sedang Berjalan (Orange) - pending_pickups
                       _buildStatCard(
-                        title: 'Pengambilan Menunggu',
-                        value: '17',
-                        backgroundColor: Colors.white,
-                        valueColor: const Color(0xFFF97316),
-                        icon: Icons.hourglass_empty_rounded,
+                        title: 'Sedang Berjalan',
+                        value: _isLoadingStats
+                            ? '-'
+                            : (statistics?['pending_pickups']?.toString() ??
+                                  '0'),
+                        backgroundColor: const Color(0xFFF97316), // Orange
+                        valueColor: Colors.white,
+                        icon: Icons.local_shipping_outlined,
                       ),
                     ],
                   ),

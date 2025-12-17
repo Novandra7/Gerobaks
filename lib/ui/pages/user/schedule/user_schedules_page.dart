@@ -3,6 +3,7 @@ import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/pages/user/schedule/add_schedule_page_new.dart';
+import 'package:bank_sha/ui/pages/user/tracking/user_gps_tracking_page.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bank_sha/blocs/schedule/schedule_bloc.dart';
@@ -226,6 +227,25 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => _buildScheduleDetailSheet(schedule),
+    );
+  }
+
+  /// ✅ NEW: Open tracking page untuk user (Real GPS Tracking)
+  void _openTrackingPage(ScheduleModel schedule) {
+    // Gunakan UserGpsTrackingPage dengan backend GPS API
+    if (schedule.id == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ID jadwal tidak valid')));
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            UserGpsTrackingPage(scheduleId: int.parse(schedule.id!)),
+      ),
     );
   }
 
@@ -733,7 +753,7 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
             value: DateFormat(
               'EEEE, d MMMM yyyy',
               'id_ID',
-            ).format(selectedDate),
+            ).format(schedule.scheduledDate),
           ),
 
           _buildDetailItem(
@@ -811,6 +831,44 @@ class _UserSchedulesPageState extends State<UserSchedulesPage> {
           const SizedBox(height: 16),
 
           // Action Buttons
+          // ✅ NEW: Tracking button for in-progress schedules
+          if (schedule.status == ScheduleStatus.inProgress)
+            Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      foregroundColor: whiteColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      _openTrackingPage(schedule);
+                    },
+                    icon: const Icon(Icons.gps_fixed, size: 20),
+                    label: Text(
+                      'Lacak Mitra',
+                      style: whiteTextStyle.copyWith(
+                        fontWeight: semiBold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '📍 Lihat lokasi mitra secara real-time',
+                  style: greyTextStyle.copyWith(fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+
           if (schedule.status == ScheduleStatus.pending)
             SizedBox(
               width: double.infinity,

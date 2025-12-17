@@ -124,42 +124,50 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
 
               if (oldStatus == 'pending' && newStatus == 'accepted') {
                 if (_debugMode) print('✅ Showing "Jadwal Diterima" banner...');
-                _showStatusChangeNotificationWithDetails(
-                  '✅ Jadwal Anda telah diterima oleh mitra!',
-                  Colors.green,
-                  scheduleDay,
-                  pickupTime,
+                InAppNotificationService.show(
+                  context: context,
+                  title: 'Jadwal Diterima! 🎉',
+                  message: 'Mitra telah menerima jadwal penjemputan Anda',
+                  subtitle: '$scheduleDay • $pickupTime',
+                  type: InAppNotificationType.success,
+                  duration: const Duration(seconds: 5),
                 );
               } else if ((oldStatus == 'pending' || oldStatus == 'accepted') &&
                   (newStatus == 'in_progress' || newStatus == 'on_the_way')) {
                 if (_debugMode)
                   print('🚛 Showing "Mitra On The Way" banner...');
-                _showStatusChangeNotificationWithDetails(
-                  '🚛 Mitra sedang menuju ke $address',
-                  Colors.blue,
-                  scheduleDay,
-                  pickupTime,
+                InAppNotificationService.show(
+                  context: context,
+                  title: 'Mitra Dalam Perjalanan 🚛',
+                  message: 'Mitra sedang menuju ke $address',
+                  subtitle: '$scheduleDay • $pickupTime',
+                  type: InAppNotificationType.info,
+                  duration: const Duration(seconds: 5),
                 );
               } else if (newStatus == 'arrived') {
                 if (_debugMode) print('📍 Showing "Mitra Arrived" banner...');
-                _showStatusChangeNotificationWithDetails(
-                  '📍 Mitra sudah tiba di lokasi!',
-                  Colors.orange,
-                  scheduleDay,
-                  pickupTime,
+                InAppNotificationService.show(
+                  context: context,
+                  title: 'Mitra Sudah Tiba! 📍',
+                  message: 'Mitra sudah sampai di lokasi penjemputan',
+                  subtitle: '$scheduleDay • $pickupTime',
+                  type: InAppNotificationType.warning,
+                  duration: const Duration(seconds: 5),
                 );
               } else if (newStatus == 'completed') {
                 if (_debugMode) print('✅ Showing "Pickup Completed" banner...');
                 final totalWeight = schedules[i]['total_weight_kg'];
                 final points = schedules[i]['total_points'];
-                _showStatusChangeNotificationWithDetails(
-                  '✅ Pengambilan sampah selesai! Terima kasih 🎉',
-                  Colors.green,
-                  scheduleDay,
-                  pickupTime,
-                  extraInfo: totalWeight != null && points != null
-                      ? '$totalWeight kg • +$points poin'
-                      : null,
+                final subtitle = totalWeight != null && points != null
+                    ? '$totalWeight kg • +$points poin'
+                    : '$scheduleDay • $pickupTime';
+                InAppNotificationService.show(
+                  context: context,
+                  title: 'Penjemputan Selesai! ✅',
+                  message: 'Terima kasih telah menggunakan layanan kami',
+                  subtitle: subtitle,
+                  type: InAppNotificationType.completed,
+                  duration: const Duration(seconds: 5),
                 );
               }
             }
@@ -301,9 +309,63 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   List<ActivityModel> getFilteredActivities() {
     // Convert API schedules to ActivityModel objects
     List<ActivityModel> activities = _schedules.map((schedule) {
-      final scheduledDate = schedule['scheduled_at'] != null
-          ? DateTime.parse(schedule['scheduled_at'])
-          : DateTime.now();
+      // ✅ Parse waktu jadwal dari backend (HANYA gunakan field dari backend)
+      // Backend WAJIB mengirim: schedule_date + pickup_time_start ATAU scheduled_at
+      DateTime scheduledDate;
+
+      try {
+        // Priority 1: Gunakan schedule_date + pickup_time_start (paling akurat)
+        if (schedule['schedule_date'] != null &&
+            schedule['pickup_time_start'] != null) {
+          final dateStr = schedule['schedule_date'].toString(); // "2025-12-15"
+          final timeStr = schedule['pickup_time_start']
+              .toString(); // "10:00:00"
+
+          // Parse date components
+          final dateParts = dateStr.split('-');
+          final year = int.parse(dateParts[0]);
+          final month = int.parse(dateParts[1]);
+          final day = int.parse(dateParts[2]);
+
+          // Parse time components
+          final timeParts = timeStr.split(':');
+          final hour = int.parse(timeParts[0]);
+          final minute = int.parse(timeParts[1]);
+
+          // Create static DateTime
+          scheduledDate = DateTime(year, month, day, hour, minute);
+
+          print('✅ Using schedule_date + pickup_time_start: $scheduledDate');
+        }
+        // Priority 2: Gunakan scheduled_at (alternative)
+        else if (schedule['scheduled_at'] != null) {
+          scheduledDate = DateTime.parse(schedule['scheduled_at']);
+
+          print('✅ Using scheduled_at: $scheduledDate');
+        }
+        // ❌ TIDAK ADA FALLBACK - Field harus ada dari backend!
+        else {
+          // Log error jika field tidak ada
+          print(
+            '❌ ERROR: Backend tidak mengirim schedule_date, pickup_time_start, atau scheduled_at!',
+          );
+          print('   Schedule ID: ${schedule['id']}');
+          print('   Backend HARUS deploy dengan field yang benar!');
+
+          // Throw exception agar kita tahu ada masalah
+          throw Exception(
+            'Backend error: Missing required fields (schedule_date, pickup_time_start, scheduled_at). '
+            'Backend harus deploy dengan field yang benar!',
+          );
+        }
+      } catch (e) {
+        // Log error dengan detail
+        print('❌ ERROR parsing schedule datetime: $e');
+        print('   Schedule data: $schedule');
+
+        // Re-throw exception agar developer tahu ada masalah
+        rethrow;
+      }
 
       // Parse actual_weights jika ada (untuk schedule yang completed)
       List<TrashDetail>? trashDetails;
@@ -445,9 +507,8 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
       case 'pending':
         return 'Dijadwalkan';
       case 'accepted':
-        return 'Diterima Mitra';
       case 'on_progress':
-        return 'Sedang Diproses'; // ✅ Blue - mitra sedang mengerjakan
+        return 'Sedang Diproses'; // ✅ Match dengan activity_item_improved.dart & activity_model_improved.dart
       case 'in_progress':
       case 'on_the_way':
         return 'Mitra Menuju Lokasi';

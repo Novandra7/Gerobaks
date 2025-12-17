@@ -5,8 +5,15 @@ import 'package:bank_sha/utils/responsive_helper.dart';
 
 class StatisticsGrid extends StatelessWidget {
   final VoidCallback onRefresh;
+  final Map<String, dynamic>? statistics;
+  final bool isLoading;
 
-  const StatisticsGrid({super.key, required this.onRefresh});
+  const StatisticsGrid({
+    super.key,
+    required this.onRefresh,
+    this.statistics,
+    this.isLoading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,36 +84,44 @@ class StatisticsGrid extends StatelessWidget {
                 ? 1.3
                 : 1.5, // Mengurangi aspect ratio lebih banyak untuk menambah tinggi card
             children: [
-              // Pengambilan Selesai
+              // 1. Selesai Hari Ini (completed_today)
               StatisticCard(
-                title: 'Pengambilan Selesai',
-                value: '12',
+                title: 'Selesai Hari Ini',
+                value: isLoading
+                    ? '-'
+                    : (statistics?['completed_today']?.toString() ?? '0'),
                 valueColor: const Color(0xFF00A643), // Bright green
                 icon: Icons.check_circle_outline,
               ),
 
-              // Rating
+              // 2. Jadwal Tersedia (available_schedules)
               StatisticCard(
-                title: 'Rating',
-                value: '4.8',
-                valueColor: blueColor, // Menggunakan blueColor dari theme.dart
-                icon: Icons.star_border_rounded,
+                title: 'Jadwal Tersedia',
+                value: isLoading
+                    ? '-'
+                    : (statistics?['available_schedules']?.toString() ?? '0'),
+                valueColor: const Color(0xFFFBBF24), // Kuning/Yellow
+                icon: Icons.calendar_today_outlined,
               ),
 
-              // Waktu Aktif
+              // 3. Waktu Aktif (active_hours)
               StatisticCard(
                 title: 'Waktu Aktif',
-                value: '7',
-                valueColor: blueColor, // Menggunakan blueColor dari theme.dart
+                value: isLoading
+                    ? '-'
+                    : '${statistics?['active_hours']?.toString() ?? '0'}j',
+                valueColor: blueColor, // Blue dari theme
                 icon: Icons.access_time_outlined,
               ),
 
-              // Pengambilan Menunggu
+              // 4. Sedang Berjalan (pending_pickups)
               StatisticCard(
-                title: 'Pengambilan Menunggu',
-                value: '17',
+                title: 'Sedang Berjalan',
+                value: isLoading
+                    ? '-'
+                    : (statistics?['pending_pickups']?.toString() ?? '0'),
                 valueColor: const Color(0xFFF97316), // Orange
-                icon: Icons.hourglass_empty_rounded,
+                icon: Icons.local_shipping_outlined,
               ),
             ],
           ),

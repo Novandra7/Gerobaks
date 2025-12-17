@@ -9,13 +9,13 @@ class AppConfig {
   factory AppConfig() => _instance;
   AppConfig._internal();
 
-  // Default values - Using LOCAL DEVELOPMENT for testing with phpMyAdmin
+  // Default values - Using PRODUCTION SERVER
   static const String DEFAULT_API_URL =
-      'http://127.0.0.1:8000'; // Local backend
+      'https://gerobaks.dumeg.com'; // Production server
   static const String DEVELOPMENT_API_URL =
-      'http://10.0.2.2:8000'; // Android emulator (points to host machine)
+      'http://10.0.2.2:8001'; // Android emulator (points to host machine) - for local dev
   static const String LOCALHOST_API_URL =
-      'http://127.0.0.1:8000'; // iOS simulator / Local development
+      'http://127.0.0.1:8001'; // iOS simulator / Local development - for local dev
   static const String STAGING_API_URL = 'https://staging-gerobaks.dumeg.com';
   static const String PRODUCTION_API_URL = 'https://gerobaks.dumeg.com';
   static const String CUSTOM_API_URL_KEY = 'custom_api_url';

@@ -224,40 +224,6 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                             ),
                           ],
                         ),
-
-                        const SizedBox(height: 20),
-
-                        // Quick Action Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildQuickActionButton(
-                                'Edit Profile',
-                                Icons.edit_rounded,
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const EditProfilePage(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildQuickActionButton(
-                                'Settings',
-                                Icons.settings_rounded,
-                                () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const KeamananPage(),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -528,45 +494,6 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
           ),
         );
       },
-    );
-  }
-
-  // Helper method untuk quick action button
-  Widget _buildQuickActionButton(
-    String title,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: whiteTextStyle.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

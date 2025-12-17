@@ -24,6 +24,15 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   final _weightController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _scheduledWeightController =
+      TextEditingController(); // Controller untuk perkiraan berat sampah terjadwal
+
+  // Pickup time selection
+  TimeOfDay _selectedPickupTime = const TimeOfDay(
+    hour: 6,
+    minute: 0,
+  ); // Default 06:00
+  final _pickupTimeController = TextEditingController(text: '06:00');
 
   bool _isLoading = false;
   String? _userId;
@@ -65,6 +74,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     _weightController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _pickupTimeController.dispose();
     // Dispose dynamic weight controllers
     for (var controller in _weightControllers.values) {
       controller.dispose();
@@ -168,6 +178,23 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     }
   }
 
+  Future<void> _selectPickupTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedPickupTime,
+    );
+
+    if (picked != null && picked != _selectedPickupTime) {
+      setState(() {
+        _selectedPickupTime = picked;
+        // Format to HH:mm
+        final hour = picked.hour.toString().padLeft(2, '0');
+        final minute = picked.minute.toString().padLeft(2, '0');
+        _pickupTimeController.text = '$hour:$minute';
+      });
+    }
+  }
+
   Future<void> _submitSchedule() async {
     if (_formKey.currentState!.validate() && _userId != null) {
       setState(() {
@@ -239,16 +266,48 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           }
         }
 
+        // Parse scheduled weight
+        double? scheduledWeight;
+        if (_hasScheduledWaste && _scheduledWeightController.text.isNotEmpty) {
+          try {
+            scheduledWeight = double.parse(_scheduledWeightController.text);
+          } catch (e) {
+            // Keep null if parsing fails
+          }
+        }
+
+        // Calculate end time (+2 hours from start)
+        final startHour = _selectedPickupTime.hour;
+        final startMinute = _selectedPickupTime.minute;
+        final endHour = (startHour + 2) % 24; // Add 2 hours, wrap at 24
+        final endMinute = startMinute;
+
+        final pickupTimeStart =
+            '${startHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')}';
+        final pickupTimeEnd =
+            '${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}';
+
+        // 🔍 DEBUG: Print what we're sending to backend
+        print('🕐 DEBUG CREATE SCHEDULE:');
+        print('   Schedule Day: $scheduleDay');
+        print('   Pickup Time Start: $pickupTimeStart');
+        print('   Pickup Time End: $pickupTimeEnd');
+        print(
+          '   Selected Time: ${_selectedPickupTime.hour}:${_selectedPickupTime.minute}',
+        );
+
         // Call new API endpoint
         final response = await scheduleApiService.createPickupSchedule(
           scheduleDay: scheduleDay,
           wasteTypeScheduled: _todayWasteType,
           isScheduledActive: _hasScheduledWaste,
-          pickupTimeStart: '06:00', // Fixed start time
-          pickupTimeEnd: '08:00', // Fixed end time
+          pickupTimeStart: pickupTimeStart, // ✅ Use selected time!
+          pickupTimeEnd: pickupTimeEnd, // ✅ Auto +2 hours
           hasAdditionalWaste: _hasAdditionalWaste,
           additionalWastes: additionalWastes,
           notes: finalNotes.isNotEmpty ? finalNotes : null,
+          scheduledWeight:
+              scheduledWeight, // Kirim perkiraan berat sampah terjadwal
         );
 
         // Check if successful
@@ -854,6 +913,77 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 16),
+
+                            // Form input perkiraan berat sampah terjadwal
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Perkiraan Berat (kg)',
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: semiBold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: _scheduledWeightController,
+                                  keyboardType: TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Masukkan perkiraan berat sampah',
+                                    hintStyle: greyTextStyle.copyWith(
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.scale_outlined,
+                                      color: greenColor,
+                                      size: 20,
+                                    ),
+                                    suffixText: 'kg',
+                                    suffixStyle: blackTextStyle.copyWith(
+                                      fontSize: 14,
+                                      fontWeight: medium,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: greyColor.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: greyColor.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: greenColor,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Masukkan perkiraan berat sampah';
+                                    }
+                                    final weight = double.tryParse(value);
+                                    if (weight == null || weight <= 0) {
+                                      return 'Masukkan berat yang valid';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
                           ] else ...[
                             // Inactive state info for scheduled waste
                             Container(
@@ -1421,6 +1551,108 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               fontWeight: medium,
                             ),
                             maxLines: 3,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Waktu Penjemputan section
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                color: greenColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Waktu Penjemputan',
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 16,
+                                  fontWeight: semiBold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Info text
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: lightBackgroundColor,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: greyColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 20,
+                                  color: blueColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Pilih waktu yang Anda inginkan untuk penjemputan sampah',
+                                    style: blackTextStyle.copyWith(
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Time picker field
+                          TextFormField(
+                            controller: _pickupTimeController,
+                            readOnly: true,
+                            onTap: _selectPickupTime,
+                            decoration: InputDecoration(
+                              labelText: 'Waktu Penjemputan',
+                              labelStyle: greyTextStyle.copyWith(
+                                fontSize: 14,
+                                fontWeight: medium,
+                              ),
+                              hintText: 'Pilih waktu',
+                              prefixIcon: Icon(
+                                Icons.schedule,
+                                color: greenColor,
+                              ),
+                              suffixIcon: Icon(
+                                Icons.arrow_drop_down,
+                                color: greyColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: greyColor.withOpacity(0.3),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: greenColor),
+                              ),
+                            ),
+                            style: blackTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: medium,
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Waktu penjemputan wajib dipilih';
+                              }
+                              return null;
+                            },
                           ),
 
                           const SizedBox(height: 32),

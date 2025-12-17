@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:developer' as developer;
+import 'package:bank_sha/shared/route_observer.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
 import 'package:bank_sha/ui/pages/end_user/reward/reward_page.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_full_screen.dart';
+import 'package:bank_sha/ui/pages/user/tracking/user_tracking_by_id_page.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_full_screen.dart';
 import 'package:bank_sha/ui/pages/end_user/wilayah/wilayah_page.dart';
 import 'package:bank_sha/ui/pages/end_user/chat/chat_list_page.dart';
@@ -64,7 +66,7 @@ import 'package:bank_sha/services/gemini_ai_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
-import 'package:bank_sha/services/global_notification_polling_service.dart';
+// import 'package:bank_sha/services/global_notification_polling_service.dart'; // ❌ DISABLED - see FIX_DOUBLE_NOTIFICATION_POPUP.md
 import 'package:bank_sha/controllers/profile_controller.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/app_config.dart';
@@ -231,24 +233,27 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Initialize global notification polling service
-    _initializeGlobalNotification();
+    // ❌ DISABLED: Initialize global notification polling service
+    // Reason: Menyebabkan duplicate popup dengan FCM push notification
+    // See: FIX_DOUBLE_NOTIFICATION_POPUP.md
+    // _initializeGlobalNotification();
   }
 
-  Future<void> _initializeGlobalNotification() async {
-    try {
-      final GlobalNotificationPollingService notificationService =
-          GlobalNotificationPollingService();
-
-      // Wait for first frame to ensure navigator is ready
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await notificationService.initialize(_navigatorKey);
-        print('✅ Global notification service initialized');
-      });
-    } catch (e) {
-      print('❌ Error initializing global notification: $e');
-    }
-  }
+  // ❌ DISABLED: Polling service initialization
+  // Future<void> _initializeGlobalNotification() async {
+  //   try {
+  //     final GlobalNotificationPollingService notificationService =
+  //         GlobalNotificationPollingService();
+  //
+  //     // Wait for first frame to ensure navigator is ready
+  //     WidgetsBinding.instance.addPostFrameCallback((_) async {
+  //       await notificationService.initialize(_navigatorKey);
+  //       print('✅ Global notification service initialized');
+  //     });
+  //   } catch (e) {
+  //     print('❌ Error initializing global notification: $e');
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -298,6 +303,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         debugShowCheckedModeBanner: false,
         navigatorKey:
             _navigatorKey, // ✅ Add navigator key untuk global notification
+        navigatorObservers: [
+          routeObserver,
+        ], // ✅ Track navigation untuk auto-refresh
         routes: {
           '/': (context) => const SplashPage(),
           '/onboarding': (context) => OnboardingPage(),
@@ -326,7 +334,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/notifications': (context) =>
               const NotificationScreen(), // New notification feature
           '/chat': (context) => ChatListPage(),
-          '/debug-notification': (context) => const DebugNotificationPage(), // Debug test banner
+          '/debug-notification': (context) =>
+              const DebugNotificationPage(), // Debug test banner
           '/subscription-plans': (context) => SubscriptionPlansPage(),
           '/my-subscription': (context) => MySubscriptionPage(),
           '/tambah-jadwal': (context) => const TambahJadwalPage(),
@@ -337,6 +346,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/mitra-wilayah': (context) => const MitraLokasiPage(),
           '/reward': (context) => const RewardPage(),
           '/tracking_full': (context) => const TrackingFullScreen(),
+          '/user-tracking-by-id': (context) => UserTrackingByIdPage(
+            scheduleId: ModalRoute.of(context)?.settings.arguments as int? ?? 0,
+          ),
           '/buatKeluhan': (context) => const BuatKeluhanPage(),
           '/goldenKeluhan': (context) => const GoldenKeluhanPage(),
           '/about-us': (context) => AboutUs(),

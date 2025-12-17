@@ -18,16 +18,16 @@ class InAppNotificationService {
       print('   Title: $title');
       print('   Message: $message');
       print('   Type: $type');
-      
+
       // Check if context is valid
       if (!context.mounted) {
         print('❌ [InAppNotificationService] Context is not mounted!');
         return;
       }
-      
+
       print('✅ [InAppNotificationService] Getting overlay...');
       final overlay = Overlay.of(context);
-      
+
       print('✅ [InAppNotificationService] Creating overlay entry...');
       late OverlayEntry overlayEntry;
 
@@ -108,7 +108,7 @@ class _InAppNotificationBannerState extends State<_InAppNotificationBanner>
     // Slide dari atas ke bawah
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1), // Start from top (hidden above screen)
-      end: Offset.zero,            // End at normal position
+      end: Offset.zero, // End at normal position
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     // Fade in
@@ -175,10 +175,10 @@ class _InAppNotificationBannerState extends State<_InAppNotificationBanner>
   @override
   Widget build(BuildContext context) {
     print('🎨 [Banner] build() called');
-    
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    
+
     print('📐 [Banner] Screen width: $screenWidth, isTablet: $isTablet');
 
     return Positioned(
