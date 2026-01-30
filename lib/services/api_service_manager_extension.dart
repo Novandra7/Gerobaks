@@ -157,7 +157,6 @@ extension ApiServiceManagerExtension on ApiServiceManager {
         await auth.refreshUserFromResponse(response);
       }
     } catch (e) {
-      print('❌ Failed to refresh user data: $e');
       throw Exception('Gagal memperbarui data pengguna');
     }
   }

@@ -113,8 +113,6 @@ class ServiceIntegrationManager {
     if (_isInitialized) return;
 
     try {
-      print('🚀 Initializing Service Integration Manager...');
-
       // Initialize core API manager first
       _apiManager = ApiServiceManager();
 
@@ -140,17 +138,13 @@ class ServiceIntegrationManager {
       _startBackgroundServices();
 
       _isInitialized = true;
-      print('✅ Service Integration Manager initialized successfully');
     } catch (e) {
-      print('❌ Failed to initialize Service Integration Manager: $e');
       rethrow;
     }
   }
 
   /// Dispose all services and streams
   Future<void> dispose() async {
-    print('🛑 Disposing Service Integration Manager...');
-
     // Cancel timers
     _notificationPollingTimer?.cancel();
     _dataRefreshTimer?.cancel();
@@ -160,7 +154,6 @@ class ServiceIntegrationManager {
     await _notificationStreamController?.close();
 
     _isInitialized = false;
-    print('✅ Service Integration Manager disposed');
   }
 
   // ==================== AUTHENTICATION MANAGEMENT ====================
@@ -172,7 +165,6 @@ class ServiceIntegrationManager {
       await _onUserAuthenticated(user);
       return user;
     } catch (e) {
-      print('❌ Login failed: $e');
       rethrow;
     }
   }
@@ -196,7 +188,6 @@ class ServiceIntegrationManager {
       await _onUserAuthenticated(user);
       return user;
     } catch (e) {
-      print('❌ Registration failed: $e');
       rethrow;
     }
   }
@@ -207,7 +198,6 @@ class ServiceIntegrationManager {
       await _apiManager.logout();
       await _onUserLoggedOut();
     } catch (e) {
-      print('❌ Logout failed: $e');
       rethrow;
     }
   }
@@ -220,7 +210,6 @@ class ServiceIntegrationManager {
       _userStreamController?.add(user);
       return user;
     } catch (e) {
-      print('❌ Failed to refresh user: $e');
       rethrow;
     }
   }
@@ -282,7 +271,6 @@ class ServiceIntegrationManager {
       // Count unread (simplified - assume new notifications are unread)
       return notifications.where((n) => n['is_read'] == false).length;
     } catch (e) {
-      print('❌ Failed to get unread notification count: $e');
       return 0;
     }
   }
@@ -346,7 +334,6 @@ class ServiceIntegrationManager {
 
       return activities.take(limit).toList();
     } catch (e) {
-      print('❌ Failed to get recent activities: $e');
       return [];
     }
   }
@@ -378,7 +365,6 @@ class ServiceIntegrationManager {
 
       return results;
     } catch (e) {
-      print('❌ Failed to search: $e');
       return {};
     }
   }
@@ -427,8 +413,6 @@ class ServiceIntegrationManager {
   Future<void> syncOfflineData() async {
     if (!await isOnline()) return;
 
-    print('🔄 Syncing offline data...');
-
     try {
       // Sync pending data from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -442,9 +426,8 @@ class ServiceIntegrationManager {
       // Clear synced data
       await prefs.remove('pending_orders');
 
-      print('✅ Offline data synced successfully');
     } catch (e) {
-      print('❌ Failed to sync offline data: $e');
+      // Handle sync errors
     }
   }
 
@@ -456,7 +439,7 @@ class ServiceIntegrationManager {
       final user = await _apiManager.refreshUser();
       await _onUserAuthenticated(user);
     } catch (e) {
-      print('⚠️ Could not restore authentication state: $e');
+      // Not authenticated
     }
   }
 
@@ -468,7 +451,6 @@ class ServiceIntegrationManager {
     // Start personalized background services
     _startPersonalizedServices();
 
-    print('✅ User authenticated: ${user.name} (${user.role})');
   }
 
   /// Handle user logout
@@ -478,8 +460,6 @@ class ServiceIntegrationManager {
 
     // Stop personalized services
     _stopPersonalizedServices();
-
-    print('✅ User logged out');
   }
 
   /// Start background services
@@ -511,7 +491,7 @@ class ServiceIntegrationManager {
           });
         }
       } catch (e) {
-        print('❌ Failed to poll notifications: $e');
+        // Handle polling errors
       }
     });
   }

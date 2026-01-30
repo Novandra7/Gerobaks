@@ -70,8 +70,6 @@ class _SignInPageState extends State<SignInPage> {
         try {
           // Get user data from API
           final userData = await authService.me();
-          print("Me API response: $userData");
-          print("Me API response keys: ${userData.keys.toList()}");
 
           // For backward compatibility
           final localStorage = await LocalStorageService.getInstance();
@@ -79,25 +77,19 @@ class _SignInPageState extends State<SignInPage> {
           // Normalize field names dari backend (user_phone → phone)
           if (userData.containsKey('user_phone')) {
             userData['phone'] = userData['user_phone'];
-            print("🔄 Mapped user_phone to phone: ${userData['phone']}");
           }
           if (userData.containsKey('user_address')) {
             userData['address'] = userData['user_address'];
-            print("🔄 Mapped user_address to address: ${userData['address']}");
           }
 
           // Get existing user data from localStorage to preserve phone/address
           final existingData = await localStorage.getUserData();
-          print("📦 Existing localStorage data: $existingData");
 
           // Merge: API data (newer) + existing localStorage data (preserve phone/address)
           if (existingData != null) {
             // Preserve phone and address from localStorage if not in API response
             if (!userData.containsKey('phone') || userData['phone'] == null) {
               userData['phone'] = existingData['phone'];
-              print(
-                "✅ Preserved phone from localStorage: ${userData['phone']}",
-              );
             }
             if (!userData.containsKey('address') ||
                 userData['address'] == null) {
@@ -118,45 +110,33 @@ class _SignInPageState extends State<SignInPage> {
 
           // Pastikan role tersimpan dengan benar
           if (!userData.containsKey('role') || userData['role'] == null) {
-            print("WARNING: Role not found or null, adding default role");
             userData['role'] = 'end_user';
           }
 
           // Memastikan role valid
           String role = userData['role'];
           if (role != 'end_user' && role != 'mitra') {
-            print(
-              "WARNING: Invalid role '${userData['role']}', correcting to 'end_user'",
-            );
             userData['role'] = 'end_user';
             role = 'end_user';
           }
 
           // Simpan data user dengan role yang benar
           await localStorage.saveUserData(userData);
-          print("User data saved with role: ${userData['role']}");
 
           // Double-check user role setelah disimpan
           final savedRole = await localStorage.getUserRole();
-          print("Verified role from localStorage after save: $savedRole");
 
           if (savedRole != role) {
-            print(
-              "WARNING: Role mismatch! API role: $role, Saved role: $savedRole",
-            );
             // Force resave with correct role
             userData['role'] = role;
             await localStorage.saveUserData(userData);
-            print("Re-saved user data to fix role mismatch");
           }
 
           // Navigate based on role
           if (role == 'mitra') {
-            print("✅ Auto-login: Navigating to MITRA dashboard");
             Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
           } else {
             // Default to end_user dashboard
-            print("✅ Auto-login: Navigating to END USER dashboard");
 
             // ❌ DISABLED: Polling service (menyebabkan duplicate popup)
             // FCM push notification sudah handle popup, tidak perlu polling
@@ -183,7 +163,7 @@ class _SignInPageState extends State<SignInPage> {
         await _userService!.init();
       }
     } catch (e) {
-      print("Error initializing services: $e");
+      // Handle initialization errors
     }
   }
 
@@ -297,52 +277,34 @@ class _SignInPageState extends State<SignInPage> {
       // Create API service instance
       final authService = AuthApiService();
 
-      print("🔐 Attempting login via API: ${_emailController.text}");
-      print("🔐 API URL: ${AppConfig.apiBaseUrl}${ApiRoutes.login}");
-
       // Attempt login using the API service
       final userData = await authService.login(
         email: _emailController.text,
         password: _passwordController.text,
       );
 
-      print(
-        "🔓 Login successful via API for: ${userData['name']} (${userData['email']}) with role: ${userData['role']}",
-      );
-
       // For backward compatibility - update local storage
       final localStorage = await LocalStorageService.getInstance();
-
-      // Debug print full user data untuk membantu debugging
-      print("Raw userData from API login response: $userData");
-      print("userData keys: ${userData.keys.toList()}");
 
       // Normalize field names dari backend (user_phone → phone)
       if (userData.containsKey('user_phone')) {
         userData['phone'] = userData['user_phone'];
-        print("🔄 Mapped user_phone to phone: ${userData['phone']}");
       }
       if (userData.containsKey('user_address')) {
         userData['address'] = userData['user_address'];
-        print("🔄 Mapped user_address to address: ${userData['address']}");
       }
 
       // Get existing user data from localStorage to preserve phone/address
       final existingData = await localStorage.getUserData();
-      print("📦 Existing localStorage data: $existingData");
 
       // Merge: API data (newer) + existing localStorage data (preserve phone/address)
       if (existingData != null) {
         // Preserve phone and address from localStorage if not in API response
         if (!userData.containsKey('phone') || userData['phone'] == null) {
           userData['phone'] = existingData['phone'];
-          print("✅ Preserved phone from localStorage: ${userData['phone']}");
         }
         if (!userData.containsKey('address') || userData['address'] == null) {
           userData['address'] = existingData['address'];
-          print(
-            "✅ Preserved address from localStorage: ${userData['address']}",
-          );
         }
         if (!userData.containsKey('latitude') || userData['latitude'] == null) {
           userData['latitude'] = existingData['latitude'];
@@ -355,27 +317,20 @@ class _SignInPageState extends State<SignInPage> {
 
       // Pastikan role tersimpan dengan benar
       if (!userData.containsKey('role')) {
-        print(
-          "WARNING: Role not found in user data from API, adding default role",
-        );
         userData['role'] = 'end_user';
       }
 
       // Print role untuk debugging
-      print("User role before saving: ${userData['role']}");
 
       // Pastikan semua field yang diperlukan ada
       if (!userData.containsKey('name')) {
-        print("WARNING: Name not found in user data");
       }
 
       if (!userData.containsKey('email')) {
-        print("WARNING: Email not found in user data");
       }
 
       // Simpan data user dengan role yang benar untuk backward compatibility
       await localStorage.saveUserData(userData);
-      print("User data saved with role: ${userData['role']}");
 
       // Set flag login = true for backward compatibility
       await localStorage.saveBool(localStorage.getLoginKey(), true);
@@ -385,7 +340,6 @@ class _SignInPageState extends State<SignInPage> {
         _emailController.text,
         _passwordController.text,
       );
-      print("Credentials saved for future auto-login");
 
       // Menampilkan notifikasi login berhasil
       await NotificationService().showNotification(
@@ -413,11 +367,9 @@ class _SignInPageState extends State<SignInPage> {
 
         // Navigasi berdasarkan role dengan validasi yang lebih baik
         String userRole = userData['role'] ?? 'end_user';
-        print("🚀 User role for navigation: $userRole");
 
         // Validasi dan normalisasi role
         if (!['end_user', 'mitra', 'admin'].contains(userRole)) {
-          print("⚠️ Invalid role detected: $userRole, defaulting to end_user");
           userRole = 'end_user';
           userData['role'] = userRole;
           await localStorage.saveUserData(userData);
@@ -426,7 +378,6 @@ class _SignInPageState extends State<SignInPage> {
         // Navigate berdasarkan role
         switch (userRole) {
           case 'mitra':
-            print("✅ Navigating to MITRA dashboard");
             Navigator.pushNamedAndRemoveUntil(
               context,
               '/mitra-dashboard-new',
@@ -434,7 +385,6 @@ class _SignInPageState extends State<SignInPage> {
             );
             break;
           case 'admin':
-            print("✅ Navigating to ADMIN dashboard");
             // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
             Navigator.pushNamedAndRemoveUntil(
               context,
@@ -444,7 +394,6 @@ class _SignInPageState extends State<SignInPage> {
             break;
           case 'end_user':
           default:
-            print("✅ Navigating to END USER home");
 
             // ❌ DISABLED: Polling service (menyebabkan duplicate popup)
             // FCM push notification sudah handle popup, tidak perlu polling
@@ -467,8 +416,6 @@ class _SignInPageState extends State<SignInPage> {
         }
       }
     } catch (e) {
-      print("Login failed for: ${_emailController.text} - Error: $e");
-
       if (mounted) {
         // More user-friendly error message
         String errorMessage = 'Email atau password salah';

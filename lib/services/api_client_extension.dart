@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bank_sha/services/api_client.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:bank_sha/utils/api_routes.dart';
@@ -65,7 +66,6 @@ extension ApiClientExtension on ApiClient {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return jsonDecode(response.body);
       } else {
-        print('❌ Upload failed: ${response.statusCode} - ${response.body}');
         return {
           'success': false,
           'message': 'Upload failed: ${response.statusCode}',
@@ -73,7 +73,6 @@ extension ApiClientExtension on ApiClient {
         };
       }
     } catch (e) {
-      print('❌ Upload exception: $e');
       throw Exception('Failed to upload file: $e');
     }
   }
