@@ -94,9 +94,6 @@ class _SignInPageState extends State<SignInPage> {
             if (!userData.containsKey('address') ||
                 userData['address'] == null) {
               userData['address'] = existingData['address'];
-              print(
-                "✅ Preserved address from localStorage: ${userData['address']}",
-              );
             }
             if (!userData.containsKey('latitude') ||
                 userData['latitude'] == null) {
@@ -153,7 +150,6 @@ class _SignInPageState extends State<SignInPage> {
             Navigator.pushReplacementNamed(context, '/home');
           }
         } catch (e) {
-          print("Error getting user data: $e");
           // Token might be invalid, clear it
           await authService.logout();
         }
@@ -323,11 +319,9 @@ class _SignInPageState extends State<SignInPage> {
       // Print role untuk debugging
 
       // Pastikan semua field yang diperlukan ada
-      if (!userData.containsKey('name')) {
-      }
+      if (!userData.containsKey('name')) {}
 
-      if (!userData.containsKey('email')) {
-      }
+      if (!userData.containsKey('email')) {}
 
       // Simpan data user dengan role yang benar untuk backward compatibility
       await localStorage.saveUserData(userData);

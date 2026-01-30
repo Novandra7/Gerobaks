@@ -103,7 +103,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: greenColor.withOpacity(0.3),
+                              color: greenColor.withAlpha(13),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -195,7 +195,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                           vertical: ResponsiveHelper.getResponsiveSpacing(context, 4),
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
+                                          color: Colors.white.withAlpha(51),
                                           borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 4)),
                                         ),
                                         child: Row(
@@ -369,7 +369,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Container(
                                 padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
                                 decoration: BoxDecoration(
-                                  color: greenColor.withOpacity(0.1),
+                                  color: greenColor.withAlpha(25),
                                   borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
                                 ),
                                 child: Icon(
@@ -411,7 +411,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Container(
                                 padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
                                 decoration: BoxDecoration(
-                                  color: greenColor.withOpacity(0.1),
+                                  color: greenColor.withAlpha(25),
                                   borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
                                 ),
                                 child: Icon(
@@ -453,7 +453,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                               Container(
                                 padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
                                 decoration: BoxDecoration(
-                                  color: greenColor.withOpacity(0.1),
+                                  color: greenColor.withAlpha(25),
                                   borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
                                 ),
                                 child: Icon(
@@ -578,7 +578,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -644,7 +644,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withAlpha(10),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -698,7 +698,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -749,7 +749,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
               Container(
                 padding: EdgeInsets.all(ResponsiveHelper.getResponsiveSpacing(context, 6)),
                 decoration: BoxDecoration(
-                  color: greenColor.withOpacity(0.1),
+                  color: greenColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(ResponsiveHelper.getResponsiveRadius(context, 8)),
                 ),
                 child: Icon(
