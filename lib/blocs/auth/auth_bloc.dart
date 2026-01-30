@@ -98,6 +98,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       print('🔐 AuthBloc: Logging out');
 
+      // Emit loading state first to trigger listener
+      emit(AuthState.loading());
+
       // Call logout API
       await _authService.logout();
 
