@@ -40,6 +40,7 @@ import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/otp_service.dart';
 import 'package:bank_sha/utils/pantun_helper.dart';
 import 'package:bank_sha/utils/navigation_helper.dart';
+import 'package:bank_sha/utils/navigation_service.dart';
 import 'package:bank_sha/utils/debug_helper.dart';
 import 'package:bank_sha/services/tile_provider_service.dart';
 import 'package:flutter/material.dart';
@@ -232,6 +233,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Set global navigator key for NavigationService
+    NavigationService.setNavigatorKey(_navigatorKey);
 
     // ❌ DISABLED: Initialize global notification polling service
     // Reason: Menyebabkan duplicate popup dengan FCM push notification
