@@ -5,6 +5,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/blocs/auth/auth_bloc.dart';
 import 'package:bank_sha/blocs/auth/auth_event.dart';
 import 'package:bank_sha/blocs/auth/auth_state.dart';
+import 'package:bank_sha/utils/navigation_service.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/edit_profile_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/riwayat_page.dart';
 import 'package:bank_sha/ui/pages/mitra/profile/notifikasi_page.dart';
@@ -49,10 +50,16 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 const Center(child: CircularProgressIndicator()),
           );
         } else if (state.status == AuthStatus.unauthenticated) {
-          // Close any open dialogs
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          // Close all dialogs
+          try {
+            Navigator.of(context, rootNavigator: true).popUntil((route) {
+              return route.isFirst;
+            });
+          } catch (e) {
+            print('Error closing dialogs: $e');
+          }
 
-          // Show success message before navigating
+          // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text(
@@ -69,13 +76,26 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             ),
           );
 
-          // Navigate to login page with replacement to prevent back navigation
-          Future.delayed(const Duration(milliseconds: 500), () {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
-          });
-        } else {
+          // Navigate using global NavigationService
+          print('🔄 Attempting navigation to /sign-in');
+          final result = NavigationService.pushNamedAndRemoveUntil('/sign-in');
+          if (result == null) {
+            print('❌ Navigation failed - trying with context');
+            // Fallback to context navigation
+            Future.delayed(const Duration(milliseconds: 200), () {
+              try {
+                Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                  '/sign-in',
+                  (route) => false,
+                );
+              } catch (e) {
+                print('❌ Context navigation also failed: $e');
+              }
+            });
+          } else {
+            print('✅ Navigation successful');
+          }
+        }else {
           // Close loading dialog if it exists
           if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
