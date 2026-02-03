@@ -98,8 +98,18 @@ extension ApiServiceManagerExtension on ApiServiceManager {
     required String name,
     String? phone,
     String? address,
+    String? vehicleType,
+    String? vehiclePlate,
+    String? workArea,
   }) async {
+    print('🔍 updateProfile called');
+    print('🔍 ApiServiceManager instance hashCode: ${this.hashCode}');
+    print('🔍 isAuthenticated: $isAuthenticated');
+    print('🔍 currentUser: ${currentUser?.name ?? "NULL"}');
+    print('🔍 currentToken: ${currentToken != null ? "EXISTS (${currentToken!.substring(0, 10)}...)" : "NULL"}');
+    
     if (!isAuthenticated) {
+      print('❌ Not authenticated! _currentUser=${currentUser != null}, _currentToken=${currentToken != null}');
       throw Exception('Anda harus login terlebih dahulu');
     }
     
@@ -107,6 +117,10 @@ extension ApiServiceManagerExtension on ApiServiceManager {
       'name': name,
       if (phone != null) 'phone': phone,
       if (address != null) 'address': address,
+      // Add mitra-specific fields
+      if (vehicleType != null) 'vehicle_type': vehicleType,
+      if (vehiclePlate != null) 'vehicle_plate': vehiclePlate,
+      if (workArea != null) 'work_area': workArea,
     };
     
     final response = await client.postJson('/api/user/update-profile', data);
@@ -126,11 +140,7 @@ extension ApiServiceManagerExtension on ApiServiceManager {
       throw Exception('Anda harus login terlebih dahulu');
     }
     
-    // Import required extension
-    await Future.delayed(Duration.zero); // Dummy operation to allow import to be used
-    
-    final uploadExtension = ApiClientExtension(client);
-    final response = await uploadExtension.uploadFile(
+    final response = await client.uploadFile(
       '/api/user/upload-profile-image',
       'profile_image',
       image,
@@ -150,12 +160,7 @@ extension ApiServiceManagerExtension on ApiServiceManager {
     if (!isAuthenticated) return;
     
     try {
-      final response = await client.getJson('/api/auth/me');
-      
-      if (response != null && response['success'] == true) {
-        // Let the main manager handle the user update
-        await auth.refreshUserFromResponse(response);
-      }
+      await refreshUser();
     } catch (e) {
       throw Exception('Gagal memperbarui data pengguna');
     }
