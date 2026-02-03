@@ -35,8 +35,6 @@ class ApiServiceManager {
     if (_isInitialized) return;
     
     try {
-      print('🚀 Initializing API Service Manager...');
-      
       // Load persisted auth data
       await _loadPersistedAuth();
       
@@ -46,28 +44,31 @@ class ApiServiceManager {
       }
       
       _isInitialized = true;
-      print('✅ API Service Manager initialized');
     } catch (e) {
-      print('❌ Failed to initialize API Service Manager: $e');
-      await clearAuth(); // Clear invalid auth data
+      await clearAuth();
+      _isInitialized = true;
     }
   }
 
   /// Load persisted authentication data
   Future<void> _loadPersistedAuth() async {
-    final prefs = await SharedPreferences.getInstance();
-    _currentToken = prefs.getString('auth_token');
-    
-    final userJson = prefs.getString('current_user');
-    if (userJson != null) {
-      try {
-        final userMap = json.decode(userJson);
-        _currentUser = User.fromMap(userMap);
-        print('📱 Loaded persisted user: ${_currentUser?.name} (${_currentUser?.role})');
-      } catch (e) {
-        print('❌ Failed to parse persisted user data: $e');
-        await prefs.remove('current_user');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _currentToken = prefs.getString('auth_token');
+      
+      final userJson = prefs.getString('current_user');
+      if (userJson != null) {
+        try {
+          final userMap = json.decode(userJson);
+          _currentUser = User.fromMap(userMap);
+        } catch (e) {
+          await prefs.remove('current_user');
+          _currentUser = null;
+        }
       }
+    } catch (e) {
+      _currentToken = null;
+      _currentUser = null;
     }
   }
 
@@ -78,20 +79,28 @@ class ApiServiceManager {
       if (response != null && response['success'] == true) {
         _currentUser = User.fromMap(response['data']['user']);
         await _persistCurrentUser();
-        print('✅ User token verified and data refreshed');
       }
     } catch (e) {
-      print('❌ Token verification failed: $e');
       await clearAuth();
       throw Exception('Session expired. Please login again.');
     }
   }
 
-  /// Persist current user data
+  /// Persist current user data and token
   Future<void> _persistCurrentUser() async {
-    if (_currentUser != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_user', _currentUser!.toJson());
+    try {
+      if (_currentUser != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('current_user', _currentUser!.toJson());
+        
+        // Also persist token if it exists
+        if (_currentToken != null) {
+          await prefs.setString('auth_token', _currentToken!);
+        }
+      }
+    } catch (e) {
+      // Failed to persist user data
+      rethrow;
     }
   }
 
@@ -100,20 +109,15 @@ class ApiServiceManager {
     try {
       final response = await _authService.login(email: email, password: password);
       
-      // Extract user and token from response
-      if (response['user'] != null) {
-        _currentUser = User.fromMap(response['user']);
-        _currentToken = response['token'];
-        
-        await _persistCurrentUser();
-        
-        print('✅ Login successful: ${_currentUser?.name} (${_currentUser?.role})');
-        return _currentUser!;
-      }
+      // Response from AuthApiService is already the user data with token
+      // (not nested under 'user' key)
+      _currentUser = User.fromMap(response);
+      _currentToken = response['token'];
       
-      throw Exception('Invalid login response format');
+      await _persistCurrentUser();
+      
+      return _currentUser!;
     } catch (e) {
-      print('❌ Login failed: $e');
       rethrow;
     }
   }
@@ -138,20 +142,15 @@ class ApiServiceManager {
         role: role,
       );
       
-      // Extract user and token from response
-      if (response['user'] != null) {
-        _currentUser = User.fromMap(response['user']);
-        _currentToken = response['token'];
-        
-        await _persistCurrentUser();
-        
-        print('✅ Registration successful: ${_currentUser?.name} (${_currentUser?.role})');
-        return _currentUser!;
-      }
+      // Response from AuthApiService is already the user data with token
+      // (not nested under 'user' key)
+      _currentUser = User.fromMap(response);
+      _currentToken = response['token'];
       
-      throw Exception('Invalid registration response format');
+      await _persistCurrentUser();
+      
+      return _currentUser!;
     } catch (e) {
-      print('❌ Registration failed: $e');
       rethrow;
     }
   }
@@ -163,29 +162,59 @@ class ApiServiceManager {
         await _apiClient.postJson('/api/auth/logout', {});
       }
     } catch (e) {
-      print('⚠️ Logout API call failed: $e');
       // Continue with local logout even if API fails
     } finally {
       await clearAuth();
-      print('✅ User logged out');
     }
   }
 
   /// Clear authentication data
   Future<void> clearAuth() async {
-    _currentUser = null;
-    _currentToken = null;
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    await prefs.remove('current_user');
-    await _apiClient.clearToken();
+    try {
+      _currentUser = null;
+      _currentToken = null;
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('current_user');
+      await _apiClient.clearToken();
+    } catch (e) {
+      // Ensure local state is cleared even if SharedPreferences fails
+      _currentUser = null;
+      _currentToken = null;
+    }
   }
 
   /// Refresh current user data
   Future<User> refreshUser() async {
-    await _verifyCurrentUser();
-    return _currentUser!;
+    try {
+      await _verifyCurrentUser();
+      if (_currentUser == null) {
+        throw Exception('Failed to refresh user data');
+      }
+      return _currentUser!;
+    } catch (e) {
+      rethrow;
+    }
+  }
+  
+  /// Reload authentication state from storage
+  /// Useful after external login (e.g., via AuthApiService directly)
+  Future<void> reloadAuthState() async {
+    try {
+      await _loadPersistedAuth();
+      
+      if (_currentToken != null && _currentUser == null) {
+        // Token exists but user data not loaded, try to fetch from API
+        try {
+          await _verifyCurrentUser();
+        } catch (e) {
+          await clearAuth();
+        }
+      }
+    } catch (e) {
+      await clearAuth();
+    }
   }
 
   /// Check if user has specific role

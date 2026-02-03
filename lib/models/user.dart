@@ -45,8 +45,30 @@ class User {
 
   /// Create User from API response JSON
   factory User.fromMap(Map<String, dynamic> map) {
+    // Helper function to safely parse double from dynamic value
+    double? parseDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) {
+        return double.tryParse(value);
+      }
+      return null;
+    }
+    
+    // Helper function to safely parse int from dynamic value
+    int parseIntSafe(dynamic value, int defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is int) return value;
+      if (value is double) return value.toInt();
+      if (value is String) {
+        return int.tryParse(value) ?? defaultValue;
+      }
+      return defaultValue;
+    }
+    
     return User(
-      id: map['id']?.toInt() ?? 0,
+      id: parseIntSafe(map['id'], 0),
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       role: map['role'] ?? 'end_user',
@@ -54,14 +76,14 @@ class User {
       phone: map['phone'],
       address: map['address'],
       subscriptionStatus: map['subscription_status'] ?? 'inactive',
-      points: map['points']?.toInt() ?? 0,
+      points: parseIntSafe(map['points'], 0),
       employeeId: map['employee_id'],
       vehicleType: map['vehicle_type'],
       vehiclePlate: map['vehicle_plate'],
       workArea: map['work_area'],
       status: map['status'] ?? 'active',
-      rating: map['rating']?.toDouble(),
-      totalCollections: map['total_collections']?.toInt() ?? 0,
+      rating: parseDouble(map['rating']),
+      totalCollections: parseIntSafe(map['total_collections'], 0),
       createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
