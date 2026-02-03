@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/services/api_service_manager.dart';
+import 'package:bank_sha/services/api_service_manager_extension.dart';
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({super.key});
+  final Map<String, dynamic> userData;
+
+  const EditProfilePage({super.key, required this.userData});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -19,6 +23,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _vehicleTypeController = TextEditingController();
   final _vehiclePlateController = TextEditingController();
   final _workAreaController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -27,15 +32,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   void _loadUserData() {
-    // Load existing user data - in real app, this would come from API or provider
-    _nameController.text = 'Ahmad Kurniawan';
-    _emailController.text = 'driver.jakarta@gerobaks.com';
-    _phoneController.text = '+62 813 4567 8901';
-    _addressController.text = 'Jakarta Pusat';
-    _employeeIdController.text = 'DRV-JKT-001';
-    _vehicleTypeController.text = 'Truck Sampah';
-    _vehiclePlateController.text = 'B 1234 ABC';
-    _workAreaController.text = 'Jakarta Pusat';
+    // Load from passed userData parameter
+    _nameController.text = widget.userData['name'] ?? '';
+    _emailController.text = widget.userData['email'] ?? '';
+    _phoneController.text = widget.userData['phone'] ?? '';
+    _addressController.text = widget.userData['address'] ?? '';
+    _employeeIdController.text = widget.userData['employee_id'] ?? '';
+    _vehicleTypeController.text = widget.userData['vehicle_type'] ?? '';
+    _vehiclePlateController.text = widget.userData['vehicle_plate'] ?? '';
+    _workAreaController.text = widget.userData['work_area'] ?? '';
   }
 
   @override
@@ -69,7 +74,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withAlpha(25),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -107,7 +112,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withAlpha(10),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -122,9 +127,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: greenColor.withOpacity(0.1),
+                              color: greenColor.withAlpha(25),
                               border: Border.all(
-                                color: greenColor.withOpacity(0.3),
+                                color: greenColor.withAlpha(77),
                                 width: 2,
                               ),
                             ),
@@ -150,7 +155,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: Colors.black.withAlpha(51),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -260,14 +265,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [greenColor, greenColor.withOpacity(0.8)],
+                        colors: [greenColor, greenColor.withAlpha(204)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: greenColor.withOpacity(0.3),
+                          color: greenColor.withAlpha(77),
                           blurRadius: 15,
                           offset: const Offset(0, 6),
                         ),
@@ -276,28 +281,39 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _saveProfile,
+                        onTap: _isLoading ? null : _saveProfile,
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.all(18),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.save_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Simpan Perubahan',
-                                style: whiteTextStyle.copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                          child: _isLoading
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.save_rounded,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Simpan Perubahan',
+                                      style: whiteTextStyle.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
@@ -321,7 +337,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -336,7 +352,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: greenColor.withOpacity(0.1),
+                  color: greenColor.withAlpha(25),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: greenColor, size: 20),
@@ -428,38 +444,90 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final apiService = ApiServiceManager();
+
+      // Prepare update data based on role
+      final updateData = <String, dynamic>{
+        'name': _nameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+      };
+
+      // Add mitra-specific fields if role is mitra
+      if (widget.userData['role'] == 'mitra') {
+        updateData['vehicle_type'] = _vehicleTypeController.text.trim();
+        updateData['vehicle_plate'] = _vehiclePlateController.text.trim();
+        updateData['work_area'] = _workAreaController.text.trim();
+      }
+
+      // Call update profile API
+      await apiService.updateProfile(
+        name: updateData['name'],
+        phone: updateData['phone'],
+        address: updateData['address'],
+        vehicleType: widget.userData['role'] == 'mitra'
+            ? updateData['vehicle_type']
+            : null,
+        vehiclePlate: widget.userData['role'] == 'mitra'
+            ? updateData['vehicle_plate']
+            : null,
+        workArea: widget.userData['role'] == 'mitra'
+            ? updateData['work_area']
+            : null,
       );
 
-      // Simulate API call
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pop(context); // Close loading dialog
+      if (!mounted) return;
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Profile berhasil diperbarui',
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: greenColor,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
-
-        // Go back to profile page
-        Navigator.pop(context);
+      setState(() {
+        _isLoading = false;
       });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Profile berhasil diperbarui',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: greenColor,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+
+      // Go back to profile page with refresh signal
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceAll('Exception: ', ''),
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
     }
   }
 }
