@@ -101,15 +101,8 @@ extension ApiServiceManagerExtension on ApiServiceManager {
     String? vehicleType,
     String? vehiclePlate,
     String? workArea,
-  }) async {
-    print('🔍 updateProfile called');
-    print('🔍 ApiServiceManager instance hashCode: ${this.hashCode}');
-    print('🔍 isAuthenticated: $isAuthenticated');
-    print('🔍 currentUser: ${currentUser?.name ?? "NULL"}');
-    print('🔍 currentToken: ${currentToken != null ? "EXISTS (${currentToken!.substring(0, 10)}...)" : "NULL"}');
-    
+  }) async {    
     if (!isAuthenticated) {
-      print('❌ Not authenticated! _currentUser=${currentUser != null}, _currentToken=${currentToken != null}');
       throw Exception('Anda harus login terlebih dahulu');
     }
     
