@@ -1,18 +1,16 @@
+import 'dart:convert';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
-// import 'package:bank_sha/services/global_notification_polling_service.dart'; // ❌ DISABLED - see FIX_DOUBLE_NOTIFICATION_POPUP.md
+import 'package:bank_sha/services/api_service_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/layout.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
-import 'package:bank_sha/utils/app_config.dart';
-import 'package:bank_sha/utils/api_routes.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:bank_sha/blocs/blocs.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -325,6 +323,25 @@ class _SignInPageState extends State<SignInPage> {
 
       // Simpan data user dengan role yang benar untuk backward compatibility
       await localStorage.saveUserData(userData);
+      
+      // IMPORTANT: Also save to SharedPreferences for ApiServiceManager
+      // Ensure required fields exist
+      if (!userData.containsKey('created_at')) {
+        userData['created_at'] = DateTime.now().toIso8601String();
+      }
+      if (!userData.containsKey('updated_at')) {
+        userData['updated_at'] = DateTime.now().toIso8601String();
+      }
+      
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = jsonEncode(userData);
+      await prefs.setString('current_user', userJson);
+      
+      // Verify save was successful
+      final verifyJson = prefs.getString('current_user');
+      if (verifyJson != null) {
+        print('🔐 [SIGNIN] Saved data length: ${verifyJson.length} chars');
+      }
 
       // Set flag login = true for backward compatibility
       await localStorage.saveBool(localStorage.getLoginKey(), true);
@@ -334,6 +351,9 @@ class _SignInPageState extends State<SignInPage> {
         _emailController.text,
         _passwordController.text,
       );
+      
+      // Reload ApiServiceManager auth state
+      await ApiServiceManager().reloadAuthState();
 
       // Menampilkan notifikasi login berhasil
       await NotificationService().showNotification(
