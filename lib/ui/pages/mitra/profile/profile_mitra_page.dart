@@ -1,3 +1,5 @@
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/api_service_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,23 +21,52 @@ class ProfileMitraPage extends StatefulWidget {
 }
 
 class _ProfileMitraPageState extends State<ProfileMitraPage> {
+  Map<String, dynamic>? _userData;
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
+    _loadUserData();
   }
 
-  // Dummy data - in real app, this would come from API or provider
-  final Map<String, dynamic> _userData = {
-    'name': 'Ahmad Kurniawan',
-    'email': 'driver.jakarta@gerobaks.com',
-    'id': 'DRV-JKT-001',
-    'role': 'Mitra Premium',
-    'phone': '+62 813 4567 8901',
-    'address': 'Jakarta Pusat',
-    'points': '2,500',
-    'transactions': '56',
-    'rating': '4.8',
-  };
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Try to get from ApiServiceManager first (most up-to-date)
+      final apiManager = ApiServiceManager();
+
+      if (apiManager.isAuthenticated && apiManager.currentUser != null) {
+        // Convert User model to Map for compatibility
+        setState(() {
+          _userData = apiManager.currentUser!.toMap();
+          _isLoading = false;
+        });
+
+        // Also update LocalStorageService for backward compatibility
+        final localStorage = await LocalStorageService.getInstance();
+        await localStorage.saveUserData(_userData!);
+        return;
+      }
+
+      // Fallback to LocalStorageService if ApiServiceManager not initialized
+      final localStorage = await LocalStorageService.getInstance();
+      final userData = await localStorage.getUserData();
+
+      setState(() {
+        _userData = userData;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +87,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
               return route.isFirst;
             });
           } catch (e) {
-            print('Error closing dialogs: $e');
+            // Handle error closing dialogs
           }
 
           // Show success message
@@ -77,25 +108,21 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
           );
 
           // Navigate using global NavigationService
-          print('🔄 Attempting navigation to /sign-in');
           final result = NavigationService.pushNamedAndRemoveUntil('/sign-in');
           if (result == null) {
-            print('❌ Navigation failed - trying with context');
             // Fallback to context navigation
             Future.delayed(const Duration(milliseconds: 200), () {
               try {
-                Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                  '/sign-in',
-                  (route) => false,
-                );
+                Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
               } catch (e) {
-                print('❌ Context navigation also failed: $e');
+                // Handle navigation error
               }
             });
-          } else {
-            print('✅ Navigation successful');
-          }
-        }else {
+          } else {}
+        } else {
           // Close loading dialog if it exists
           if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
@@ -103,6 +130,42 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         }
       },
       builder: (context, state) {
+        // Show loading indicator while loading user data
+        if (_isLoading) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF9FFF8),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Show error if no user data
+        if (_userData == null) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF9FFF8),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Gagal memuat data profil',
+                    style: blackTextStyle.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadUserData,
+                    child: const Text('Coba Lagi'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return Scaffold(
           backgroundColor: const Color(
             0xFFF9FFF8,
@@ -121,394 +184,410 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             ),
             centerTitle: false,
           ),
-          body: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FFF8), // Consistent background color
-              ),
-              child: Column(
-                children: [
-                  // Modern Profile Header Card
-                  Container(
-                    margin: const EdgeInsets.all(20),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          greenColor,
-                          greenColor.withOpacity(0.8),
-                          const Color(0xFF059669),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: greenColor.withOpacity(0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.1),
-                          blurRadius: 1,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            // Modern Profile Avatar dengan glassmorphism effect
-                            Container(
-                              width: 90,
-                              height: 90,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.2),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _userData['name'][0].toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.w800,
-                                      color: greenColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-
-                            // Profile Info
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _userData['name'],
-                                    style: whiteTextStyle.copyWith(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      'ID: ${_userData['id']}',
-                                      style: whiteTextStyle.copyWith(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white.withOpacity(0.9),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Modern Stats Cards - Responsive Design
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildResponsiveStatCard(
-                            'Poin',
-                            _userData['points'],
-                            Icons.stars_rounded,
-                            const Color(0xFF10B981),
-                            const Color(0xFFD1FAE5),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildResponsiveStatCard(
-                            'Transaksi',
-                            _userData['transactions'],
-                            Icons.receipt_long_rounded,
-                            const Color(0xFF3B82F6),
-                            const Color(0xFFDBEAFE),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildResponsiveStatCard(
-                            'Rating',
-                            _userData['rating'],
-                            Icons.star_rounded,
-                            const Color(0xFFF59E0B),
-                            const Color(0xFFFEF3C7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Modern Menu Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Menu Utama',
-                          style: blackTextStyle.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.3, // Adjusted for better fit
-                          children: [
-                            _buildModernMenuCard(
-                              'Edit Profile',
-                              'Kelola info pribadi',
-                              Icons.person_rounded,
-                              const Color(0xFF3B82F6),
-                              const Color(0xFFDBEAFE),
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const EditProfilePage(),
-                                ),
-                              ),
-                            ),
-                            _buildModernMenuCard(
-                              'Riwayat',
-                              'Transaksi & aktivitas',
-                              Icons.history_rounded,
-                              const Color(0xFF10B981),
-                              const Color(0xFFD1FAE5),
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RiwayatPage(),
-                                ),
-                              ),
-                            ),
-                            _buildModernMenuCard(
-                              'Notifikasi',
-                              'Pengaturan alert',
-                              Icons.notifications_rounded,
-                              const Color(0xFFF59E0B),
-                              const Color(0xFFFEF3C7),
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NotifikasiPage(),
-                                ),
-                              ),
-                            ),
-                            _buildModernMenuCard(
-                              'Keamanan',
-                              'Password & privasi',
-                              Icons.security_rounded,
-                              const Color(0xFFEF4444),
-                              const Color(0xFFFECACB),
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const KeamananPage(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Modern Information Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
+          body: RefreshIndicator(
+            onRefresh: _loadUserData,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9FFF8), // Consistent background color
+                ),
+                child: Column(
+                  children: [
+                    // Modern Profile Header Card
+                    Container(
+                      margin: const EdgeInsets.all(20),
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: blueColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.info_outline_rounded,
-                                  color: blueColor,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Informasi Akun',
-                                style: blackTextStyle.copyWith(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          _buildModernInfoItem(
-                            'Email Address',
-                            _userData['email'],
-                            Icons.email_rounded,
-                            const Color(0xFF3B82F6),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildModernInfoItem(
-                            'Nomor Telepon',
-                            _userData['phone'],
-                            Icons.phone_rounded,
-                            const Color(0xFF10B981),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildModernInfoItem(
-                            'Area Kerja',
-                            _userData['address'],
-                            Icons.location_on_rounded,
-                            const Color(0xFFF59E0B),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildModernInfoItem(
-                            'Employee ID',
-                            _userData['id'],
-                            Icons.badge_rounded,
-                            const Color(0xFF8B5CF6),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Modern Logout Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            const Color(0xFFEF4444),
-                            const Color(0xFFDC2626),
+                            greenColor,
+                            greenColor.withAlpha(204),
+                            const Color(0xFF059669),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFEF4444).withOpacity(0.3),
-                            blurRadius: 15,
-                            offset: const Offset(0, 6),
+                            color: greenColor.withAlpha(102),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                          BoxShadow(
+                            color: Colors.white.withAlpha(26),
+                            blurRadius: 1,
+                            offset: const Offset(0, 1),
                           ),
                         ],
                       ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _showLogoutDialog(),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(18),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              // Modern Profile Avatar dengan glassmorphism effect
+                              Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withAlpha(51),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(77),
+                                    width: 2,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withAlpha(26),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
+                                ),
+                                child: Container(
+                                  margin: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withAlpha(26),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      (_userData!['name'] ?? 'U')[0]
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w800,
+                                        color: greenColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+
+                              // Profile Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _userData!['name'] ?? 'User',
+                                      style: whiteTextStyle.copyWith(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withAlpha(38),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        'ID: ${_userData!['employee_id'] ?? '-'}',
+                                        style: whiteTextStyle.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white.withAlpha(230),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Modern Stats Cards - Responsive Design
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildResponsiveStatCard(
+                              'Poin',
+                              (_userData!['total_collections'] ?? 0).toString(),
+                              Icons.stars_rounded,
+                              const Color(0xFF10B981),
+                              const Color(0xFFD1FAE5),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildResponsiveStatCard(
+                              'Transaksi',
+                              (_userData!['transactions'] ?? '0').toString(),
+                              Icons.receipt_long_rounded,
+                              const Color(0xFF3B82F6),
+                              const Color(0xFFDBEAFE),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildResponsiveStatCard(
+                              'Rating',
+                              (_userData!['rating'] ?? '0.0').toString(),
+                              Icons.star_rounded,
+                              const Color(0xFFF59E0B),
+                              const Color(0xFFFEF3C7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Modern Menu Grid
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Menu Utama',
+                            style: blackTextStyle.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.3, // Adjusted for better fit
+                            children: [
+                              _buildModernMenuCard(
+                                'Edit Profile',
+                                'Kelola info pribadi',
+                                Icons.person_rounded,
+                                const Color(0xFF3B82F6),
+                                const Color(0xFFDBEAFE),
+                                () async {
+                                  if (_userData != null) {
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => EditProfilePage(
+                                          userData: _userData!,
+                                        ),
+                                      ),
+                                    );
+
+                                    // Refresh data if profile was updated
+                                    if (result == true) {
+                                      _loadUserData();
+                                    }
+                                  }
+                                },
+                              ),
+                              _buildModernMenuCard(
+                                'Riwayat',
+                                'Transaksi & aktivitas',
+                                Icons.history_rounded,
+                                const Color(0xFF10B981),
+                                const Color(0xFFD1FAE5),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const RiwayatPage(),
+                                  ),
+                                ),
+                              ),
+                              _buildModernMenuCard(
+                                'Notifikasi',
+                                'Pengaturan alert',
+                                Icons.notifications_rounded,
+                                const Color(0xFFF59E0B),
+                                const Color(0xFFFEF3C7),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const NotifikasiPage(),
+                                  ),
+                                ),
+                              ),
+                              _buildModernMenuCard(
+                                'Keamanan',
+                                'Password & privasi',
+                                Icons.security_rounded,
+                                const Color(0xFFEF4444),
+                                const Color(0xFFFECACB),
+                                () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const KeamananPage(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Modern Information Section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(10),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                const Icon(
-                                  Icons.logout_rounded,
-                                  color: Colors.white,
-                                  size: 22,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: blueColor.withAlpha(26),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.info_outline_rounded,
+                                    color: blueColor,
+                                    size: 20,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Keluar dari Akun',
-                                  style: whiteTextStyle.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
+                                  'Informasi Akun',
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF1E293B),
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 24),
+                            _buildModernInfoItem(
+                              'Email Address',
+                              _userData!['email'] ?? '-',
+                              Icons.email_rounded,
+                              const Color(0xFF3B82F6),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildModernInfoItem(
+                              'Nomor Telepon',
+                              _userData!['phone'] ?? '-',
+                              Icons.phone_rounded,
+                              const Color(0xFF10B981),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildModernInfoItem(
+                              'Area Kerja',
+                              _userData!['work_area'] ?? '-',
+                              Icons.location_on_rounded,
+                              const Color(0xFFF59E0B),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildModernInfoItem(
+                              'Employee ID',
+                              _userData!['employee_id'] ?? '-',
+                              Icons.badge_rounded,
+                              const Color(0xFF8B5CF6),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Modern Logout Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFEF4444),
+                              const Color(0xFFDC2626),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withAlpha(77),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showLogoutDialog(),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(18),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.logout_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Keluar dari Akun',
+                                    style: whiteTextStyle.copyWith(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
@@ -533,7 +612,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha(20),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -602,7 +681,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -686,7 +765,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withAlpha(26),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: iconColor, size: 18),
@@ -734,7 +813,7 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444).withOpacity(0.1),
+                  color: const Color(0xFFEF4444).withAlpha(26),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
