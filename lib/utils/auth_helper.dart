@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
+import 'package:bank_sha/services/api_service_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Utility class untuk membantu proses autentikasi
 /// Kelas ini menangani operasi auto-login dan penentuan role pengguna
@@ -64,6 +67,22 @@ class AuthHelper {
           // Save to localStorage for backward compatibility during transition
           await localStorage.saveUserData(userData);
           await localStorage.saveBool(localStorage.getLoginKey(), true);
+          
+          // IMPORTANT: Also save to SharedPreferences for ApiServiceManager
+          // Ensure required fields exist
+          if (!userData.containsKey('created_at')) {
+            userData['created_at'] = DateTime.now().toIso8601String();
+          }
+          if (!userData.containsKey('updated_at')) {
+            userData['updated_at'] = DateTime.now().toIso8601String();
+          }
+          
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('current_user', jsonEncode(userData));
+          print("🔑 [AUTH] Saved user to SharedPreferences with keys: ${userData.keys.toList()}");
+          
+          // Reload ApiServiceManager auth state
+          await ApiServiceManager().reloadAuthState();
 
           print(
             "🔑 [AUTH] Auth success via token. Role: $role, Name: ${userData['name']}",
@@ -119,6 +138,22 @@ class AuthHelper {
         // Save to localStorage for backward compatibility
         await localStorage.saveUserData(userData);
         await localStorage.saveBool(localStorage.getLoginKey(), true);
+        
+        // IMPORTANT: Also save to SharedPreferences for ApiServiceManager
+        // Ensure required fields exist
+        if (!userData.containsKey('created_at')) {
+          userData['created_at'] = DateTime.now().toIso8601String();
+        }
+        if (!userData.containsKey('updated_at')) {
+          userData['updated_at'] = DateTime.now().toIso8601String();
+        }
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('current_user', jsonEncode(userData));
+        print("🔑 [AUTH] Saved user to SharedPreferences with keys: ${userData.keys.toList()}");
+        
+        // Reload ApiServiceManager auth state
+        await ApiServiceManager().reloadAuthState();
 
         print(
           "🔑 [AUTH] Auth success via credentials. Role: $role, Name: ${userData['name']}",
