@@ -1067,14 +1067,14 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: greenColor.withOpacity(0.2),
+                        color: greenColor.withAlpha(51),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                         spreadRadius: -6,
                       ),
                     ],
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withAlpha(38),
                       width: 1.5,
                     ),
                   ),
@@ -1089,15 +1089,15 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                             Container(
                               padding: const EdgeInsets.all(13),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.18),
+                                color: Colors.white.withAlpha(46),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.25),
+                                  color: Colors.white.withAlpha(64),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withAlpha(25),
                                     blurRadius: 10,
                                     spreadRadius: -5,
                                   ),
@@ -1107,7 +1107,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                 'assets/ic_stars.png',
                                 width: 28,
                                 height: 28,
-                                color: Colors.white.withOpacity(1),
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(width: 18),
@@ -1119,7 +1119,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                   style: whiteTextStyle.copyWith(
                                     fontSize: 14,
                                     fontWeight: medium,
-                                    color: Colors.white.withOpacity(0.95),
+                                    color: Colors.white.withAlpha(243),
                                     letterSpacing: 0.2,
                                   ),
                                 ),
@@ -1129,7 +1129,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                         width: 80,
                                         height: 30,
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.3),
+                                          color: Colors.white.withAlpha(77),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
@@ -1151,8 +1151,8 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                             style: whiteTextStyle.copyWith(
                                               fontSize: 16,
                                               fontWeight: medium,
-                                              color: Colors.white.withOpacity(
-                                                0.95,
+                                              color: Colors.white.withAlpha(
+                                                243,
                                               ),
                                             ),
                                           ),
@@ -1168,15 +1168,15 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                 vertical: 9,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withAlpha(51),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withAlpha(77),
                                   width: 1,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withAlpha(25),
                                     blurRadius: 10,
                                     offset: const Offset(0, 2),
                                     spreadRadius: -3,
@@ -1209,7 +1209,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                       // Divider with improved appearance
                       Container(
                         height: 1,
-                        color: Colors.white.withOpacity(0.08),
+                        color: Colors.white.withAlpha(20),
                       ),
                       // Bottom part with info text - softer appearance
                       Container(
@@ -1221,7 +1221,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                           children: [
                             Icon(
                               Icons.info_outline_rounded,
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withAlpha(179),
                               size: 15,
                             ),
                             const SizedBox(width: 8),
@@ -1230,7 +1230,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                               style: whiteTextStyle.copyWith(
                                 fontSize: 12,
                                 fontWeight: regular,
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withAlpha(179),
                               ),
                             ),
                           ],
@@ -1308,15 +1308,15 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                         width: 54,
                         height: 54,
                         decoration: BoxDecoration(
-                          color: greenColor.withOpacity(0.08),
+                          color: greenColor.withAlpha(20),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: greenColor.withOpacity(0.2),
+                            color: greenColor.withAlpha(51),
                             width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: greenColor.withOpacity(0.05),
+                              color: greenColor.withAlpha(13),
                               blurRadius: 8,
                               spreadRadius: 0,
                               offset: const Offset(0, 2),
@@ -1371,7 +1371,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
-                      color: greenColor.withOpacity(0.1),
+                      color: greenColor.withAlpha(25),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -1419,13 +1419,13 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withAlpha(10),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                   spreadRadius: -5,
                 ),
               ],
-              border: Border.all(color: greenColor.withOpacity(0.1), width: 1),
+              border: Border.all(color: greenColor.withAlpha(25), width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
@@ -1451,7 +1451,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.7),
+                              Colors.black.withAlpha(179),
                             ],
                             stops: const [0.4, 1.0],
                           ),
@@ -1472,7 +1472,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
+                                    color: Colors.black.withAlpha(25),
                                     blurRadius: 8,
                                     spreadRadius: -2,
                                     offset: const Offset(0, 2),
