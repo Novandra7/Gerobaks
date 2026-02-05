@@ -5,6 +5,7 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/services/api_service_manager.dart';
 import 'package:bank_sha/services/api_service_manager_extension.dart';
 import 'package:bank_sha/utils/profile_image_helper.dart';
+import 'package:bank_sha/ui/widgets/shared/profile_image_upload_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -128,7 +129,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   ),
                   child: Column(
                     children: [
-                      _buildProfilePicture(),
+                      ProfileImageUploadPicker(
+                        currentImageUrl: _currentProfileImageUrl,
+                        selectedImage: _selectedImage,
+                        isUploading: _isUploadingImage,
+                        defaultInitials: _getInitials(
+                          _nameController.text.isNotEmpty
+                              ? _nameController.text
+                              : widget.userData['name'] ?? '',
+                        ),
+                        onCameraTap: () => _pickImage(ImageSource.camera),
+                        onGalleryTap: () => _pickImage(ImageSource.gallery),
+                        onRemoveTap: ProfileImageHelper.removeProfileImage,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Ubah Foto Profile',
@@ -509,159 +522,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     } else {
       return (words[0][0] + words[1][0]).toUpperCase();
     }
-  }
-
-  Widget _buildProfilePicture() {
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: greenColor.withAlpha(25),
-            border: Border.all(color: greenColor.withAlpha(77), width: 2),
-          ),
-          child: ClipOval(child: _buildProfileContent()),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: GestureDetector(
-            onTap: (_isLoading || _isUploadingImage)
-                ? null
-                : _showImagePickerOptions,
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: greenColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(51),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: _isUploadingImage
-                  ? const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProfileContent() {
-    if (_selectedImage != null) {
-      return Image.file(_selectedImage!, fit: BoxFit.cover);
-    } else if (_currentProfileImageUrl != null &&
-        _currentProfileImageUrl!.isNotEmpty) {
-      // Tambahkan cache buster dengan timestamp untuk force reload
-      final imageUrl = _currentProfileImageUrl!.contains('?')
-          ? '$_currentProfileImageUrl&t=${DateTime.now().millisecondsSinceEpoch}'
-          : '$_currentProfileImageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
-
-      return Image.network(
-        imageUrl,
-        key: ValueKey(imageUrl), // Unique key untuk force rebuild
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildInitialAvatar();
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(child: CircularProgressIndicator());
-        },
-      );
-    } else {
-      return _buildInitialAvatar();
-    }
-  }
-
-  Widget _buildInitialAvatar() {
-    final name = _nameController.text.isNotEmpty
-        ? _nameController.text
-        : widget.userData['name'] ?? '';
-
-    return Center(
-      child: Text(
-        _getInitials(name),
-        style: TextStyle(
-          fontSize: 36,
-          fontWeight: FontWeight.w800,
-          color: greenColor,
-        ),
-      ),
-    );
-  }
-
-  void _showImagePickerOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Icon(Icons.camera_alt, color: greenColor),
-              title: const Text('Ambil dari Kamera'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.photo_library, color: greenColor),
-              title: const Text('Pilih dari Galeri'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-            if (_currentProfileImageUrl != null || _selectedImage != null)
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text(
-                  'Hapus Foto',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  ProfileImageHelper.removeProfileImage();
-                },
-              ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
