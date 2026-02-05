@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/utils/api_routes.dart';
@@ -264,6 +265,64 @@ class ApiClient {
       'DELETE ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
       statusCode: resp.statusCode,
     );
+  }
+
+  // POST multipart request (untuk upload file)
+  Future<dynamic> postMultipart(
+    String path, {
+    Map<String, dynamic>? fields,
+    Map<String, dynamic>? files,
+  }) async {
+    try {
+      final uri = _buildUri(path);
+      final token = await getToken();
+
+      final request = http.MultipartRequest('POST', uri);
+
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+
+      if (fields != null) {
+        fields.forEach((key, value) {
+          request.fields[key] = value.toString();
+        });
+      }
+
+      if (files != null) {
+        for (var entry in files.entries) {
+          final file = entry.value;
+          if (file is File) {
+            request.files.add(
+              await http.MultipartFile.fromPath(entry.key, file.path),
+            );
+          }
+        }
+      }
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final resp = await http.Response.fromStream(streamedResponse);
+
+      if (resp.statusCode >= 200 && resp.statusCode < 300) {
+        if (resp.body.isEmpty) return null;
+        return _tryExtractJson(resp.body);
+      }
+
+      throw HttpException(
+        'POST ${uri.toString()} failed: ${resp.statusCode} ${resp.body}',
+        statusCode: resp.statusCode,
+      );
+    } catch (e) {
+      if (e is http.ClientException) {
+        throw HttpException('Koneksi ke server gagal: ${e.toString()}');
+      } else if (e is TimeoutException) {
+        throw HttpException('Koneksi timeout: Server tidak merespons');
+      }
+      rethrow;
+    }
   }
 
   // Simpan token
