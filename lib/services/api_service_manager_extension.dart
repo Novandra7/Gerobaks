@@ -135,7 +135,7 @@ extension ApiServiceManagerExtension on ApiServiceManager {
     
     final response = await client.uploadFile(
       '/api/user/upload-profile-image',
-      'profile_image',
+      'profile_picture',
       image,
     );
     
