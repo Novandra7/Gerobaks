@@ -396,9 +396,15 @@ class _ProfileMitraPageState extends State<ProfileMitraPage> {
                                       ),
                                     );
 
-                                    // Refresh data if profile was updated
-                                    if (result == true) {
-                                      _loadUserData();
+                                    // Update data if profile was updated
+                                    if (result != null && result is Map<String, dynamic>) {
+                                      setState(() {
+                                        _userData = result;
+                                      });
+                                      
+                                      // Save updated data to local storage
+                                      final localStorage = await LocalStorageService.getInstance();
+                                      await localStorage.saveUserData(result);
                                     }
                                   }
                                 },
