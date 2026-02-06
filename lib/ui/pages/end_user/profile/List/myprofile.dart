@@ -1,7 +1,6 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
-import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/models/user_model.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +19,7 @@ class _MyprofileState extends State<Myprofile> {
   bool _isLoading = true;
   UserModel? _user;
   late UserService _userService;
-  
+
   // Controllers untuk dialog verifikasi telepon
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
@@ -45,10 +44,10 @@ class _MyprofileState extends State<Myprofile> {
     try {
       _userService = await UserService.getInstance();
       await _userService.init();
-      
+
       // Get user directly from UserService
       final user = await _userService.getCurrentUser();
-      
+
       // Convert UserModel to Map for backward compatibility
       final Map<String, dynamic> userMap = {
         'name': user?.name ?? 'Pengguna',
@@ -57,7 +56,7 @@ class _MyprofileState extends State<Myprofile> {
         'address': user?.address ?? '-',
         'profile_picture': user?.profilePicUrl ?? 'assets/img_profile.png',
       };
-      
+
       if (mounted) {
         setState(() {
           _user = user;
@@ -158,10 +157,7 @@ class _MyprofileState extends State<Myprofile> {
                     _isVerificationInProgress = false;
                     _otpController.clear();
                   },
-                  child: Text(
-                    'Batal',
-                    style: greyTextStyle,
-                  ),
+                  child: Text('Batal', style: greyTextStyle),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
@@ -178,7 +174,9 @@ class _MyprofileState extends State<Myprofile> {
                             if (_phoneController.text.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Nomor telepon tidak boleh kosong'),
+                                  content: Text(
+                                    'Nomor telepon tidak boleh kosong',
+                                  ),
                                 ),
                               );
                               return;
@@ -191,13 +189,16 @@ class _MyprofileState extends State<Myprofile> {
                             try {
                               // Dalam aplikasi sebenarnya, ini akan mengirim OTP via SMS
                               // Untuk demo, kita hanya generate OTP di UserService
-                              _generatedOtp = await _userService.requestPhoneVerification(_phoneController.text);
-                              
+                              _generatedOtp = await _userService
+                                  .requestPhoneVerification(
+                                    _phoneController.text,
+                                  );
+
                               setState(() {
                                 _isOtpSent = true;
                                 _isVerificationInProgress = false;
                               });
-                              
+
                               // Untuk demo, tampilkan OTP (dalam produksi, ini akan dikirim via SMS)
                               if (_generatedOtp != null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -211,7 +212,7 @@ class _MyprofileState extends State<Myprofile> {
                               setState(() {
                                 _isVerificationInProgress = false;
                               });
-                              
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error: ${e.toString()}'),
@@ -234,25 +235,28 @@ class _MyprofileState extends State<Myprofile> {
                             });
 
                             try {
-                              final isVerified = await _userService.verifyPhoneWithOTP(
-                                _phoneController.text,
-                                _otpController.text,
-                              );
+                              final isVerified = await _userService
+                                  .verifyPhoneWithOTP(
+                                    _phoneController.text,
+                                    _otpController.text,
+                                  );
 
                               if (isVerified) {
                                 // Refresh data user
                                 await _loadUserData();
-                                
+
                                 Navigator.of(context).pop();
-                                
+
                                 // Reset state
                                 _isOtpSent = false;
                                 _isVerificationInProgress = false;
                                 _otpController.clear();
-                                
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Nomor telepon berhasil diverifikasi'),
+                                    content: Text(
+                                      'Nomor telepon berhasil diverifikasi',
+                                    ),
                                     backgroundColor: Colors.green,
                                   ),
                                 );
@@ -260,7 +264,7 @@ class _MyprofileState extends State<Myprofile> {
                                 setState(() {
                                   _isVerificationInProgress = false;
                                 });
-                                
+
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Kode OTP tidak valid'),
@@ -272,7 +276,7 @@ class _MyprofileState extends State<Myprofile> {
                               setState(() {
                                 _isVerificationInProgress = false;
                               });
-                              
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error: ${e.toString()}'),
@@ -300,269 +304,399 @@ class _MyprofileState extends State<Myprofile> {
       backgroundColor: uicolor,
       appBar: const CustomAppNotif(title: 'My Profile', showBackButton: true),
       body: _isLoading
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(greenColor),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Memuat data profil...',
-                  style: greyTextStyle.copyWith(
-                    fontWeight: medium,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(greenColor),
                   ),
-                ),
-              ],
-            ),
-          )
-        : SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Foto Profil
-              ProfilePicturePicker(
-                currentPicture: _user?.profilePicUrl ?? userData?['profile_picture'] ?? 'assets/img_profile.png',
-              onPictureSelected: (String newPicture) async {
-                // Update using UserService for persistent storage
-                final userService = await UserService.getInstance();
-                final updatedUser = await userService.updateUserProfile(
-                  profilePicUrl: newPicture,
-                );
-                
-                if (mounted) {
-                  setState(() {
-                    _user = updatedUser;
-                    // Update map for backward compatibility
-                    if (userData != null) {
-                      userData!['profile_picture'] = newPicture;
-                    }
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Nama
-            Text(
-              _user?.name ?? userData?['name'] ?? 'Loading...',
-              style: blackTextStyle.copyWith(
-                fontSize: 20,
-                fontWeight: semiBold,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Email
-            Text(
-              _user?.email ?? userData?['email'] ?? 'Loading...',
-              style: greyTextStyle.copyWith(fontSize: 14, fontWeight: regular),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Info Tambahan
-            
-            // Badge Status Berlangganan
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Status Langganan',
-                  style: blackTextStyle.copyWith(fontSize: 14),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    if (_user?.isSubscribed != true) {
-                      Navigator.pushNamed(context, '/subscription-plans');
-                    } else {
-                      Navigator.pushNamed(context, '/my-subscription');
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _user?.isSubscribed == true 
-                        ? greenColor 
-                        : Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _user?.isSubscribed == true 
-                            ? Icons.verified 
-                            : Icons.info_outline,
-                          color: Colors.white,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _user?.isSubscribed == true 
-                            ? 'Sudah Berlangganan ${_user?.subscriptionType != null ? '(${_user?.subscriptionType})' : ''}' 
-                            : 'Belum Berlangganan',
-                          style: whiteTextStyle.copyWith(
-                            fontSize: 10,
-                            fontWeight: medium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Status Verifikasi Telepon
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'No. Telepon',
-                  style: blackTextStyle.copyWith(fontSize: 14),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      _user?.phone ?? userData?['phone'] ?? 'Loading...',
-                      style: greyTextStyle.copyWith(fontSize: 14),
-                    ),
-                    const SizedBox(width: 8),
-                    // Badge untuk status verifikasi telepon
-                    GestureDetector(
-                      onTap: () {
-                        if (_user?.isPhoneVerified != true) {
-                          _showPhoneVerificationDialog();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _user?.isPhoneVerified == true ? greenColor : Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _user?.isPhoneVerified == true 
-                                ? Icons.check_circle_outline 
-                                : Icons.info_outline,
-                              color: Colors.white,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _user?.isPhoneVerified == true 
-                                ? 'Terverifikasi' 
-                                : 'Belum Verifikasi',
-                              style: whiteTextStyle.copyWith(
-                                fontSize: 10,
-                                fontWeight: medium,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Alamat', style: blackTextStyle.copyWith(fontSize: 14)),
-                    if (_user?.address == null || (_user!.address?.length ?? 0) < 30)
-                      Flexible(
-                        child: Text(
-                          _user?.address ?? userData?['address'] ?? 'Loading...',
-                          style: greyTextStyle.copyWith(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                ),
-                // Jika alamat panjang, tampilkan di bawah sebagai teks penuh
-                if (_user?.address != null && (_user!.address?.length ?? 0) >= 30) 
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
-                      ),
-                    ),
-                    child: Text(
-                      _user!.address!,
-                      style: greyTextStyle.copyWith(fontSize: 14),
-                    ),
-                  ),
-                
-                // Tampilkan alamat tersimpan jika ada
-                if (_user?.savedAddresses != null && (_user!.savedAddresses?.isNotEmpty ?? false)) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Alamat Tersimpan',
-                    style: blackTextStyle.copyWith(fontSize: 14, fontWeight: semiBold),
+                    'Memuat data profil...',
+                    style: greyTextStyle.copyWith(fontWeight: medium),
                   ),
-                  const SizedBox(height: 8),
-                  ..._user!.savedAddresses!.map((savedAddress) => Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Foto Profil - View Only
+                  GestureDetector(
+                    onTap: () {
+                      // Show full screen image only if profile picture exists
+                      final imageUrl = _user?.profilePicUrl;
+                      if (imageUrl != null &&
+                          imageUrl.isNotEmpty &&
+                          imageUrl != 'assets/img_profile.png') {
+                        _showFullScreenImage(context, imageUrl);
+                      }
+                    },
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: greenColor.withAlpha(25),
+                        border: Border.all(
+                          color: greenColor.withAlpha(77),
+                          width: 2,
+                        ),
                       ),
+                      child: ClipOval(child: _buildProfileContent()),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: greenColor),
-                        const SizedBox(width: 8),
-                        Expanded(
+                  ),
+                  const SizedBox(height: 16),
+                  // Nama
+                  Text(
+                    _user?.name ?? userData?['name'] ?? 'Loading...',
+                    style: blackTextStyle.copyWith(
+                      fontSize: 20,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Email
+                  Text(
+                    _user?.email ?? userData?['email'] ?? 'Loading...',
+                    style: greyTextStyle.copyWith(
+                      fontSize: 14,
+                      fontWeight: regular,
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Info Tambahan
+
+                  // Badge Status Berlangganan
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Status Langganan',
+                        style: blackTextStyle.copyWith(fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (_user?.isSubscribed != true) {
+                            Navigator.pushNamed(context, '/subscription-plans');
+                          } else {
+                            Navigator.pushNamed(context, '/my-subscription');
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _user?.isSubscribed == true
+                                ? greenColor
+                                : Colors.orange,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _user?.isSubscribed == true
+                                    ? Icons.verified
+                                    : Icons.info_outline,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _user?.isSubscribed == true
+                                    ? 'Sudah Berlangganan ${_user?.subscriptionType != null ? '(${_user?.subscriptionType})' : ''}'
+                                    : 'Belum Berlangganan',
+                                style: whiteTextStyle.copyWith(
+                                  fontSize: 10,
+                                  fontWeight: medium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Status Verifikasi Telepon
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'No. Telepon',
+                        style: blackTextStyle.copyWith(fontSize: 14),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            _user?.phone ?? userData?['phone'] ?? 'Loading...',
+                            style: greyTextStyle.copyWith(fontSize: 14),
+                          ),
+                          const SizedBox(width: 8),
+                          // Badge untuk status verifikasi telepon
+                          GestureDetector(
+                            onTap: () {
+                              if (_user?.isPhoneVerified != true) {
+                                _showPhoneVerificationDialog();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _user?.isPhoneVerified == true
+                                    ? greenColor
+                                    : Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _user?.isPhoneVerified == true
+                                        ? Icons.check_circle_outline
+                                        : Icons.info_outline,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _user?.isPhoneVerified == true
+                                        ? 'Terverifikasi'
+                                        : 'Belum Verifikasi',
+                                    style: whiteTextStyle.copyWith(
+                                      fontSize: 10,
+                                      fontWeight: medium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Alamat',
+                            style: blackTextStyle.copyWith(fontSize: 14),
+                          ),
+                          if (_user?.address == null ||
+                              (_user!.address?.length ?? 0) < 30)
+                            Flexible(
+                              child: Text(
+                                _user?.address ??
+                                    userData?['address'] ??
+                                    'Loading...',
+                                style: greyTextStyle.copyWith(fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                      // Jika alamat panjang, tampilkan di bawah sebagai teks penuh
+                      if (_user?.address != null &&
+                          (_user!.address?.length ?? 0) >= 30)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                            horizontal: 12,
+                          ),
+                          margin: const EdgeInsets.only(top: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
                           child: Text(
-                            savedAddress,
-                            style: greyTextStyle.copyWith(fontSize: 13),
+                            _user!.address!,
+                            style: greyTextStyle.copyWith(fontSize: 14),
+                          ),
+                        ),
+
+                      // Tampilkan alamat tersimpan jika ada
+                      if (_user?.savedAddresses != null &&
+                          (_user!.savedAddresses?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Alamat Tersimpan',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: semiBold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ..._user!.savedAddresses!.map(
+                          (savedAddress) => Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 16,
+                                  color: greenColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    savedAddress,
+                                    style: greyTextStyle.copyWith(fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
-                    ),
-                  )),
+                    ],
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Tombol Edit
+                  CustomFilledButton(
+                    title: 'Edit Profile',
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfile(),
+                        ),
+                      );
+
+                      // Always reload data when returning from edit profile
+                      // to ensure profile picture is updated
+                      _loadUserData();
+                    },
+                  ),
                 ],
-              ],
+              ),
             ),
+    );
+  }
 
-            const SizedBox(height: 40),
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
 
-            // Tombol Edit
-            CustomFilledButton(
-              title: 'Edit Profile',
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const EditProfile()),
-                );
-                
-                // Reload data when returning from edit profile
-                if (result == true) {
-                  _loadUserData();
-                }
-              },
+    final words = name.trim().split(' ');
+    if (words.length == 1) {
+      return words[0].substring(0, words[0].length >= 2 ? 2 : 1).toUpperCase();
+    } else {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+  }
+
+  Widget _buildProfileContent() {
+    final imageUrl = _user?.profilePicUrl ?? userData?['profile_picture'];
+
+    if (imageUrl != null &&
+        imageUrl.isNotEmpty &&
+        imageUrl != 'assets/img_profile.png') {
+      final displayUrl = imageUrl.contains('?')
+          ? '$imageUrl&t=${DateTime.now().millisecondsSinceEpoch}'
+          : '$imageUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      return Image.network(
+        displayUrl,
+        key: ValueKey(displayUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildInitialAvatar();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+            ),
+          );
+        },
+      );
+    } else {
+      return _buildInitialAvatar();
+    }
+  }
+
+  Widget _buildInitialAvatar() {
+    final initials = _getInitials(_user?.name ?? userData?['name'] ?? 'G');
+
+    return Container(
+      color: greenColor.withAlpha(25),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+            color: greenColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.error,
+                      color: Colors.white,
+                      size: 48,
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ),
           ],
         ),
