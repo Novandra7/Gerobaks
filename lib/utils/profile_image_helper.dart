@@ -75,7 +75,7 @@ class ProfileImageHelper {
     try {
       final response = await _apiService.client.postMultipart(
         '/api/user/upload-profile-image',
-        files: {'remove': true},
+        files: {'image': null},
       );
 
       if (response['success'] != true) {
