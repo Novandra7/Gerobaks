@@ -47,72 +47,52 @@ class UserService {
     double? latitude,
     double? longitude,
   }) async {
-    print("Registering user: $name ($email)");
-
-    // Check if user already exists
-    final existingUser = await _getUserByEmail(email);
-    if (existingUser != null) {
-      print("Email already in use: $email");
-      throw Exception('Email already in use');
-    }
-
-    final String userId = const Uuid().v4();
-    final DateTime now = DateTime.now();
-
-    // Create user model first
-    final newUser = UserModel(
-      id: userId,
-      name: name,
-      email: email,
-      phone: phone,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
-      points: 15,
-      profilePicUrl: 'assets/img_profile.png',
-      createdAt: now,
-      lastLogin: now,
-      savedAddresses: address != null ? [address] : null,
-    );
-
-    print("Created new user model: ${newUser.name} (${newUser.id})");
-
-    // Convert to JSON for storage - this ensures all fields use the correct keys
-    final Map<String, dynamic> userData = newUser.toJson();
-    // Add password for authentication
-    userData['password'] = password;
-
     try {
+      // Check if user already exists
+      final existingUser = await _getUserByEmail(email);
+      if (existingUser != null) {
+        throw Exception('Email already in use');
+      }
+
+      final String userId = const Uuid().v4();
+      final DateTime now = DateTime.now();
+
+      // Create user model first
+      final newUser = UserModel(
+        id: userId,
+        name: name,
+        email: email,
+        phone: phone,
+        address: address,
+        latitude: latitude,
+        longitude: longitude,
+        points: 15,
+        profilePicUrl: 'assets/img_profile.png',
+        createdAt: now,
+        lastLogin: now,
+        savedAddresses: address != null ? [address] : null,
+      );
+
+      // Convert to JSON for storage - this ensures all fields use the correct keys
+      final Map<String, dynamic> userData = newUser.toJson();
+      // Add password for authentication
+      userData['password'] = password;
+
       // Save credentials for auto-login
       await _localStorage.saveCredentials(email, password);
-      print("Saved credentials for: $email");
 
       // Save user data with password
       await _localStorage.saveUserData(userData);
-      print("Saved user data for: $email");
 
       // Save user model
       await _localStorage.saveUser(newUser);
-      print("Saved user model for: ${newUser.name}");
 
       // Notify listeners about the new user
       _notifyUserChange(newUser);
-      print("Notified listeners about new user: ${newUser.name}");
-
-      // Double-check the user was saved
-      final checkUser = await _localStorage.getUser();
-      if (checkUser != null) {
-        // print(
-        //   "Verification - User found: ${checkUser.name} (${checkUser.email})",
-        // );
-      } else {
-        print("WARNING: User not found after saving!");
-      }
 
       return newUser;
     } catch (e) {
-      print("Error saving user: $e");
-      throw Exception("Failed to save user: $e");
+      throw Exception("Failed to register user: $e");
     }
   }
 
@@ -121,29 +101,21 @@ class UserService {
     required String email,
     required String password,
   }) async {
-    // print("🔐 === LOGIN ATTEMPT START ===");
-    // print("🔐 Email: $email");
-
     try {
       // Step 1: Check localStorage first
-      // print("🔐 Step 1: Checking localStorage...");
       final userData = await _localStorage.getUserData();
-      // print("🔐 LocalStorage data found: ${userData != null}");
 
       if (userData != null &&
           userData['email'] == email &&
           userData['password'] == password) {
-        // print("🔐 Step 1.1: Credentials match existing user data");
-
         // Get or create UserModel
         UserModel? user = await _localStorage.getUser();
 
         if (user != null) {
-          // print("🔐 Step 1.2: Found existing UserModel: ${user.name}");
           final updatedUser = user.copyWith(lastLogin: DateTime.now());
           await _localStorage.saveUser(updatedUser);
+          user = updatedUser;
         } else {
-          // print("🔐 Step 1.3: Creating UserModel from userData");
           user = UserModel(
             id: userData['id'] ?? const Uuid().v4(),
             name: userData['name'] ?? 'User',
@@ -162,27 +134,20 @@ class UserService {
           await _localStorage.saveUser(user);
         }
 
-        // ✅ CRITICAL FIX: Set login flag to true
+        // Set login flag to true
         await _localStorage.saveBool(_localStorage.getLoginKey(), true);
-        // print("🔐 ✅ Login flag set to TRUE for existing user");
 
         _notifyUserChange(user);
-        // print("🔐 ✅ LOGIN SUCCESS with existing user");
         return user;
       }
 
       // Step 2: Check mock data
-      // print("🔐 Step 2: Checking mock data...");
       final mockUserDataFuture = UserDataMock.getUserByEmail(email);
       final mockUserData = await mockUserDataFuture;
-      // print("🔐 Mock user found: ${mockUserData != null}");
 
       if (mockUserData != null && mockUserData['password'] == password) {
-        // print("🔐 Step 2.1: Mock credentials match");
-
         // Generate new UUID for mock user conversion
         final newId = const Uuid().v4();
-        // print("🔐 Step 2.2: Generated new UUID: $newId");
 
         // Create UserModel from mock data
         final user = UserModel(
@@ -200,43 +165,38 @@ class UserService {
         // Save mock user data for future sessions
         final userData = user.toJson();
 
-        // Tambahkan data penting yang tidak ada di model
+        // Add important data not in model
         userData['password'] = password;
         userData['role'] = mockUserData['role'] ?? 'end_user';
 
-        print(
-          "� [USER] Login success for ${user.name} with role: ${userData['role']}",
-        );
-
-        // Simpan data lengkap dan pastikan set flag login
+        // Save complete data and set login flag
         await _localStorage.saveUserData(userData);
         await _localStorage.saveUser(user);
         await _localStorage.saveCredentials(email, password);
         await _localStorage.saveBool(_localStorage.getLoginKey(), true);
 
         _notifyUserChange(user);
-        // print("🔐 ✅ LOGIN SUCCESS with mock user (converted to real user)");
         return user;
       }
 
       return null;
-    } catch (e, stackTrace) {
-      print("🔐 ❌ LOGIN ERROR: $e");
-      print("🔐 StackTrace: $stackTrace");
+    } catch (e) {
       return null;
-    } finally {
-      print("🔐 === LOGIN ATTEMPT END ===");
     }
   }
 
   // Get current user
   Future<UserModel?> getCurrentUser() async {
-    final isLoggedIn = await _localStorage.isLoggedIn();
-    if (!isLoggedIn) {
+    try {
+      final isLoggedIn = await _localStorage.isLoggedIn();
+      if (!isLoggedIn) {
+        return null;
+      }
+
+      return await _localStorage.getUser();
+    } catch (e) {
       return null;
     }
-
-    return await _localStorage.getUser();
   }
 
   // Update user profile
@@ -249,112 +209,154 @@ class UserService {
     String? profilePicUrl,
     bool? isPhoneVerified,
   }) async {
-    final user = await _localStorage.getUser();
+    try {
+      final user = await _localStorage.getUser();
 
-    if (user == null) {
-      throw Exception('User not logged in');
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      // For profilePicUrl, if empty string is passed, use it (to clear the photo)
+      // Otherwise, use the provided value or keep the existing one
+      final newProfilePicUrl = profilePicUrl != null
+          ? (profilePicUrl.isEmpty ? '' : profilePicUrl)
+          : user.profilePicUrl;
+
+      final updatedUser = user.copyWith(
+        name: name ?? user.name,
+        phone: phone ?? user.phone,
+        address: address ?? user.address,
+        latitude: latitude ?? user.latitude,
+        longitude: longitude ?? user.longitude,
+        profilePicUrl: newProfilePicUrl,
+        isPhoneVerified: isPhoneVerified ?? user.isPhoneVerified,
+      );
+
+      await _localStorage.saveUser(updatedUser);
+      _notifyUserChange(updatedUser);
+
+      return updatedUser;
+    } catch (e) {
+      throw Exception('Failed to update user profile: $e');
     }
-
-    final updatedUser = user.copyWith(
-      name: name ?? user.name,
-      phone: phone ?? user.phone,
-      address: address ?? user.address,
-      latitude: latitude ?? user.latitude,
-      longitude: longitude ?? user.longitude,
-      profilePicUrl: profilePicUrl ?? user.profilePicUrl,
-      isPhoneVerified: isPhoneVerified ?? user.isPhoneVerified,
-    );
-
-    await _localStorage.saveUser(updatedUser);
-    _notifyUserChange(updatedUser);
-    return updatedUser;
   }
 
   // Update user's saved addresses
   Future<UserModel> updateSavedAddresses(List<String> addresses) async {
-    final user = await _localStorage.getUser();
+    try {
+      final user = await _localStorage.getUser();
 
-    if (user == null) {
-      throw Exception('User not logged in');
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      final updatedUser = user.copyWith(savedAddresses: addresses);
+
+      await _localStorage.saveUser(updatedUser);
+      _notifyUserChange(updatedUser);
+      return updatedUser;
+    } catch (e) {
+      throw Exception('Failed to update saved addresses: $e');
     }
-
-    final updatedUser = user.copyWith(savedAddresses: addresses);
-
-    await _localStorage.saveUser(updatedUser);
-    _notifyUserChange(updatedUser);
-    return updatedUser;
   }
 
   // Add points to user
   Future<int> addPoints(int amount) async {
-    await _localStorage.addPoints(amount);
-    return await _localStorage.getUserPoints();
+    try {
+      await _localStorage.addPoints(amount);
+      return await _localStorage.getUserPoints();
+    } catch (e) {
+      throw Exception('Failed to add points: $e');
+    }
   }
 
   // Use points (deduct from user's balance)
   Future<int> usePoints(int amount) async {
-    final currentPoints = await _localStorage.getUserPoints();
+    try {
+      final currentPoints = await _localStorage.getUserPoints();
 
-    if (currentPoints < amount) {
-      throw Exception('Not enough points');
+      if (currentPoints < amount) {
+        throw Exception('Not enough points');
+      }
+
+      await _localStorage.updateUserPoints(currentPoints - amount);
+      return await _localStorage.getUserPoints();
+    } catch (e) {
+      throw Exception('Failed to use points: $e');
     }
-
-    await _localStorage.updateUserPoints(currentPoints - amount);
-    return await _localStorage.getUserPoints();
   }
 
   // Update user data directly
   Future<UserModel> updateUserData(UserModel user) async {
-    await _localStorage.saveUser(user);
-    _notifyUserChange(user);
-    return user;
+    try {
+      await _localStorage.saveUser(user);
+      _notifyUserChange(user);
+      return user;
+    } catch (e) {
+      throw Exception('Failed to update user data: $e');
+    }
   }
 
   // Request OTP for phone verification
   Future<String> requestPhoneVerification(String phoneNumber) async {
-    // In a real app, this would call an API to send SMS
-    // For demo purposes, we'll generate a simple OTP
-    final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000))
-        .toString();
+    try {
+      // In a real app, this would call an API to send SMS
+      // For demo purposes, we'll generate a simple OTP
+      final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000))
+          .toString();
 
-    // In a real app, store this OTP with the phone number in a temporary storage
-    // For demo, we'll store it in localStorage with a key based on the phone number
-    await _localStorage.saveValue('otp_for_$phoneNumber', otp);
+      // In a real app, store this OTP with the phone number in a temporary storage
+      // For demo, we'll store it in localStorage with a key based on the phone number
+      await _localStorage.saveValue('otp_for_$phoneNumber', otp);
 
-    print('Generated OTP for $phoneNumber: $otp');
-    return otp; // Return OTP for demo purposes, in production just return success status
+      return otp; // Return OTP for demo purposes, in production just return success status
+    } catch (e) {
+      throw Exception('Failed to request phone verification: $e');
+    }
   }
 
   // Verify phone with OTP
   Future<bool> verifyPhoneWithOTP(String phoneNumber, String otp) async {
-    // In a real app, validate against stored OTP or call API
-    // For demo, we'll check against our localStorage
-    final storedOTP = await _localStorage.getValue('otp_for_$phoneNumber');
+    try {
+      // In a real app, validate against stored OTP or call API
+      // For demo, we'll check against our localStorage
+      final storedOTP = await _localStorage.getValue('otp_for_$phoneNumber');
 
-    if (storedOTP == otp) {
-      // Update user with verified phone
-      final user = await getCurrentUser();
-      if (user != null) {
-        await updateUserProfile(phone: phoneNumber, isPhoneVerified: true);
+      if (storedOTP == otp) {
+        // Update user with verified phone
+        final user = await getCurrentUser();
+        if (user != null) {
+          await updateUserProfile(phone: phoneNumber, isPhoneVerified: true);
+        }
+
+        // Clear OTP after successful verification
+        await _localStorage.removeValue('otp_for_$phoneNumber');
+        return true;
       }
 
-      // Clear OTP after successful verification
-      await _localStorage.removeValue('otp_for_$phoneNumber');
-      return true;
+      return false;
+    } catch (e) {
+      throw Exception('Failed to verify phone: $e');
     }
-
-    return false;
   }
 
   // Save an address
   Future<List<String>> saveAddress(String address) async {
-    await _localStorage.saveAddress(address);
-    return await _localStorage.getSavedAddresses();
+    try {
+      await _localStorage.saveAddress(address);
+      return await _localStorage.getSavedAddresses();
+    } catch (e) {
+      throw Exception('Failed to save address: $e');
+    }
   }
 
   // Get all saved addresses
   Future<List<String>> getSavedAddresses() async {
-    return await _localStorage.getSavedAddresses();
+    try {
+      return await _localStorage.getSavedAddresses();
+    } catch (e) {
+      throw Exception('Failed to get saved addresses: $e');
+    }
   }
 
   // Log out - now uses AuthApiService as primary method
@@ -363,27 +365,31 @@ class UserService {
       // Log out from API first (primary method)
       final authService = AuthApiService();
       await authService.logout();
-      print("User logged out via API");
     } catch (e) {
-      print("Error logging out via API: $e");
       // Continue with local logout even if API fails
     }
 
-    // Also log out locally for backward compatibility
-    await _localStorage.logout();
+    try {
+      // Also log out locally for backward compatibility
+      await _localStorage.logout();
 
-    // Notify listeners that the user has logged out
-    _notifyUserChange(null);
-
-    print("User logged out via UserService");
+      // Notify listeners that the user has logged out
+      _notifyUserChange(null);
+    } catch (e) {
+      throw Exception('Failed to logout: $e');
+    }
   }
 
   // Helper method to find user by email
   Future<Map<String, dynamic>?> _getUserByEmail(String email) async {
-    final userData = await _localStorage.getUserData();
-    if (userData != null && userData['email'] == email) {
-      return userData;
+    try {
+      final userData = await _localStorage.getUserData();
+      if (userData != null && userData['email'] == email) {
+        return userData;
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
-    return null;
   }
 }

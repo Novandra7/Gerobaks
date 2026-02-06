@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
-import 'package:image_picker/image_picker.dart';
 
 class ProfileImageUploadPicker extends StatelessWidget {
   final String? currentImageUrl;

@@ -3,7 +3,6 @@ import 'package:bank_sha/ui/pages/end_user/profile/List/myprofile.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/privacy_policy.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/settings/settings.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/points_history_page.dart';
-import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/ui/widgets/shared/responsive_menu.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +58,89 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin {
         });
       }
     }
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    
+    final words = name.trim().split(' ');
+    if (words.length == 1) {
+      return words[0].substring(0, words[0].length >= 2 ? 2 : 1).toUpperCase();
+    } else {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+  }
+
+  Widget _buildProfilePicture() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final size = isTablet ? 70.0 : 60.0;
+    
+    final profilePicUrl = _user?.profilePicUrl;
+    final hasValidUrl = profilePicUrl != null && 
+                       profilePicUrl.isNotEmpty && 
+                       (profilePicUrl.startsWith('http://') || profilePicUrl.startsWith('https://'));
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const Myprofile()),
+        );
+      },
+      child: Container(
+        width: size * 2,
+        height: size * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: hasValidUrl ? null : greenColor.withAlpha(25),
+          border: Border.all(
+            color: greenColor.withAlpha(77),
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: hasValidUrl
+              ? Image.network(
+                  profilePicUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildInitialAvatar();
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        color: greenColor,
+                        strokeWidth: 2,
+                      ),
+                    );
+                  },
+                )
+              : _buildInitialAvatar(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitialAvatar() {
+    return Center(
+      child: Text(
+        _getInitials(_user?.name ?? 'Pengguna'),
+        style: TextStyle(
+          fontSize: 48,
+          fontWeight: FontWeight.w800,
+          color: greenColor,
+        ),
+      ),
+    );
   }
   
   // Skeleton loading for profile
@@ -130,71 +212,55 @@ class _ProfileContentState extends State<ProfileContent> with AppDialogMixin {
             // Profile Info
             Column(
               children: [
-              ProfilePicturePicker(
-                currentPicture: _user?.profilePicUrl ?? 'assets/img_profile.png',
-                onPictureSelected: (String newPicture) async {
-                  try {
-                    await _userService.updateUserProfile(
-                      profilePicUrl: newPicture,
-                    );
-                    _loadUserData(); // Refresh data
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Gagal mengubah foto profil: $e')),
-                      );
-                    }
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _user?.name ?? 'Pengguna',
-                style: blackTextStyle.copyWith(
-                  fontSize: isTablet ? 18 : 16,
-                  fontWeight: semiBold,
+                _buildProfilePicture(),
+                const SizedBox(height: 12),
+                Text(
+                  _user?.name ?? 'Pengguna',
+                  style: blackTextStyle.copyWith(
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: semiBold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _user?.email ?? 'email@gerobaks.com',
-                style: greyTextStyle.copyWith(
-                  fontSize: isTablet ? 15 : 14,
-                  fontWeight: regular,
+                const SizedBox(height: 4),
+                Text(
+                  _user?.email ?? 'email@gerobaks.com',
+                  style: greyTextStyle.copyWith(
+                    fontSize: isTablet ? 15 : 14,
+                    fontWeight: regular,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 20 : 16, 
-                  vertical: isTablet ? 10 : 8
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: greenColor.withOpacity(0.5)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.stars_rounded,
-                      color: greenColor,
-                      size: isTablet ? 24 : 20,
-                    ),
-                    SizedBox(width: isTablet ? 10 : 8),
-                    Text(
-                      '${_user?.points ?? 0} Poin',
-                      style: greenTextStyle.copyWith(
-                        fontWeight: semiBold,
-                        fontSize: isTablet ? 16 : 14,
+                const SizedBox(height: 12),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 20 : 16, 
+                    vertical: isTablet ? 10 : 8
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: greenColor.withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.stars_rounded,
+                        color: greenColor,
+                        size: isTablet ? 24 : 20,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: isTablet ? 10 : 8),
+                      Text(
+                        '${_user?.points ?? 0} Poin',
+                        style: greenTextStyle.copyWith(
+                          fontWeight: semiBold,
+                          fontSize: isTablet ? 16 : 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
           const SizedBox(height: 36), // Jarak lebih besar untuk memisahkan profil dan menu
 

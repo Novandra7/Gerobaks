@@ -3,7 +3,6 @@ import 'package:bank_sha/ui/pages/end_user/profile/List/myprofile.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/privacy_policy.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/settings/settings.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/points_history_page.dart';
-import 'package:bank_sha/ui/widgets/shared/profile_picture_picker.dart';
 import 'package:bank_sha/ui/widgets/shared/responsive_menu.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +82,6 @@ class _ProfileContentState extends State<ProfileContent>
         });
       }
     } catch (e) {
-      print("Error loading user data: $e");
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -165,25 +163,27 @@ class _ProfileContentState extends State<ProfileContent>
                 // Profile Info
                 Column(
                   children: [
-                    ProfilePicturePicker(
-                      currentPicture:
-                          _user?.profilePicUrl ?? 'assets/img_profile.png',
-                      onPictureSelected: (String newPicture) async {
-                        try {
-                          await _userService.updateUserProfile(
-                            profilePicUrl: newPicture,
-                          );
-                          _loadUserData(); // Refresh data
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Gagal mengubah foto profil: $e'),
-                              ),
-                            );
-                          }
+                    GestureDetector(
+                      onTap: () {
+                        // Show full screen image only if profile picture exists
+                        if (_user?.profilePicUrl != null &&
+                            _user!.profilePicUrl!.isNotEmpty) {
+                          _showFullScreenImage(context, _user!.profilePicUrl!);
                         }
                       },
+                      child: Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: greenColor.withAlpha(25),
+                          border: Border.all(
+                            color: greenColor.withAlpha(77),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipOval(child: _buildProfileContent()),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -267,11 +267,11 @@ class _ProfileContentState extends State<ProfileContent>
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: greenColor.withOpacity(0.5),
+                            color: greenColor.withAlpha(128),
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: greenColor.withOpacity(0.1),
+                              color: greenColor.withAlpha(25),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -314,13 +314,16 @@ class _ProfileContentState extends State<ProfileContent>
                   iconURL: 'assets/ic_profile_profile.png',
                   title: 'My profile',
                   isHighlighted: false,
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const Myprofile(),
                       ),
                     );
+                    // Reload user data when returning from My Profile
+                    // to ensure profile picture is updated
+                    _loadUserData();
                   },
                 ),
                 ResponsiveAppMenu(
@@ -417,6 +420,94 @@ class _ProfileContentState extends State<ProfileContent>
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileContent() {
+    if (_user?.profilePicUrl != null && _user!.profilePicUrl!.isNotEmpty) {
+      final imageUrl = _user!.profilePicUrl!.contains('?')
+          ? '${_user!.profilePicUrl}&t=${DateTime.now().millisecondsSinceEpoch}'
+          : '${_user!.profilePicUrl}?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      return Image.network(
+        imageUrl,
+        key: ValueKey(imageUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildInitialAvatar();
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+    } else {
+      return _buildInitialAvatar();
+    }
+  }
+
+  Widget _buildInitialAvatar() {
+    String initial = '';
+
+    final words = _user!.name.trim().split(' ');
+    if (words.length == 1) {
+      initial = words[0]
+          .substring(0, words[0].length >= 2 ? 2 : 1)
+          .toUpperCase();
+    } else {
+      initial = (words[0][0] + words[1][0]).toUpperCase();
+    }
+
+    return Container(
+      color: greenColor.withAlpha(25),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 40,
+            fontWeight: FontWeight.bold,
+            color: greenColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(10),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.error,
+                      color: Colors.white,
+                      size: 48,
+                    );
+                  },
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
         ),
       ),
     );
