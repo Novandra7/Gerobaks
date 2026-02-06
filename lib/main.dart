@@ -4,6 +4,7 @@ import 'package:bank_sha/shared/route_observer.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
+import 'package:bank_sha/ui/pages/end_user/profile/List/myprofile.dart';
 import 'package:bank_sha/ui/pages/end_user/reward/reward_page.dart';
 import 'package:bank_sha/ui/pages/end_user/tracking/tracking_full_screen.dart';
 import 'package:bank_sha/ui/pages/user/tracking/user_tracking_by_id_page.dart';
@@ -356,6 +357,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/buatKeluhan': (context) => const BuatKeluhanPage(),
           '/goldenKeluhan': (context) => const GoldenKeluhanPage(),
           '/about-us': (context) => AboutUs(),
+          '/my-profile': (context) => const Myprofile(),
           '/wilayah_full': (context) => const WilayahFullScreen(),
           '/qris-payment': (context) => QRISPaymentPage(
             amount: ModalRoute.of(context)?.settings.arguments != null
