@@ -56,7 +56,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            greenColor.withOpacity(0.1),
+            greenColor.withAlpha(25),
             Colors.transparent,
           ],
         ),
@@ -99,7 +99,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
             : null,
         boxShadow: [
           BoxShadow(
-            color: blackColor.withOpacity(0.1),
+            color: blackColor.withAlpha(26),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -117,7 +117,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getPlanColor(plan.type).withOpacity(0.1),
+                        color: _getPlanColor(plan.type).withAlpha(25),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
