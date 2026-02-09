@@ -622,7 +622,7 @@ class _EditProfileState extends State<EditProfile> {
 
       // Update user profile picture in UserService
       await _userService.updateUserProfile(profilePicUrl: newImageUrl);
-      
+
       // Reload user data to get updated profile
       await _loadUserData();
 
@@ -676,10 +676,7 @@ class _EditProfileState extends State<EditProfile> {
       builder: (context) => AlertDialog(
         title: Text(
           'Hapus Foto Profil',
-          style: blackTextStyle.copyWith(
-            fontSize: 18,
-            fontWeight: semiBold,
-          ),
+          style: blackTextStyle.copyWith(fontSize: 18, fontWeight: semiBold),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus foto profil?',
@@ -706,26 +703,19 @@ class _EditProfileState extends State<EditProfile> {
 
     try {
       // Remove profile image using helper
-      print("🗑️ Removing profile image from server...");
       await ProfileImageHelper.removeProfileImage();
-      print("✅ Profile image removed from server");
 
       setState(() {
         _selectedImage = null;
-        _currentProfileImageUrl = '';  // Use empty string instead of null
+        _currentProfileImageUrl = ''; // Use empty string instead of null
         _isUploadingImage = false;
       });
-      print("✅ Local state updated (empty string)");
 
       // Update user profile picture in UserService (set to empty string to clear)
-      print("💾 Updating UserService with empty string...");
       await _userService.updateUserProfile(profilePicUrl: '');
-      print("✅ UserService updated");
-      
+
       // Reload user data to get updated profile
-      print("🔄 Reloading user data...");
       await _loadUserData();
-      print("✅ User data reloaded");
 
       if (!mounted) return;
 
@@ -757,9 +747,7 @@ class _EditProfileState extends State<EditProfile> {
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
@@ -784,7 +772,7 @@ class _EditProfileState extends State<EditProfile> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: greyColor.withOpacity(0.3),
+                color: greyColor.withAlpha(77),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -903,8 +891,25 @@ class _EditProfileState extends State<EditProfile> {
         );
       }
     } catch (e) {
-      print("Error updating profile: $e");
+      if (!mounted) return;
 
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceAll('Exception: ', ''),
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
       if (mounted) {
         DialogHelper.showErrorDialog(
           context: context,
