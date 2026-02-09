@@ -1,6 +1,7 @@
 import 'package:bank_sha/models/user_model.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
+import 'package:bank_sha/services/api_service_manager.dart';
 import 'package:bank_sha/utils/user_data_mock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -214,6 +215,35 @@ class UserService {
 
       if (user == null) {
         throw Exception('User not logged in');
+      }
+
+      // Call API to update profile
+      try {
+        final apiService = ApiServiceManager();
+        final data = <String, dynamic>{};
+
+        if (name != null) data['name'] = name;
+        if (phone != null) data['phone'] = phone;
+        if (address != null) data['address'] = address;
+        if (latitude != null) data['latitude'] = latitude;
+        if (longitude != null) data['longitude'] = longitude;
+
+        // Only send to API if there are fields to update
+        if (data.isNotEmpty) {
+          final response = await apiService.client.postJson(
+            '/api/user/update-profile',
+            data,
+          );
+
+          if (response == null || response['success'] != true) {
+            throw Exception(
+              response?['message'] ?? 'Gagal memperbarui profil di server',
+            );
+          }
+        }
+      } catch (e) {
+        // If API fails, continue with local update only
+        // This allows offline functionality
       }
 
       // For profilePicUrl, if empty string is passed, use it (to clear the photo)

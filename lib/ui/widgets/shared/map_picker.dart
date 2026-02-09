@@ -192,11 +192,22 @@ class _MapPickerPageState extends State<MapPickerPage> {
         });
       }
     } catch (e) {
-      print('Error getting address: $e');
-      setState(() {
-        _selectedAddress =
-            'Lat: ${location.latitude.toStringAsFixed(6)}, Lng: ${location.longitude.toStringAsFixed(6)}';
-      });
+      // Geocoding error - might be network or API limit
+      if (mounted) {
+        setState(() {
+          _selectedAddress =
+              'Lat: ${location.latitude.toStringAsFixed(6)}, Lng: ${location.longitude.toStringAsFixed(6)}';
+        });
+        
+        // Show user-friendly message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mendapatkan alamat: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
   }
 
@@ -245,9 +256,16 @@ class _MapPickerPageState extends State<MapPickerPage> {
               onTap: _onMapTap,
             ),
             children: [
+              // Using OpenTopoMap - Free for production use, no API key needed
+              // More alternatives: https://wiki.openstreetmap.org/wiki/Tile_servers
               TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.gerobaks.app/1.0',
+                maxNativeZoom: 17,
+                maxZoom: 17,
                 subdomains: const ['a', 'b', 'c'],
+                // Attribution (required by OpenTopoMap)
+                tileProvider: NetworkTileProvider(),
               ),
               // Circle around selected location for accuracy visualization
               CircleLayer(
@@ -424,6 +442,16 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Attribution text (required by OpenTopoMap)
+                  Text(
+                    'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
