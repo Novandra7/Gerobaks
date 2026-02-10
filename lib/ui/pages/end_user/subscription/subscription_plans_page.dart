@@ -14,12 +14,12 @@ class SubscriptionPlansPage extends StatefulWidget {
 
 class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
   final SubscriptionService _subscriptionService = SubscriptionService();
-  List<SubscriptionPlan> _plans = [];
+  late Future<List<SubscriptionPlan>> _plansFuture;
 
   @override
   void initState() {
     super.initState();
-    _plans = _subscriptionService.getAvailablePlans();
+    _plansFuture = _subscriptionService.getAvailablePlans();
   }
 
   @override
@@ -34,11 +34,63 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
         children: [
           _buildHeader(),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _plans.length,
-              itemBuilder: (context, index) {
-                return _buildPlanCard(_plans[index]);
+            child: FutureBuilder<List<SubscriptionPlan>>(
+              future: _plansFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: redcolor,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Gagal memuat paket langganan',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: semiBold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snapshot.error.toString(),
+                          style: greyTextStyle.copyWith(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final plans = snapshot.data ?? [];
+                if (plans.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Tidak ada paket tersedia',
+                      style: greyTextStyle.copyWith(fontSize: 16),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: plans.length,
+                  itemBuilder: (context, index) {
+                    return _buildPlanCard(plans[index]);
+                  },
+                );
               },
             ),
           ),
@@ -56,7 +108,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            greenColor.withOpacity(0.1),
+            greenColor.withAlpha(25),
             Colors.transparent,
           ],
         ),
@@ -99,7 +151,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
             : null,
         boxShadow: [
           BoxShadow(
-            color: blackColor.withOpacity(0.1),
+            color: blackColor.withAlpha(26),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -117,7 +169,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getPlanColor(plan.type).withOpacity(0.1),
+                        color: _getPlanColor(plan.type).withAlpha(25),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(

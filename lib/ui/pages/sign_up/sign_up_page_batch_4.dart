@@ -3,9 +3,12 @@ import 'package:bank_sha/ui/widgets/shared/form.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/services/sign_up_service.dart';
+import 'package:bank_sha/services/auth_api_service.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/mixins/app_dialog_mixin.dart';
 import 'package:bank_sha/ui/widgets/shared/map_picker.dart';
+import 'package:logger/logger.dart';
 
 class SignUpBatch4Page extends StatefulWidget {
   const SignUpBatch4Page({super.key});
@@ -18,6 +21,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
     with AppDialogMixin {
   final _addressController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final Logger _logger = Logger();
 
   String? _selectedLocation;
   double? _selectedLat;
@@ -27,6 +31,42 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
   void dispose() {
     _addressController.dispose();
     super.dispose();
+  }
+
+  /// Auto sign-in after registration to get authentication token
+  Future<bool> _performAutoSignIn(String email, String password) async {
+    try {
+      _logger.i('🔐 Performing auto sign-in after registration...');
+
+      final authService = AuthApiService();
+      final loginResult = await authService.login(
+        email: email,
+        password: password,
+      );
+
+      if (loginResult['token'] != null) {
+        _logger.i('✅ Auto sign-in successful, token obtained');
+
+        // Update local storage with token
+        final localStorage = await LocalStorageService.getInstance();
+        await localStorage.saveToken(loginResult['token']);
+
+        // Update user service with authenticated user data
+        final userService = await UserService.getInstance();
+        await userService.init();
+
+        _logger.i('✅ User authenticated successfully');
+        return true;
+      } else {
+        _logger.w('⚠️ Auto sign-in response missing token');
+        return false;
+      }
+    } catch (e) {
+      _logger.e('❌ Auto sign-in failed: $e');
+      // Don't throw error, just log it and continue
+      // User can still proceed to subscription page with static plans
+      return false;
+    }
   }
 
   void _openMapPicker() {
@@ -211,9 +251,6 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                     // Location Picker - Enhanced UI
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(
-                        maxHeight: 200, // Batasi tinggi maksimal
-                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: _selectedLocation != null
@@ -439,11 +476,11 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                               'longitude': _selectedLng,
                             };
 
-                            // Register the user first using UserService
+                            // Register the user first using UserService (local)
                             final userService = await UserService.getInstance();
                             await userService.init();
 
-                            // Register user with basic info
+                            // Register user with basic info locally
                             final user = await userService.registerUser(
                               name:
                                   userData['fullName'] ??
@@ -457,6 +494,26 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                               latitude: _selectedLat,
                               longitude: _selectedLng,
                             );
+
+                            // ✅ REGISTER TO API BACKEND FIRST
+                            _logger.i('📡 Registering user to API backend...');
+                            try {
+                              final authService = AuthApiService();
+                              await authService.register(
+                                name: userData['fullName'] ?? userData['name'] ?? 'User',
+                                email: userData['email'],
+                                password: userData['password'],
+                                phone: userData['phone'],
+                                address: _selectedLocation ?? _addressController.text,
+                                latitude: _selectedLat,
+                                longitude: _selectedLng,
+                              );
+                              _logger.i('✅ User registered to API backend successfully');
+                            } catch (apiError) {
+                              _logger.e('❌ API registration failed: $apiError');
+                              // Continue anyway - user registered locally
+                              // Auto sign-in will be skipped if API registration fails
+                            }
 
                             // Save location coordinates in user data
                             if (_selectedLat != null && _selectedLng != null) {
@@ -479,6 +536,41 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                             final signUpService =
                                 await SignUpService.getInstance();
                             await signUpService.markOnboardingComplete();
+
+                            // Auto sign-in to get authentication token
+                            _logger.i(
+                              '📝 Registration complete, performing auto sign-in...',
+                            );
+                            final autoSignInSuccess = await _performAutoSignIn(
+                              userData['email'],
+                              userData['password'],
+                            );
+
+                            if (autoSignInSuccess) {
+                              _logger.i(
+                                '✅ Auto sign-in successful - user can now fetch API subscription plans',
+                              );
+
+                              // Add small delay to ensure token is fully persisted
+                              await Future.delayed(
+                                const Duration(milliseconds: 300),
+                              );
+
+                              // Verify token is saved
+                              final localStorage =
+                                  await LocalStorageService.getInstance();
+                              final savedToken = await localStorage.getToken();
+                              _logger.i(
+                                'Token verification: ${savedToken != null ? "Token exists" : "Token NOT found"}',
+                              );
+
+                              userData['isAuthenticated'] = true;
+                            } else {
+                              _logger.w(
+                                '⚠️ Auto sign-in failed - will show static subscription plans',
+                              );
+                              userData['isAuthenticated'] = false;
+                            }
 
                             if (!context.mounted) {
                               return;

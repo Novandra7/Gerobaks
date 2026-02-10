@@ -180,13 +180,13 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
           end: Alignment.bottomRight,
           colors: [
             greenColor,
-            greenColor.withOpacity(0.8),
+            greenColor.withAlpha(204),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: greenColor.withOpacity(0.3),
+            color: greenColor.withAlpha(77),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -225,14 +225,14 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
             'Berlaku hingga ${DateFormat('dd MMMM yyyy', 'id_ID').format(subscription.endDate)}',
             style: whiteTextStyle.copyWith(
               fontSize: 14,
-              color: whiteColor.withOpacity(0.9),
+              color: whiteColor.withAlpha(229),
             ),
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: whiteColor.withOpacity(0.2),
+              color: whiteColor.withAlpha(51),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -258,7 +258,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: blackColor.withOpacity(0.1),
+            color: blackColor.withAlpha(26),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -396,7 +396,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (isDestructive ? Colors.red : greenColor).withOpacity(0.1),
+                color: (isDestructive ? Colors.red : greenColor).withAlpha(25),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
