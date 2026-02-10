@@ -5,6 +5,7 @@ import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/payment_gateway_page.dart';
 import 'package:bank_sha/services/user_service.dart';
 import 'package:bank_sha/mixins/app_dialog_mixin.dart';
+import 'package:logger/logger.dart';
 
 class SignUpSubscriptionPage extends StatefulWidget {
   const SignUpSubscriptionPage({super.key});
@@ -16,12 +17,57 @@ class SignUpSubscriptionPage extends StatefulWidget {
 class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
     with AppDialogMixin {
   final SubscriptionService _subscriptionService = SubscriptionService();
-  List<SubscriptionPlan> _plans = [];
+  final Logger _logger = Logger();
+  Future<List<SubscriptionPlan>>? _plansFuture;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _plans = _subscriptionService.getAvailablePlans();
+    // Don't call _loadPlans here, wait for didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load plans only once after dependencies are ready
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadPlans();
+    }
+  }
+
+  Future<void> _loadPlans() async {
+    _logger.i('Loading subscription plans from API...');
+    
+    // Check if user is authenticated (from auto sign-in)
+    final arguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final isAuthenticated = arguments?['isAuthenticated'] ?? false;
+    
+    if (isAuthenticated) {
+      _logger.i('✅ User is authenticated, will try to fetch from API');
+      // Smaller delay since we already waited after auto sign-in
+      await Future.delayed(const Duration(milliseconds: 200));
+    } else {
+      _logger.w('⚠️ User not authenticated, will use static plans');
+    }
+    
+    setState(() {
+      _plansFuture = _subscriptionService.getAvailablePlans();
+    });
+    
+    // Log the result for debugging
+    _plansFuture?.then((plans) {
+      _logger.i('Successfully loaded ${plans.length} subscription plans');
+      // Check if we got API plans or static plans
+      if (plans.isNotEmpty) {
+        final firstPlan = plans.first;
+        _logger.i('First plan: ${firstPlan.name} - ${firstPlan.formattedPrice}');
+      }
+    }).catchError((error) {
+      _logger.e('Failed to load subscription plans: $error');
+    });
   }
 
   @override
@@ -33,11 +79,141 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
           children: [
             _buildHeader(),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _plans.length,
-                itemBuilder: (context, index) {
-                  return _buildPlanCard(_plans[index]);
+              child: _plansFuture == null
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+                      ),
+                    )
+                  : FutureBuilder<List<SubscriptionPlan>>(
+                      future: _plansFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+                            ),
+                          );
+                        }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: redcolor,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Gagal memuat paket langganan',
+                              style: blackTextStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: semiBold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              snapshot.error.toString(),
+                              style: greyTextStyle.copyWith(fontSize: 14),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _plansFuture = _subscriptionService
+                                      .getAvailablePlans();
+                                });
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Coba Lagi'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: greenColor,
+                                foregroundColor: whiteColor,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final plans = snapshot.data ?? [];
+                  if (plans.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: greyColor,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Tidak ada paket tersedia',
+                            style: greyTextStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: medium,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _plansFuture = _subscriptionService
+                                    .getAvailablePlans();
+                              });
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Muat Ulang'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: greenColor,
+                              foregroundColor: whiteColor,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      _logger.i('Refreshing subscription plans...');
+                      final future = _subscriptionService.getAvailablePlans();
+                      setState(() {
+                        _plansFuture = future;
+                      });
+                      await future;
+                    },
+                    color: greenColor,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: plans.length,
+                      itemBuilder: (context, index) {
+                        return _buildPlanCard(plans[index]);
+                      },
+                    ),
+                  );
                 },
               ),
             ),
@@ -345,6 +521,10 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
   }
 
   void _selectPlan(SubscriptionPlan plan) {
+    _logger.i(
+      'User selected plan: ${plan.name} (${plan.id}) - ${plan.formattedPrice}',
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -353,13 +533,17 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
       ),
     ).then((result) {
       if (result == true) {
+        _logger.i('Payment successful for plan: ${plan.name}');
         // Payment successful, go to home
         _completeSignup(hasSubscription: true);
+      } else {
+        _logger.w('Payment cancelled or failed for plan: ${plan.name}');
       }
     });
   }
 
   void _skipSubscription() {
+    _logger.i('User chose to skip subscription during signup');
     _completeSignup(hasSubscription: false);
   }
 

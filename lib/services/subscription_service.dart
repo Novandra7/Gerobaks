@@ -82,39 +82,10 @@ class SubscriptionService {
   }
 
   // Get available subscription plans from API
+  // Deprecated: Use getAvailablePlans() instead
+  @Deprecated('Use getAvailablePlans() which now fetches from API with fallback')
   Future<List<SubscriptionPlan>> getAvailablePlansFromAPI() async {
-    try {
-      final localStorage = await LocalStorageService.getInstance();
-      final token = await localStorage.getToken();
-
-      if (token == null) {
-        throw Exception('User not authenticated');
-      }
-
-      final response = await http.get(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscriptionPlans}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final List<dynamic> plansData = data['data'] ?? [];
-
-        return plansData
-            .map((planData) => SubscriptionPlan.fromApiJson(planData))
-            .toList();
-      } else {
-        _logger.e('Failed to fetch subscription plans: ${response.statusCode}');
-        throw Exception('Failed to fetch subscription plans');
-      }
-    } catch (e) {
-      _logger.e('Error fetching subscription plans from API: $e');
-      // Fallback to local plans
-      return getAvailablePlans();
-    }
+    return getAvailablePlans();
   }
 
   // Get current subscription from API
@@ -315,7 +286,55 @@ class SubscriptionService {
   }
 
   // Get available subscription plans
-  List<SubscriptionPlan> getAvailablePlans() {
+  Future<List<SubscriptionPlan>> getAvailablePlans() async {
+    try {
+      final localStorage = await LocalStorageService.getInstance();
+      final token = await localStorage.getToken();
+
+      if (token == null) {
+        _logger.w('⚠️ User not authenticated (no token), returning static plans');
+        return _getStaticPlans();
+      }
+
+      _logger.i('✅ Token found, fetching plans from API...');
+      _logger.d('Token: ${token.substring(0, 20)}...');
+
+      final response = await http.get(
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscriptionPlans}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      _logger.i('API response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> plansData = data['data'] ?? [];
+
+        if (plansData.isEmpty) {
+          _logger.w('No plans returned from API, using static plans');
+          return _getStaticPlans();
+        }
+
+        _logger.i('✅ Successfully fetched ${plansData.length} subscription plans from API');
+        return plansData
+            .map((planData) => SubscriptionPlan.fromApiJson(planData))
+            .toList();
+      } else {
+        _logger.e('Failed to fetch subscription plans: ${response.statusCode}');
+        _logger.e('Response body: ${response.body}');
+        return _getStaticPlans();
+      }
+    } catch (e) {
+      _logger.e('Error fetching subscription plans from API: $e');
+      return _getStaticPlans();
+    }
+  }
+
+  // Static plans as fallback for offline mode
+  List<SubscriptionPlan> _getStaticPlans() {
     return [
       SubscriptionPlan(
         id: 'basic_monthly',
