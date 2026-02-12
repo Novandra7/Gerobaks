@@ -18,6 +18,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
   final SubscriptionService _subscriptionService = SubscriptionService();
   UserSubscription? _currentSubscription;
   bool _isLoading = true;
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -25,12 +26,24 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
     _initializeData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh subscription when page comes back to foreground
+    // But avoid refreshing during first initialization
+    if (_isInitialized && !_isLoading) {
+      _refreshSubscription();
+    }
+  }
+
   Future<void> _initializeData() async {
     await _subscriptionService.initialize();
-    setState(() {
-      _currentSubscription = _subscriptionService.getCurrentSubscription();
-      _isLoading = false;
-    });
+    
+    // Try to fetch from API first
+    await _refreshSubscription();
+    
+    // Mark as initialized
+    _isInitialized = true;
 
     // Listen to subscription updates
     _subscriptionService.subscriptionStream.listen((subscription) {
@@ -40,6 +53,28 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
         });
       }
     });
+  }
+
+  Future<void> _refreshSubscription() async {
+    try {
+      // Fetch latest subscription from API
+      final subscription = await _subscriptionService.getCurrentSubscriptionFromAPI();
+      
+      if (mounted) {
+        setState(() {
+          _currentSubscription = subscription;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // If API fails, fallback to local cache
+      if (mounted) {
+        setState(() {
+          _currentSubscription = _subscriptionService.getCurrentSubscription();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _cancelSubscription() async {
@@ -54,14 +89,26 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
     );
 
     if (confirm == true) {
-      await _subscriptionService.cancelSubscription();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Langganan berhasil dibatalkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      try {
+        await _subscriptionService.cancelSubscription();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Langganan berhasil dibatalkan'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _refreshSubscription();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -74,20 +121,26 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
         showBackButton: true,
       ),
       backgroundColor: uicolor,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _currentSubscription == null || !_currentSubscription!.isActive
-              ? _buildNoSubscription()
-              : _buildActiveSubscription(),
+      body: RefreshIndicator(
+        onRefresh: _refreshSubscription,
+        color: greenColor,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _currentSubscription == null || !_currentSubscription!.isActive
+                ? _buildNoSubscription()
+                : _buildActiveSubscription(),
+      ),
     );
   }
 
   Widget _buildNoSubscription() {
-    return Center(
-      child: Padding(
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height - 100,
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 120,
@@ -117,18 +170,32 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
               style: greyTextStyle.copyWith(fontSize: 14),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 8),
+            Text(
+              'Tarik ke bawah untuk refresh',
+              style: greyTextStyle.copyWith(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const SubscriptionPlansPage(),
                     ),
                   );
+                  
+                  // Refresh subscription after returning from plans page
+                  if (mounted) {
+                    await _refreshSubscription();
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: greenColor,
@@ -341,13 +408,18 @@ class _MySubscriptionPageState extends State<MySubscriptionPage> {
           icon: Icons.credit_card,
           title: 'Perpanjang Langganan',
           subtitle: 'Perpanjang paket langganan Anda',
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const SubscriptionPlansPage(),
               ),
             );
+            
+            // Refresh subscription after returning
+            if (mounted) {
+              await _refreshSubscription();
+            }
           },
         ),
         const SizedBox(height: 12),

@@ -146,40 +146,60 @@ class UserSubscription {
     );
   }
 
-  // Factory constructor for API JSON response
   factory UserSubscription.fromApiJson(Map<String, dynamic> json) {
-    // Map API response to local model
-    PaymentStatus status = PaymentStatus.pending;
-    final statusStr = json['status']?.toString().toLowerCase() ?? 'pending';
+    try {
+      // Map API response to local model
+      PaymentStatus status = PaymentStatus.pending;
+      final statusStr = json['status']?.toString().toLowerCase() ?? 'pending';
 
-    switch (statusStr) {
-      case 'active':
-        status = PaymentStatus.success;
-        break;
-      case 'expired':
-        status = PaymentStatus.expired;
-        break;
-      case 'cancelled':
-        status = PaymentStatus.cancelled;
-        break;
-      case 'failed':
-        status = PaymentStatus.failed;
-        break;
-      default:
-        status = PaymentStatus.pending;
+      switch (statusStr) {
+        case 'active':
+          status = PaymentStatus.success;
+          break;
+        case 'expired':
+          status = PaymentStatus.expired;
+          break;
+        case 'cancelled':
+          status = PaymentStatus.cancelled;
+          break;
+        case 'failed':
+          status = PaymentStatus.failed;
+          break;
+        default:
+          status = PaymentStatus.pending;
+      }
+
+      // Try multiple ways to get plan name with better null safety
+      String planName = 'Unknown Plan';
+      try {
+        if (json['subscription_plan'] != null) {
+          if (json['subscription_plan'] is Map && json['subscription_plan']['name'] != null) {
+            planName = json['subscription_plan']['name'].toString();
+          }
+        } else if (json['plan_name'] != null) {
+          planName = json['plan_name'].toString();
+        } else if (json['plan'] != null && json['plan'] is Map && json['plan']['name'] != null) {
+          planName = json['plan']['name'].toString();
+        }
+      } catch (e) {
+        // Keep default 'Unknown Plan' if any error occurs
+        planName = 'Unknown Plan';
+      }
+
+      return UserSubscription(
+        id: json['id'].toString(),
+        planId: json['subscription_plan_id']?.toString() ?? json['plan_id']?.toString() ?? '',
+        planName: planName,
+        startDate: DateTime.parse(json['start_date']),
+        endDate: DateTime.parse(json['end_date']),
+        status: status,
+        amount: double.parse(json['amount_paid']?.toString() ?? json['amount']?.toString() ?? '0'),
+        paymentMethod: json['payment_method'],
+        transactionId: json['payment_reference'] ?? json['transaction_id'],
+      );
+    } catch (e) {
+      throw FormatException('Failed to parse UserSubscription from API: $e. JSON: $json');
     }
-
-    return UserSubscription(
-      id: json['id'].toString(),
-      planId: json['subscription_plan_id'].toString(),
-      planName: json['plan']?['name'] ?? 'Unknown Plan',
-      startDate: DateTime.parse(json['start_date']),
-      endDate: DateTime.parse(json['end_date']),
-      status: status,
-      amount: double.parse(json['amount_paid'].toString()),
-      paymentMethod: json['payment_method'],
-      transactionId: json['payment_reference'],
-    );
   }
 
   // CopyWith method for updating subscription

@@ -6,14 +6,11 @@ import '../models/subscription_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/user_service.dart';
 import '../utils/api_routes.dart';
-import 'package:logger/logger.dart';
 
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
   factory SubscriptionService() => _instance;
   SubscriptionService._internal();
-
-  final Logger _logger = Logger();
   final StreamController<UserSubscription?> _subscriptionController =
       StreamController<UserSubscription?>.broadcast();
 
@@ -30,26 +27,20 @@ class SubscriptionService {
 
   Future<void> _loadSubscription() async {
     final subscriptionData = await _localStorage.getSubscription();
-    _logger.d('LocalStorage subscription data = $subscriptionData');
 
     if (subscriptionData != null) {
       _currentSubscription = UserSubscription.fromJson(subscriptionData);
       _subscriptionController.add(_currentSubscription);
-      _logger.d('Loaded subscription = $_currentSubscription');
 
-      // Sync subscription status with user model
       await _syncUserSubscriptionStatus();
     } else {
-      _logger.d('No subscription data found in localStorage');
       _currentSubscription = null;
       _subscriptionController.add(null);
 
-      // Sync subscription status with user model (set as not subscribed)
       await _syncUserSubscriptionStatus();
     }
   }
 
-  // Sync subscription status with user model
   Future<void> _syncUserSubscriptionStatus() async {
     try {
       final userService = await UserService.getInstance();
@@ -62,7 +53,6 @@ class SubscriptionService {
             ? _currentSubscription?.planId.split('_').first
             : null;
 
-        // Only update if there's a mismatch
         if (currentUser.isSubscribed != isActive ||
             (isActive && subscriptionType != currentUser.subscriptionType)) {
           final updatedUser = currentUser.copyWith(
@@ -71,24 +61,16 @@ class SubscriptionService {
           );
 
           await userService.updateUserData(updatedUser);
-          _logger.d(
-            'Synced user subscription status: isSubscribed=$isActive, type=$subscriptionType',
-          );
         }
       }
     } catch (e) {
-      _logger.e('Error syncing subscription status with user model: $e');
     }
   }
 
-  // Get available subscription plans from API
-  // Deprecated: Use getAvailablePlans() instead
-  @Deprecated('Use getAvailablePlans() which now fetches from API with fallback')
   Future<List<SubscriptionPlan>> getAvailablePlansFromAPI() async {
     return getAvailablePlans();
   }
 
-  // Get current subscription from API
   Future<UserSubscription?> getCurrentSubscriptionFromAPI() async {
     try {
       final localStorage = await LocalStorageService.getInstance();
@@ -119,133 +101,115 @@ class SubscriptionService {
           return subscription;
         }
       } else if (response.statusCode == 404) {
-        // No active subscription
         _currentSubscription = null;
         _subscriptionController.add(null);
         await _localStorage.clearSubscription();
         return null;
-      } else {
-        _logger.e(
-          'Failed to fetch current subscription: ${response.statusCode}',
-        );
       }
     } catch (e) {
-      _logger.e('Error fetching current subscription from API: $e');
     }
 
     return _currentSubscription;
   }
 
-  // Subscribe to a plan via API
   Future<UserSubscription> subscribeToAPI(
     String planId,
-    String paymentMethodId,
-  ) async {
+    String paymentMethodId, {
+    Map<String, dynamic>? additionalData,
+  }) async {
     try {
       final localStorage = await LocalStorageService.getInstance();
       final token = await localStorage.getToken();
 
       if (token == null) {
-        throw Exception('User not authenticated');
+        throw Exception('User belum login. Silakan login terlebih dahulu.');
       }
 
-      final requestBody = {
+      Map<String, dynamic> requestBody = {
         'subscription_plan_id': planId,
         'payment_method': paymentMethodId,
         'auto_renew': true,
+        ...?additionalData,
       };
 
-      final response = await http.post(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscribe}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(requestBody),
-      );
+      final url = '${ApiRoutes.baseUrl}${ApiRoutes.subscribe}';
+
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode(requestBody),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timeout. Silakan coba lagi.');
+            },
+          );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final subscription = UserSubscription.fromApiJson(data['data']);
+        final Map<String, dynamic> responseData = json.decode(response.body);
 
-        // Update local storage
+        if (responseData['data'] == null) {
+          throw Exception('Response API tidak valid');
+        }
+
+        final subscription = UserSubscription.fromApiJson(responseData['data']);
+
         await _localStorage.saveSubscription(subscription.toJson());
         _currentSubscription = subscription;
         _subscriptionController.add(_currentSubscription);
 
-        // Sync with user model
         await _syncUserSubscriptionStatus();
 
-        _logger.d('Successfully subscribed to plan via API');
         return subscription;
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['message'] ?? 'Data tidak valid';
+        throw Exception(errorMessage);
+      } else if (response.statusCode == 401) {
+        throw Exception('Sesi Anda telah berakhir. Silakan login kembali.');
+      } else if (response.statusCode == 402) {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['message'] ?? 'Pembayaran gagal';
+        throw Exception(errorMessage);
+      } else if (response.statusCode == 422) {
+        final errorData = json.decode(response.body);
+        final errorMessage = errorData['message'] ?? 'Data tidak valid';
+        throw Exception(errorMessage);
+      } else if (response.statusCode == 500) {
+        try {
+          final errorData = json.decode(response.body);
+          final errorMessage =
+              errorData['message'] ?? 'Terjadi kesalahan pada server';
+          throw Exception(errorMessage);
+        } catch (e) {
+          throw Exception(
+            'Terjadi kesalahan pada server. Silakan coba lagi nanti.',
+          );
+        }
       } else {
         final errorData = json.decode(response.body);
         final errorMessage = errorData['message'] ?? 'Subscription failed';
-        _logger.e(
-          'Failed to subscribe: ${response.statusCode} - $errorMessage',
-        );
         throw Exception(errorMessage);
       }
-    } catch (e) {
-      _logger.e('Error subscribing via API: $e');
-      throw Exception('Failed to subscribe: $e');
-    }
-  }
-
-  // Cancel subscription via API
-  Future<bool> cancelSubscriptionAPI() async {
-    try {
-      final localStorage = await LocalStorageService.getInstance();
-      final token = await localStorage.getToken();
-
-      if (token == null || _currentSubscription == null) {
-        throw Exception('User not authenticated or no active subscription');
-      }
-
-      final response = await http.post(
-        Uri.parse(
-          '${ApiRoutes.baseUrl}${ApiRoutes.cancelSubscription.replaceAll('{subscription}', _currentSubscription!.id)}',
-        ),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({
-          'cancellation_reason': 'User requested cancellation',
-        }),
+    } on http.ClientException catch (e) {
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
       );
-
-      if (response.statusCode == 200) {
-        // Update local subscription status
-        if (_currentSubscription != null) {
-          final updatedSubscription = _currentSubscription!.copyWith(
-            status: PaymentStatus.cancelled,
-          );
-          await _localStorage.saveSubscription(updatedSubscription.toJson());
-          _currentSubscription = updatedSubscription;
-          _subscriptionController.add(_currentSubscription);
-
-          // Sync with user model
-          await _syncUserSubscriptionStatus();
-        }
-
-        _logger.d('Successfully cancelled subscription via API');
-        return true;
-      } else {
-        final errorData = json.decode(response.body);
-        final errorMessage = errorData['message'] ?? 'Cancellation failed';
-        _logger.e(
-          'Failed to cancel subscription: ${response.statusCode} - $errorMessage',
-        );
-        throw Exception(errorMessage);
-      }
+    } on FormatException catch (e) {
+      throw Exception('Response server tidak valid.');
     } catch (e) {
-      _logger.e('Error cancelling subscription via API: $e');
-      throw Exception('Failed to cancel subscription: $e');
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Gagal membuat subscription: ${e.toString()}');
     }
   }
 
-  // Get subscription history from API
   Future<List<UserSubscription>> getSubscriptionHistoryFromAPI() async {
     try {
       final localStorage = await LocalStorageService.getInstance();
@@ -274,30 +238,21 @@ class SubscriptionService {
             )
             .toList();
       } else {
-        _logger.e(
-          'Failed to fetch subscription history: ${response.statusCode}',
-        );
         return [];
       }
     } catch (e) {
-      _logger.e('Error fetching subscription history from API: $e');
-      return getSubscriptionHistory(); // Fallback to local history
+      return getSubscriptionHistory();
     }
   }
 
-  // Get available subscription plans
   Future<List<SubscriptionPlan>> getAvailablePlans() async {
     try {
       final localStorage = await LocalStorageService.getInstance();
       final token = await localStorage.getToken();
 
       if (token == null) {
-        _logger.w('⚠️ User not authenticated (no token), returning static plans');
         return _getStaticPlans();
       }
-
-      _logger.i('✅ Token found, fetching plans from API...');
-      _logger.d('Token: ${token.substring(0, 20)}...');
 
       final response = await http.get(
         Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscriptionPlans}'),
@@ -307,33 +262,25 @@ class SubscriptionService {
         },
       );
 
-      _logger.i('API response status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> plansData = data['data'] ?? [];
 
         if (plansData.isEmpty) {
-          _logger.w('No plans returned from API, using static plans');
           return _getStaticPlans();
         }
 
-        _logger.i('✅ Successfully fetched ${plansData.length} subscription plans from API');
         return plansData
             .map((planData) => SubscriptionPlan.fromApiJson(planData))
             .toList();
       } else {
-        _logger.e('Failed to fetch subscription plans: ${response.statusCode}');
-        _logger.e('Response body: ${response.body}');
         return _getStaticPlans();
       }
     } catch (e) {
-      _logger.e('Error fetching subscription plans from API: $e');
       return _getStaticPlans();
     }
   }
 
-  // Static plans as fallback for offline mode
   List<SubscriptionPlan> _getStaticPlans() {
     return [
       SubscriptionPlan(
@@ -388,10 +335,8 @@ class SubscriptionService {
     ];
   }
 
-  // Get available payment methods
   List<PaymentMethod> getPaymentMethods() {
     return [
-      // E-Wallet Methods
       PaymentMethod(
         id: 'qris',
         name: 'QRIS',
@@ -427,7 +372,6 @@ class SubscriptionService {
         description: 'Bayar dengan OVO',
         category: 'E-Wallet',
       ),
-      // Bank Transfer Methods
       PaymentMethod(
         id: 'bca',
         name: 'BCA Virtual Account',
@@ -459,12 +403,10 @@ class SubscriptionService {
     ];
   }
 
-  // Process subscription payment
   Future<UserSubscription> processPayment(
     SubscriptionPlan plan,
     PaymentMethod paymentMethod,
   ) async {
-    // Simulate payment processing
     await Future.delayed(const Duration(seconds: 2));
 
     final now = DateTime.now();
@@ -474,20 +416,17 @@ class SubscriptionService {
       planName: plan.name,
       startDate: now,
       endDate: now.add(Duration(days: plan.durationInDays)),
-      status:
-          PaymentStatus.success, // In real app, this would be pending initially
+      status: PaymentStatus.success,
       amount: plan.price,
       paymentMethod: paymentMethod.name,
       transactionId: _generateTransactionId(),
     );
 
-    // Save to local storage
     await _localStorage.saveSubscription(subscription.toJson());
 
     _currentSubscription = subscription;
     _subscriptionController.add(_currentSubscription);
 
-    // Update user model with subscription information
     try {
       final userService = await UserService.getInstance();
       await userService.init();
@@ -502,30 +441,24 @@ class SubscriptionService {
         await userService.updateUserData(updatedUser);
       }
     } catch (e) {
-      _logger.e('Error updating user subscription status: $e');
     }
 
     return subscription;
   }
 
-  // Get current subscription
   UserSubscription? getCurrentSubscription() {
     return _currentSubscription;
   }
 
-  // Clear subscription (for testing)
   Future<void> clearSubscription() async {
     await _localStorage.clearSubscription();
     _currentSubscription = null;
     _subscriptionController.add(null);
-    _logger.d('Subscription cleared');
   }
 
-  // Check if user has active subscription
   bool hasActiveSubscription() {
     bool isActive = _currentSubscription?.isActive ?? false;
 
-    // Ensure user model subscription status is in sync with actual subscription
     Future.microtask(() async {
       try {
         final userService = await UserService.getInstance();
@@ -533,7 +466,6 @@ class SubscriptionService {
         final currentUser = await userService.getCurrentUser();
 
         if (currentUser != null) {
-          // Only update if there's a mismatch
           if (currentUser.isSubscribed != isActive ||
               (isActive &&
                   _currentSubscription != null &&
@@ -550,53 +482,69 @@ class SubscriptionService {
           }
         }
       } catch (e) {
-        _logger.e('Error syncing subscription status with user model: $e');
       }
     });
 
     return isActive;
   }
 
-  // Cancel subscription
   Future<void> cancelSubscription() async {
-    if (_currentSubscription != null) {
-      final cancelledSubscription = UserSubscription(
-        id: _currentSubscription!.id,
-        planId: _currentSubscription!.planId,
-        planName: _currentSubscription!.planName,
-        startDate: _currentSubscription!.startDate,
-        endDate: DateTime.now(), // End now
-        status: PaymentStatus.expired,
-        amount: _currentSubscription!.amount,
-        paymentMethod: _currentSubscription!.paymentMethod,
-        transactionId: _currentSubscription!.transactionId,
+    if (_currentSubscription == null) return;
+
+    try {
+      final token = await _localStorage.getToken();
+
+      if (token == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final url =
+          '${ApiRoutes.baseUrl}${ApiRoutes.cancelSubscription(_currentSubscription!.id)}';
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'cancellation_reason': 'User requested cancellation',
+        }),
       );
 
-      await _localStorage.saveSubscription(cancelledSubscription.toJson());
-      _currentSubscription = cancelledSubscription;
-      _subscriptionController.add(_currentSubscription);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+      } else {
+        String errorMessage = 'Gagal membatalkan langganan';
 
-      // Update user subscription status
-      try {
-        final userService = await UserService.getInstance();
-        await userService.init();
-        final currentUser = await userService.getCurrentUser();
-
-        if (currentUser != null) {
-          final updatedUser = currentUser.copyWith(
-            isSubscribed: false,
-            subscriptionType: null,
-          );
-
-          await userService.updateUserData(updatedUser);
+        if (response.body.isNotEmpty) {
+          try {
+            final errorData = json.decode(response.body);
+            errorMessage = errorData['message'] ?? errorMessage;
+          } catch (e) {
+            errorMessage = 'Server error: ${response.statusCode}';
+          }
         }
-      } catch (e) {
-        _logger.e('Error updating user subscription status: $e');
+
+        throw Exception(errorMessage);
       }
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Gagal membatalkan langganan: ${e.toString()}');
     }
+
+    final cancelledSubscription = _currentSubscription!.copyWith(
+      status: PaymentStatus.cancelled,
+    );
+
+    await _localStorage.saveSubscription(cancelledSubscription.toJson());
+    _currentSubscription = cancelledSubscription;
+    _subscriptionController.add(_currentSubscription);
+
+    await _syncUserSubscriptionStatus();
   }
 
-  // Extend subscription
   Future<UserSubscription> extendSubscription(SubscriptionPlan plan) async {
     if (_currentSubscription != null) {
       final startDate = _currentSubscription!.isActive
@@ -618,7 +566,6 @@ class SubscriptionService {
       _currentSubscription = newSubscription;
       _subscriptionController.add(_currentSubscription);
 
-      // Update user model with subscription information
       try {
         final userService = await UserService.getInstance();
         await userService.init();
@@ -633,7 +580,6 @@ class SubscriptionService {
           await userService.updateUserData(updatedUser);
         }
       } catch (e) {
-        _logger.e('Error updating user subscription status: $e');
       }
 
       return newSubscription;
@@ -642,7 +588,6 @@ class SubscriptionService {
     throw Exception('No existing subscription to extend');
   }
 
-  // Get subscription history (for now, just return current if exists)
   List<UserSubscription> getSubscriptionHistory() {
     return _currentSubscription != null ? [_currentSubscription!] : [];
   }

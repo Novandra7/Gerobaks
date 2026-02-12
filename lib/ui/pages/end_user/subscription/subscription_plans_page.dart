@@ -254,13 +254,18 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final result = await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => PaymentGatewayPage(plan: plan),
                         ),
                       );
+                      
+                      // If payment successful, pop and return true to my_subscription
+                      if (result == true && mounted) {
+                        Navigator.pop(context, true);
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: plan.isPopular ? greenColor : Colors.grey[600],
