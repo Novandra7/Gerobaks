@@ -103,12 +103,10 @@ class ApiRoutes {
   static const String subscriptionPlans = '/api/subscription/plans';
   static String subscriptionPlan(int id) => '/api/subscription/plans/$id';
   static const String currentSubscription = '/api/subscription/current';
-  static const String subscribe = '/api/subscription/subscribe';
+  static const String subscribe = '/api/subscriptions';
   static const String subscriptionHistory = '/api/subscription/history';
-  static const String cancelSubscription =
-      '/api/subscription/{subscription}/cancel';
-  static const String activateSubscription =
-      '/api/subscription/{subscription}/activate';
+  static String cancelSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId/cancel';
+  static String activateSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId/activate';
 
   // Service Routes
   static const String services = '/api/services';
