@@ -30,3 +30,8 @@ export 'schedule/schedule_bloc.dart';
 export 'wilayah/wilayah_bloc.dart';
 export 'wilayah/wilayah_event.dart' hide FetchRoute, UpdateTruckLocation;
 export 'wilayah/wilayah_state.dart';
+
+// Address BLoC
+export 'address/address_bloc.dart';
+export 'address/address_event.dart';
+export 'address/address_state.dart';

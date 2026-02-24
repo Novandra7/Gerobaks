@@ -304,6 +304,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
         // Wilayah BLoC - Existing wilayah functionality
         BlocProvider(create: (context) => WilayahBloc()),
+        BlocProvider(create: (context) => AddressBloc()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
