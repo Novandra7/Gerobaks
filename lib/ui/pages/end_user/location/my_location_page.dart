@@ -1,6 +1,10 @@
+import 'package:bank_sha/blocs/blocs.dart';
+import 'package:bank_sha/models/address_model.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MyLocationPage extends StatefulWidget {
   const MyLocationPage({super.key});
@@ -10,35 +14,11 @@ class MyLocationPage extends StatefulWidget {
 }
 
 class _MyLocationPageState extends State<MyLocationPage> {
-  // Index alamat yang menjadi utama
-  int _utamaIndex = 0;
-
-  final List<Map<String, dynamic>> _locations = [
-    {
-      'label': 'Rumah',
-      'address': 'Jl. Sudirman No. 10, Kel. Kebon Jeruk',
-      'city': 'Jakarta Barat, 11530',
-      'icon': Icons.home,
-      'subscriptionPlan': 'Premium',
-      'subscriptionStatus': 'Aktif',
-    },
-    {
-      'label': 'Kantor',
-      'address': 'Jl. Thamrin No. 5, Kel. Gondangdia',
-      'city': 'Jakarta Pusat, 10350',
-      'icon': Icons.business,
-      'subscriptionPlan': 'Basic',
-      'subscriptionStatus': 'Kadaluarsa',
-    },
-    {
-      'label': 'Gudang',
-      'address': 'Jl. Raya Bekasi No. 88, Kel. Cakung',
-      'city': 'Jakarta Timur, 13910',
-      'icon': Icons.warehouse,
-      'subscriptionPlan': '-',
-      'subscriptionStatus': 'Tidak Aktif',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    context.read<AddressBloc>().add(const FetchAddresses());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,11 +26,98 @@ class _MyLocationPageState extends State<MyLocationPage> {
       backgroundColor: uicolor,
       appBar: const CustomAppNotif(title: 'Alamat Saya', showBackButton: true),
       body: SafeArea(
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          itemCount: _locations.length,
-          itemBuilder: (context, index) =>
-              _buildLocationCard(index, _locations[index]),
+        child: BlocConsumer<AddressBloc, AddressState>(
+          listener: (context, state) {
+            if (state.status == AddressStatus.error &&
+                state.errorMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.errorMessage!),
+                  backgroundColor: redcolor,
+                ),
+              );
+            }
+            if (state.status == AddressStatus.operationSuccess &&
+                state.successMessage != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.successMessage!),
+                  backgroundColor: greenColor,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state.status == AddressStatus.loading) {
+              return _buildSkeletonList();
+            }
+
+            if (state.status == AddressStatus.error &&
+                state.addresses.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline, color: redcolor, size: 48),
+                    const SizedBox(height: 12),
+                    Text(
+                      state.errorMessage ?? 'Gagal memuat alamat',
+                      style: greyTextStyle.copyWith(fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.read<AddressBloc>().add(
+                        const FetchAddresses(),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: greenColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Coba Lagi',
+                        style: whiteTextStyle.copyWith(fontWeight: semiBold),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state.addresses.isEmpty) {
+              return Center(
+                child: Text(
+                  'Belum ada alamat tersimpan.',
+                  style: greyTextStyle.copyWith(fontSize: 14),
+                ),
+              );
+            }
+
+            final isOperating = state.status == AddressStatus.operating;
+
+            return Stack(
+              children: [
+                ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 16.0,
+                  ),
+                  itemCount: state.addresses.length,
+                  itemBuilder: (context, index) =>
+                      _buildLocationCard(state.addresses[index]),
+                ),
+                if (isOperating)
+                  const Positioned.fill(
+                    child: ColoredBox(
+                      color: Colors.black26,
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -58,17 +125,125 @@ class _MyLocationPageState extends State<MyLocationPage> {
           Navigator.pushNamed(context, '/wilayah');
         },
         foregroundColor: yellowColor,
-        backgroundColor: Color(0xFF4CAF50),
+        backgroundColor: const Color(0xFF4CAF50),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         child: Image.asset('assets/ic_map_pin_add_line.png', width: 24),
       ),
     );
   }
 
-  Widget _buildLocationCard(int index, Map<String, dynamic> loc) {
-    final bool isUtama = index == _utamaIndex;
-    final String subscriptionStatus = loc['subscriptionStatus'] as String;
-    final String subscriptionPlan = loc['subscriptionPlan'] as String;
+  Widget _buildSkeletonList() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+      itemCount: 3,
+      itemBuilder: (_, __) => _buildSkeletonCard(),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: whiteColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 16,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Badge
+            Container(
+              height: 26,
+              width: 140,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Buttons row
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForLabel(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('rumah')) return Icons.home;
+    if (lower.contains('kantor')) return Icons.business;
+    if (lower.contains('gudang')) return Icons.warehouse;
+    return Icons.location_on;
+  }
+
+  Widget _buildLocationCard(AddressModel loc) {
+    final bool isUtama = loc.isDefault;
+    final String plan = loc.subscriptionPlan ?? '-';
+    final String status = loc.subscriptionStatus ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -104,7 +279,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        loc['icon'] as IconData,
+                        _iconForLabel(loc.label),
                         color: greenColor,
                         size: 24,
                       ),
@@ -115,14 +290,14 @@ class _MyLocationPageState extends State<MyLocationPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            loc['label'] as String,
+                            loc.label,
                             style: blackTextStyle.copyWith(
                               fontSize: 18,
                               fontWeight: bold,
                             ),
                           ),
                           Text(
-                            loc['address'] as String,
+                            loc.address,
                             style: greyTextStyle.copyWith(fontSize: 12),
                           ),
                         ],
@@ -132,28 +307,8 @@ class _MyLocationPageState extends State<MyLocationPage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Kota
-                Row(
-                  children: [
-                    Icon(Icons.location_city, color: greenColor, size: 16),
-                    const SizedBox(width: 6),
-                    Text(
-                      loc['city'] as String,
-                      style: greyTextStyle.copyWith(fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
                 // Badge subscription
-                Row(
-                  children: [
-                    _buildSubscriptionBadge(
-                      subscriptionPlan,
-                      subscriptionStatus,
-                    ),
-                  ],
-                ),
+                _buildSubscriptionBadge(plan, status),
                 const SizedBox(height: 20),
 
                 // Tombol Hapus & Gunakan
@@ -164,7 +319,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
                         height: 44,
                         child: OutlinedButton(
                           onPressed: () =>
-                              _showDeleteConfirmation(context, index),
+                              _showDeleteConfirmation(context, loc),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: redcolor),
                             shape: RoundedRectangleBorder(
@@ -189,9 +344,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
                         child: ElevatedButton(
                           onPressed: isUtama
                               ? null
-                              : () {
-                                  setState(() => _utamaIndex = index);
-                                },
+                              : () => context.read<AddressBloc>().add(
+                                  SetDefaultAddress(loc.id),
+                                ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isUtama
                                 ? greenColor
@@ -248,11 +403,10 @@ class _MyLocationPageState extends State<MyLocationPage> {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, int index) {
-    final loc = _locations[index];
-    final bool isUtama = index == _utamaIndex;
-    final String subscriptionStatus = loc['subscriptionStatus'] as String;
-    final bool hasActiveSubscription = subscriptionStatus == 'Aktif';
+  void _showDeleteConfirmation(BuildContext context, AddressModel loc) {
+    final bool hasActiveSubscription =
+        (loc.subscriptionStatus ?? '').toLowerCase() == 'active' ||
+        loc.subscriptionStatus == 'Aktif';
 
     showDialog(
       context: context,
@@ -273,7 +427,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Apakah kamu yakin ingin menghapus alamat "${loc['label']}"?',
+              'Apakah kamu yakin ingin menghapus alamat "${loc.label}"?',
               style: blackTextStyle.copyWith(fontSize: 13),
             ),
             if (hasActiveSubscription) ...[
@@ -302,7 +456,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
                 ),
               ),
             ],
-            if (isUtama) ...[
+            if (loc.isDefault) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -348,12 +502,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              setState(() {
-                _locations.removeAt(index);
-                if (_utamaIndex >= _locations.length) {
-                  _utamaIndex = _locations.isEmpty ? 0 : _locations.length - 1;
-                }
-              });
+              context.read<AddressBloc>().add(DeleteAddress(loc.id));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: redcolor,
@@ -378,12 +527,14 @@ class _MyLocationPageState extends State<MyLocationPage> {
     final Color statusColor;
     final IconData statusIcon;
 
-    switch (status) {
-      case 'Aktif':
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'aktif':
         statusColor = greenColor;
         statusIcon = Icons.check_circle;
         break;
-      case 'Kadaluarsa':
+      case 'expired':
+      case 'kadaluarsa':
         statusColor = redcolor;
         statusIcon = Icons.cancel;
         break;
@@ -391,6 +542,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
         statusColor = Colors.grey;
         statusIcon = Icons.remove_circle_outline;
     }
+
+    final bool hasPlan = plan != '-' && plan.isNotEmpty;
+    final String displayStatus = _localizeStatus(status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -405,7 +559,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
           Icon(statusIcon, size: 14, color: statusColor),
           const SizedBox(width: 5),
           Text(
-            plan != '-' ? '$plan · $status' : 'Belum Berlangganan',
+            hasPlan ? '$plan · $displayStatus' : 'Belum Berlangganan',
             style: blackTextStyle.copyWith(
               fontSize: 11,
               fontWeight: semiBold,
@@ -415,5 +569,18 @@ class _MyLocationPageState extends State<MyLocationPage> {
         ],
       ),
     );
+  }
+
+  String _localizeStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'Aktif';
+      case 'expired':
+        return 'Kadaluarsa';
+      case 'inactive':
+        return 'Tidak Aktif';
+      default:
+        return status;
+    }
   }
 }

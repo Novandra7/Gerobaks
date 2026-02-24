@@ -125,9 +125,15 @@ class ApiRoutes {
   static const String chats = '/api/chats';
   static String chat(int id) => '/api/chats/$id';
 
-  // Address Routes
+  // Address Routes (admin/general)
   static const String addresses = '/api/addresses';
   static String address(int id) => '/api/addresses/$id';
+
+  // User Address Routes
+  static const String userAddresses = '/api/user/addresses';
+  static String userAddress(int id) => '/api/user/addresses/$id';
+  static String userAddressSetDefault(int id) =>
+      '/api/user/addresses/$id/set-default';
 
   // Balance Routes
   static const String balance = '/api/balance';
