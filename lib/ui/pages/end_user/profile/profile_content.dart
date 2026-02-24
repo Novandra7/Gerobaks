@@ -266,9 +266,7 @@ class _ProfileContentState extends State<ProfileContent>
                         decoration: BoxDecoration(
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: greenColor.withAlpha(128),
-                          ),
+                          border: Border.all(color: greenColor.withAlpha(128)),
                           boxShadow: [
                             BoxShadow(
                               color: greenColor.withAlpha(25),
@@ -337,6 +335,14 @@ class _ProfileContentState extends State<ProfileContent>
                         builder: (context) => const PointsHistoryPage(),
                       ),
                     );
+                  },
+                ),
+                ResponsiveAppMenu(
+                  iconURL: 'assets/ic_map_pin_line.png',
+                  title: 'Alamat Saya',
+                  isHighlighted: false,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/my-location');
                   },
                 ),
                 ResponsiveAppMenu(
