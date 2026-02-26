@@ -6,7 +6,9 @@ import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/payment_gateway_page.dart';
 
 class SubscriptionPlansPage extends StatefulWidget {
-  const SubscriptionPlansPage({super.key});
+  final void Function(SubscriptionPlan plan)? onPlanSelected;
+
+  const SubscriptionPlansPage({super.key, this.onPlanSelected});
 
   @override
   State<SubscriptionPlansPage> createState() => _SubscriptionPlansPageState();
@@ -50,11 +52,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: redcolor,
-                        ),
+                        Icon(Icons.error_outline, size: 64, color: redcolor),
                         const SizedBox(height: 16),
                         Text(
                           'Gagal memuat paket langganan',
@@ -107,26 +105,16 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            greenColor.withAlpha(25),
-            Colors.transparent,
-          ],
+          colors: [greenColor.withAlpha(25), Colors.transparent],
         ),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.star,
-            color: greenColor,
-            size: 48,
-          ),
+          Icon(Icons.star, color: greenColor, size: 48),
           const SizedBox(height: 12),
           Text(
             'Mulai Kelola Sampah\ndengan Mudah',
-            style: blackTextStyle.copyWith(
-              fontSize: 20,
-              fontWeight: bold,
-            ),
+            style: blackTextStyle.copyWith(fontSize: 20, fontWeight: bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -146,9 +134,7 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(16),
-        border: plan.isPopular 
-            ? Border.all(color: greenColor, width: 2)
-            : null,
+        border: plan.isPopular ? Border.all(color: greenColor, width: 2) : null,
         boxShadow: [
           BoxShadow(
             color: blackColor.withAlpha(26),
@@ -230,45 +216,51 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...plan.features.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: greenColor,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: greyTextStyle.copyWith(fontSize: 12),
+                ...plan.features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: greenColor, size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: greyTextStyle.copyWith(fontSize: 12),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PaymentGatewayPage(plan: plan),
-                        ),
-                      );
-                      
-                      // If payment successful, pop and return true to my_subscription
-                      if (result == true && mounted) {
-                        Navigator.pop(context, true);
+                      if (widget.onPlanSelected != null) {
+                        // Mode pilih: kembalikan plan ke pemanggil
+                        widget.onPlanSelected!(plan);
+                        Navigator.pop(context);
+                      } else {
+                        // Mode normal: lanjut ke pembayaran
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PaymentGatewayPage(plan: plan),
+                          ),
+                        );
+                        if (result == true && mounted) {
+                          Navigator.pop(context, true);
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: plan.isPopular ? greenColor : Colors.grey[600],
+                      backgroundColor: plan.isPopular
+                          ? greenColor
+                          : Colors.grey[600],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -290,7 +282,10 @@ class _SubscriptionPlansPageState extends State<SubscriptionPlansPage> {
               top: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: greenColor,
                   borderRadius: const BorderRadius.only(
