@@ -22,6 +22,30 @@ class SetDefaultAddress extends AddressEvent {
   List<Object?> get props => [addressId];
 }
 
+/// Create a new address
+class CreateAddress extends AddressEvent {
+  final String label;
+  final String address;
+  final String? addressText;
+  final String? latitude;
+  final String? longitude;
+  final bool isDefault;
+  final String? subscriptionPlanId;
+
+  const CreateAddress({
+    required this.label,
+    required this.address,
+    this.addressText,
+    this.latitude,
+    this.longitude,
+    this.isDefault = false,
+    this.subscriptionPlanId,
+  });
+
+  @override
+  List<Object?> get props => [label, address, addressText, latitude, longitude, isDefault, subscriptionPlanId];
+}
+
 /// Delete a specific address
 class DeleteAddress extends AddressEvent {
   final int addressId;
