@@ -11,6 +11,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
 
   AddressBloc() : super(AddressState.initial()) {
     on<FetchAddresses>(_onFetchAddresses);
+    on<CreateAddress>(_onCreateAddress);
     on<SetDefaultAddress>(_onSetDefaultAddress);
     on<DeleteAddress>(_onDeleteAddress);
   }
@@ -34,6 +35,53 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     } catch (e) {
       print('❌ AddressBloc: Failed to fetch addresses - $e');
       emit(AddressState.error(e.toString()));
+    }
+  }
+
+  Future<void> _onCreateAddress(
+    CreateAddress event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(AddressState.operating(state.addresses));
+    try {
+      print('📍 AddressBloc: Creating new address');
+      final response = await _api.postJson(ApiRoutes.userAddresses, {
+        'label': event.label,
+        'address': event.address,
+        'address_text': event.addressText,
+        'latitude': event.latitude,
+        'longitude': event.longitude,
+        'subscription_status': event.subscriptionPlanId != null ? 'pending' : null,
+        'is_default': event.isDefault,
+      });
+      print('✅ AddressBloc: Address created');
+
+      // Jika plan subscription dipilih, buat subscription setelah address dibuat
+      if (event.subscriptionPlanId != null) {
+        final addressId = response?['data']?['id']?.toString();
+        if (addressId != null) {
+          print('📋 AddressBloc: Creating subscription for address $addressId');
+          await _api.postJson(ApiRoutes.subscribe, {
+            'address_id': addressId,
+            'subscription_plan_id': event.subscriptionPlanId,
+            'auto_renew': true,
+          });
+          print('✅ AddressBloc: Subscription created');
+        }
+      }
+
+      emit(AddressState.operationSuccess(
+        state.addresses,
+        'Alamat berhasil ditambahkan',
+      ));
+      add(const FetchAddresses());
+    } catch (e) {
+      print('❌ AddressBloc: Failed to create address - $e');
+      emit(AddressState(
+        status: AddressStatus.error,
+        addresses: state.addresses,
+        errorMessage: e.toString(),
+      ));
     }
   }
 

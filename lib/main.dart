@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:bank_sha/shared/route_observer.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
+import 'package:bank_sha/ui/pages/end_user/location/add_location_page.dart';
 import 'package:bank_sha/ui/pages/end_user/location/my_location_page.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/about_us.dart';
 import 'package:bank_sha/ui/pages/end_user/profile/List/myprofile.dart';
@@ -349,6 +350,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/user-add-schedule': (context) => const CreateSchedulePage(),
           '/jadwal': (context) => const UserSchedulesPageNew(),
           '/my-location': (context) => const MyLocationPage(),
+          '/add-location': (context) => const AddLocationPage(),
           '/tracking': (context) => const TrackingPage(),
           '/wilayah': (context) => const WilayahPage(),
           '/mitra-wilayah': (context) => const MitraLokasiPage(),

@@ -122,7 +122,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.pushNamed(context, '/wilayah');
+          Navigator.pushNamed(context, '/add-location');
         },
         foregroundColor: yellowColor,
         backgroundColor: const Color(0xFF4CAF50),
@@ -348,10 +348,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
                                   SetDefaultAddress(loc.id),
                                 ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isUtama
-                                ? greenColor
-                                : Colors.grey[600],
+                            backgroundColor: greenColor.withAlpha(125),
                             disabledBackgroundColor: greenColor,
+
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -533,6 +532,11 @@ class _MyLocationPageState extends State<MyLocationPage> {
         statusColor = greenColor;
         statusIcon = Icons.check_circle;
         break;
+      case 'pending':
+      case 'menunggu pembayaran':
+        statusColor = orangeColor;
+        statusIcon = Icons.access_time_rounded;
+        break;
       case 'expired':
       case 'kadaluarsa':
         statusColor = redcolor;
@@ -544,7 +548,11 @@ class _MyLocationPageState extends State<MyLocationPage> {
     }
 
     final bool hasPlan = plan != '-' && plan.isNotEmpty;
+    final bool hasStatus = status.isNotEmpty;
     final String displayStatus = _localizeStatus(status);
+    final String badgeText = hasPlan
+        ? '$plan · $displayStatus'
+        : (hasStatus ? displayStatus : 'Belum Berlangganan');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -559,7 +567,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
           Icon(statusIcon, size: 14, color: statusColor),
           const SizedBox(width: 5),
           Text(
-            hasPlan ? '$plan · $displayStatus' : 'Belum Berlangganan',
+            badgeText,
             style: blackTextStyle.copyWith(
               fontSize: 11,
               fontWeight: semiBold,
@@ -575,6 +583,8 @@ class _MyLocationPageState extends State<MyLocationPage> {
     switch (status.toLowerCase()) {
       case 'active':
         return 'Aktif';
+      case 'pending':
+        return 'Menunggu Pembayaran';
       case 'expired':
         return 'Kadaluarsa';
       case 'inactive':
