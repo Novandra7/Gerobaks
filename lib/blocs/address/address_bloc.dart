@@ -12,6 +12,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
   AddressBloc() : super(AddressState.initial()) {
     on<FetchAddresses>(_onFetchAddresses);
     on<CreateAddress>(_onCreateAddress);
+    on<UpdateAddress>(_onUpdateAddress);
     on<SetDefaultAddress>(_onSetDefaultAddress);
     on<DeleteAddress>(_onDeleteAddress);
   }
@@ -85,6 +86,56 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     }
   }
 
+  Future<void> _onUpdateAddress(
+    UpdateAddress event,
+    Emitter<AddressState> emit,
+  ) async {
+    emit(AddressState.operating(state.addresses));
+    try {
+      print('📍 AddressBloc: Updating address ${event.addressId}');
+      await _api.patchJson(ApiRoutes.userAddress(event.addressId), {
+        'label': event.label,
+        'address': event.address,
+        'address_text': event.addressText,
+        'latitude': event.latitude,
+        'longitude': event.longitude,
+        'is_default': event.isDefault,
+        if (event.subscriptionPlanId != null) 'subscription_status': 'pending',
+      });
+      print('✅ AddressBloc: Address updated');
+
+      if (event.subscriptionPlanId != null) {
+        if (event.existingSubscriptionId != null) {
+          // Update existing subscription via PATCH
+          await _api.patchJson(
+            ApiRoutes.updateSubscription(event.existingSubscriptionId!),
+            {'subscription_plan_id': event.subscriptionPlanId},
+          );
+        } else {
+          // Create new subscription via POST
+          await _api.patchJson(ApiRoutes.subscribe, {
+            'address_id': event.addressId.toString(),
+            'subscription_plan_id': event.subscriptionPlanId,
+            'auto_renew': true,
+          });
+        }
+      }
+
+      emit(AddressState.operationSuccess(
+        state.addresses,
+        'Alamat berhasil diperbarui',
+      ));
+      add(const FetchAddresses());
+    } catch (e) {
+      print('❌ AddressBloc: Failed to update address - $e');
+      emit(AddressState(
+        status: AddressStatus.error,
+        addresses: state.addresses,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
   Future<void> _onSetDefaultAddress(
     SetDefaultAddress event,
     Emitter<AddressState> emit,
@@ -120,6 +171,20 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
   ) async {
     emit(AddressState.operating(state.addresses));
     try {
+      // Best-effort: cancel then delete the linked subscription before deleting the address
+      if (event.subscriptionId != null) {
+        try {
+          await _api.postJson(ApiRoutes.cancelSubscription(event.subscriptionId!), {});
+        } catch (_) {
+          // Ignore — subscription may already be pending/cancelled, proceed with delete
+        }
+        try {
+          await _api.delete(ApiRoutes.deleteSubscription(event.subscriptionId!));
+        } catch (_) {
+          // Ignore — proceed with address deletion regardless
+        }
+      }
+
       print('📍 AddressBloc: Deleting address ${event.addressId}');
       await _api.delete(ApiRoutes.userAddress(event.addressId));
       print('✅ AddressBloc: Address deleted');

@@ -105,6 +105,8 @@ class ApiRoutes {
   static const String currentSubscription = '/api/subscription/current';
   static const String subscribe = '/api/subscriptions';
   static const String subscriptionHistory = '/api/subscription/history';
+  static String updateSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId';
+  static String deleteSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId';
   static String cancelSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId/cancel';
   static String activateSubscription(String subscriptionId) => '/api/subscriptions/$subscriptionId/activate';
 

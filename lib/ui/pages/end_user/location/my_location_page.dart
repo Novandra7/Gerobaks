@@ -1,7 +1,11 @@
 import 'package:bank_sha/blocs/blocs.dart';
 import 'package:bank_sha/models/address_model.dart';
+import 'package:bank_sha/models/subscription_model.dart';
+import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/pages/end_user/location/edit_location_page.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
+import 'package:bank_sha/utils/api_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
@@ -14,10 +18,53 @@ class MyLocationPage extends StatefulWidget {
 }
 
 class _MyLocationPageState extends State<MyLocationPage> {
+  final Map<int, SubscriptionPlan?> _subscriptionCache = {};
+  final Map<int, String?> _subscriptionIdCache = {};
+  Future<void>? _prefetchFuture;
+
   @override
   void initState() {
     super.initState();
     context.read<AddressBloc>().add(const FetchAddresses());
+  }
+
+  Future<void> _prefetchSubscriptions(List<AddressModel> addresses) async {
+    await Future.wait(
+      addresses.map((addr) async {
+        if (_subscriptionCache.containsKey(addr.id)) return;
+        try {
+          final response = await ApiClient().getJson(
+            ApiRoutes.subscribe,
+            query: {'address_id': addr.id.toString()},
+          );
+          if (response == null) return;
+          final dynamic raw = response['data'];
+          List<dynamic> data;
+          if (raw is List) {
+            data = raw;
+          } else if (raw is Map && raw['subscriptions'] is List) {
+            data = raw['subscriptions'] as List<dynamic>;
+          } else if (raw is Map && raw['data'] is List) {
+            data = raw['data'] as List<dynamic>;
+          } else {
+            return;
+          }
+          if (data.isEmpty) return;
+          final sub = data.firstWhere(
+            (s) => ['active', 'pending'].contains(
+              s['status']?.toString().toLowerCase(),
+            ),
+            orElse: () => data.first,
+          );
+          final planJson = sub['subscription_plan'];
+          if (planJson == null || planJson is! Map) return;
+          _subscriptionCache[addr.id] = SubscriptionPlan.fromApiJson(
+            Map<String, dynamic>.from(planJson),
+          );
+          _subscriptionIdCache[addr.id] = sub['id']?.toString();
+        } catch (_) {}
+      }),
+    );
   }
 
   @override
@@ -28,6 +75,10 @@ class _MyLocationPageState extends State<MyLocationPage> {
       body: SafeArea(
         child: BlocConsumer<AddressBloc, AddressState>(
           listener: (context, state) {
+            if (state.status == AddressStatus.loaded &&
+                state.addresses.isNotEmpty) {
+              _prefetchFuture = _prefetchSubscriptions(state.addresses);
+            }
             if (state.status == AddressStatus.error &&
                 state.errorMessage != null) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -39,6 +90,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
             }
             if (state.status == AddressStatus.operationSuccess &&
                 state.successMessage != null) {
+              // Clear subscription cache so the next loaded state re-fetches fresh data
+              _subscriptionCache.clear();
+              _subscriptionIdCache.clear();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.successMessage!),
@@ -245,8 +299,23 @@ class _MyLocationPageState extends State<MyLocationPage> {
     final String plan = loc.subscriptionPlan ?? '-';
     final String status = loc.subscriptionStatus ?? '';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+    return GestureDetector(
+      onTap: () async {
+        await _prefetchFuture;
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditLocationPage(
+              address: loc,
+              initialPlan: _subscriptionCache[loc.id],
+              initialSubscriptionId: _subscriptionIdCache[loc.id],
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: whiteColor,
         borderRadius: BorderRadius.circular(16),
@@ -399,6 +468,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
             ),
         ],
       ),
+      ),
     );
   }
 
@@ -501,7 +571,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              context.read<AddressBloc>().add(DeleteAddress(loc.id));
+              context.read<AddressBloc>().add(
+                DeleteAddress(loc.id, subscriptionId: _subscriptionIdCache[loc.id]),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: redcolor,
