@@ -21,6 +21,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
   final Map<int, SubscriptionPlan?> _subscriptionCache = {};
   final Map<int, String?> _subscriptionIdCache = {};
   Future<void>? _prefetchFuture;
+  bool _isPrefetching = false;
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
   }
 
   Future<void> _prefetchSubscriptions(List<AddressModel> addresses) async {
+    if (mounted) setState(() => _isPrefetching = true);
     await Future.wait(
       addresses.map((addr) async {
         if (_subscriptionCache.containsKey(addr.id)) return;
@@ -51,9 +53,10 @@ class _MyLocationPageState extends State<MyLocationPage> {
           }
           if (data.isEmpty) return;
           final sub = data.firstWhere(
-            (s) => ['active', 'pending'].contains(
-              s['status']?.toString().toLowerCase(),
-            ),
+            (s) => [
+              'active',
+              'pending',
+            ].contains(s['status']?.toString().toLowerCase()),
             orElse: () => data.first,
           );
           final planJson = sub['subscription_plan'];
@@ -65,6 +68,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
         } catch (_) {}
       }),
     );
+    if (mounted) setState(() => _isPrefetching = false);
   }
 
   @override
@@ -102,7 +106,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
             }
           },
           builder: (context, state) {
-            if (state.status == AddressStatus.loading) {
+            if (state.status == AddressStatus.loading || _isPrefetching) {
               return _buildSkeletonList();
             }
 
@@ -296,7 +300,8 @@ class _MyLocationPageState extends State<MyLocationPage> {
 
   Widget _buildLocationCard(AddressModel loc) {
     final bool isUtama = loc.isDefault;
-    final String plan = loc.subscriptionPlan ?? '-';
+    final SubscriptionPlan? cachedPlan = _subscriptionCache[loc.id];
+    final String plan = cachedPlan?.name ?? loc.subscriptionPlan ?? '-';
     final String status = loc.subscriptionStatus ?? '';
 
     return GestureDetector(
@@ -316,158 +321,158 @@ class _MyLocationPageState extends State<MyLocationPage> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isUtama ? greenColor : Colors.transparent,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: blackColor.withAlpha(26),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+        decoration: BoxDecoration(
+          color: whiteColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isUtama ? greenColor : Colors.transparent,
+            width: 2,
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header: icon + label + alamat
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: greenColor.withAlpha(25),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        _iconForLabel(loc.label),
-                        color: greenColor,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            loc.label,
-                            style: blackTextStyle.copyWith(
-                              fontSize: 18,
-                              fontWeight: bold,
-                            ),
-                          ),
-                          Text(
-                            loc.address,
-                            style: greyTextStyle.copyWith(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Badge subscription
-                _buildSubscriptionBadge(plan, status),
-                const SizedBox(height: 20),
-
-                // Tombol Hapus & Gunakan
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 44,
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              _showDeleteConfirmation(context, loc),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: redcolor),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'Hapus',
-                            style: blackTextStyle.copyWith(
-                              fontSize: 13,
-                              fontWeight: semiBold,
-                              color: redcolor,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 44,
-                        child: ElevatedButton(
-                          onPressed: isUtama
-                              ? null
-                              : () => context.read<AddressBloc>().add(
-                                  SetDefaultAddress(loc.id),
-                                ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: greenColor.withAlpha(125),
-                            disabledBackgroundColor: greenColor,
-
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            isUtama ? 'Alamat Utama' : 'Gunakan',
-                            style: whiteTextStyle.copyWith(
-                              fontSize: 13,
-                              fontWeight: semiBold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: blackColor.withAlpha(26),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          ),
-
-          // Badge UTAMA di pojok kanan atas
-          if (isUtama)
-            Positioned(
-              top: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: greenColor,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(14),
-                    bottomLeft: Radius.circular(12),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header: icon + label + alamat
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: greenColor.withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _iconForLabel(loc.label),
+                          color: greenColor,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.label,
+                              style: blackTextStyle.copyWith(
+                                fontSize: 18,
+                                fontWeight: bold,
+                              ),
+                            ),
+                            Text(
+                              loc.address,
+                              style: greyTextStyle.copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                child: Text(
-                  'UTAMA',
-                  style: whiteTextStyle.copyWith(
-                    fontSize: 10,
-                    fontWeight: bold,
+                  const SizedBox(height: 12),
+
+                  // Badge subscription
+                  _buildSubscriptionBadge(plan, status),
+                  const SizedBox(height: 20),
+
+                  // Tombol Hapus & Gunakan
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 44,
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                _showDeleteConfirmation(context, loc),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: redcolor),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'Hapus',
+                              style: blackTextStyle.copyWith(
+                                fontSize: 13,
+                                fontWeight: semiBold,
+                                color: redcolor,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 44,
+                          child: ElevatedButton(
+                            onPressed: isUtama
+                                ? null
+                                : () => context.read<AddressBloc>().add(
+                                    SetDefaultAddress(loc.id),
+                                  ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: greenColor.withAlpha(125),
+                              disabledBackgroundColor: greenColor,
+
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              isUtama ? 'Alamat Utama' : 'Gunakan',
+                              style: whiteTextStyle.copyWith(
+                                fontSize: 13,
+                                fontWeight: semiBold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Badge UTAMA di pojok kanan atas
+            if (isUtama)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: greenColor,
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(14),
+                      bottomLeft: Radius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'UTAMA',
+                    style: whiteTextStyle.copyWith(
+                      fontSize: 10,
+                      fontWeight: bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -572,7 +577,10 @@ class _MyLocationPageState extends State<MyLocationPage> {
             onPressed: () {
               Navigator.pop(ctx);
               context.read<AddressBloc>().add(
-                DeleteAddress(loc.id, subscriptionId: _subscriptionIdCache[loc.id]),
+                DeleteAddress(
+                  loc.id,
+                  subscriptionId: _subscriptionIdCache[loc.id],
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
