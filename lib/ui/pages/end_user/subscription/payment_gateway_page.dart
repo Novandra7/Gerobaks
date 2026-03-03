@@ -9,11 +9,13 @@ import 'package:bank_sha/mixins/app_dialog_mixin.dart';
 class PaymentGatewayPage extends StatefulWidget {
   final SubscriptionPlan plan;
   final bool isFromSignup;
+  final String? subscriptionId;
 
   const PaymentGatewayPage({
     super.key,
     required this.plan,
     this.isFromSignup = false,
+    this.subscriptionId,
   });
 
   @override
@@ -66,10 +68,18 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
     showAppLoadingDialog(message: 'Memproses pembayaran Anda...');
 
     try {
-      final subscription = await _subscriptionService.subscribeToAPI(
-        widget.plan.id,
-        _selectedPaymentMethod!.id,
-      );
+      final UserSubscription subscription;
+      if (widget.subscriptionId != null) {
+        subscription = await _subscriptionService.activateSubscriptionAPI(
+          widget.subscriptionId!,
+          _selectedPaymentMethod!.name,
+        );
+      } else {
+        subscription = await _subscriptionService.subscribeToAPI(
+          widget.plan.id,
+          _selectedPaymentMethod!.id,
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
