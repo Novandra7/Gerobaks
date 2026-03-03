@@ -5,6 +5,7 @@ import 'package:bank_sha/models/subscription_model.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/subscription_plans_page.dart';
 import 'package:bank_sha/ui/pages/end_user/subscription/payment_gateway_page.dart';
+import 'package:bank_sha/ui/pages/end_user/location/add_location_page.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:intl/intl.dart';
 
@@ -161,10 +162,8 @@ class _MySubscriptionPageState extends State<MySubscriptionPage>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PaymentGatewayPage(
-          plan: plan,
-          subscriptionId: subscription.id,
-        ),
+        builder: (context) =>
+            PaymentGatewayPage(plan: plan, subscriptionId: subscription.id),
       ),
     ).then((_) {
       if (mounted) _refreshSubscriptions();
@@ -255,7 +254,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage>
         'icon': Icons.subscriptions_outlined,
         'title': 'Belum Ada Langganan Aktif',
         'subtitle':
-            'Berlangganan sekarang untuk menikmati layanan pengelolaan sampah.',
+            'Tambahkan lokasi terlebih dahulu untuk mulai berlangganan layanan pengelolaan sampah.',
         'showButton': true,
       },
       'pending': {
@@ -323,7 +322,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage>
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const SubscriptionPlansPage(),
+                        builder: (context) => const AddLocationPage(),
                       ),
                     );
                     if (mounted) await _refreshSubscriptions();
@@ -335,7 +334,7 @@ class _MySubscriptionPageState extends State<MySubscriptionPage>
                     ),
                   ),
                   child: Text(
-                    'Berlangganan Sekarang',
+                    'Tambah Lokasi',
                     style: whiteTextStyle.copyWith(
                       fontSize: 16,
                       fontWeight: semiBold,
