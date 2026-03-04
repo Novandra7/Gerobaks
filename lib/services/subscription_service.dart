@@ -210,6 +210,111 @@ class SubscriptionService {
     }
   }
 
+  Future<UserSubscription> activateSubscriptionAPI(
+    String subscriptionId,
+    String paymentMethodName,
+  ) async {
+    try {
+      final localStorage = await LocalStorageService.getInstance();
+      final token = await localStorage.getToken();
+
+      if (token == null) {
+        throw Exception('User belum login. Silakan login terlebih dahulu.');
+      }
+
+      final url =
+          '${ApiRoutes.baseUrl}${ApiRoutes.activateSubscription(subscriptionId)}';
+
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode({'payment_method': paymentMethodName}),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception('Request timeout. Silakan coba lagi.');
+            },
+          );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData['data'] == null) {
+          throw Exception('Response API tidak valid');
+        }
+
+        final subscription =
+            UserSubscription.fromApiJson(responseData['data']);
+
+        await _localStorage.saveSubscription(subscription.toJson());
+        _currentSubscription = subscription;
+        _subscriptionController.add(_currentSubscription);
+
+        await _syncUserSubscriptionStatus();
+
+        return subscription;
+      } else {
+        final errorData = json.decode(response.body);
+        final errorMessage =
+            errorData['message'] ?? 'Gagal mengaktifkan subscription';
+        throw Exception(errorMessage);
+      }
+    } on http.ClientException {
+      throw Exception(
+        'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.',
+      );
+    } on FormatException {
+      throw Exception('Response server tidak valid.');
+    } catch (e) {
+      if (e.toString().contains('Exception:')) {
+        rethrow;
+      }
+      throw Exception('Gagal mengaktifkan subscription: ${e.toString()}');
+    }
+  }
+
+  Future<List<UserSubscription>> getAllSubscriptionsFromAPI() async {
+    try {
+      final localStorage = await LocalStorageService.getInstance();
+      final token = await localStorage.getToken();
+
+      if (token == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final response = await http.get(
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscribe}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> subscriptionsData =
+            (data['data'] as Map<String, dynamic>?)?['subscriptions'] ?? [];
+
+        return subscriptionsData
+            .map(
+              (subscriptionData) =>
+                  UserSubscription.fromApiJson(subscriptionData),
+            )
+            .toList();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      return getSubscriptionHistory();
+    }
+  }
+
   Future<List<UserSubscription>> getSubscriptionHistoryFromAPI() async {
     try {
       final localStorage = await LocalStorageService.getInstance();
@@ -488,9 +593,7 @@ class SubscriptionService {
     return isActive;
   }
 
-  Future<void> cancelSubscription() async {
-    if (_currentSubscription == null) return;
-
+  Future<void> cancelSubscription(String subscriptionId) async {
     try {
       final token = await _localStorage.getToken();
 
@@ -499,7 +602,7 @@ class SubscriptionService {
       }
 
       final url =
-          '${ApiRoutes.baseUrl}${ApiRoutes.cancelSubscription(_currentSubscription!.id)}';
+          '${ApiRoutes.baseUrl}${ApiRoutes.cancelSubscription(subscriptionId)}';
 
       final response = await http.post(
         Uri.parse(url),
@@ -534,15 +637,15 @@ class SubscriptionService {
       throw Exception('Gagal membatalkan langganan: ${e.toString()}');
     }
 
-    final cancelledSubscription = _currentSubscription!.copyWith(
-      status: PaymentStatus.cancelled,
-    );
-
-    await _localStorage.saveSubscription(cancelledSubscription.toJson());
-    _currentSubscription = cancelledSubscription;
-    _subscriptionController.add(_currentSubscription);
-
-    await _syncUserSubscriptionStatus();
+    if (_currentSubscription?.id == subscriptionId) {
+      final cancelledSubscription = _currentSubscription!.copyWith(
+        status: PaymentStatus.cancelled,
+      );
+      await _localStorage.saveSubscription(cancelledSubscription.toJson());
+      _currentSubscription = cancelledSubscription;
+      _subscriptionController.add(_currentSubscription);
+      await _syncUserSubscriptionStatus();
+    }
   }
 
   Future<UserSubscription> extendSubscription(SubscriptionPlan plan) async {

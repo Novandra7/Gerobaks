@@ -662,7 +662,7 @@ class EndUserApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.addresses}'),
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.userAddresses}'),
         headers: headers,
       );
 
@@ -685,7 +685,7 @@ class EndUserApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.addresses}'),
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.userAddresses}'),
         headers: headers,
         body: json.encode(addressData),
       );
@@ -710,7 +710,7 @@ class EndUserApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.put(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.addresses}/$addressId'),
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.userAddresses}/$addressId'),
         headers: headers,
         body: json.encode(addressData),
       );
@@ -732,7 +732,7 @@ class EndUserApiService {
     try {
       final headers = await _getHeaders();
       final response = await http.delete(
-        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.addresses}/$addressId'),
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.userAddresses}/$addressId'),
         headers: headers,
       );
 
@@ -748,7 +748,7 @@ class EndUserApiService {
       final headers = await _getHeaders();
       final response = await http.put(
         Uri.parse(
-          '${ApiRoutes.baseUrl}${ApiRoutes.addresses}/$addressId/set-default',
+          '${ApiRoutes.baseUrl}${ApiRoutes.userAddresses}/$addressId/set-default',
         ),
         headers: headers,
       );
