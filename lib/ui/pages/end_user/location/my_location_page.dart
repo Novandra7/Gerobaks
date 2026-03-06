@@ -20,6 +20,7 @@ class MyLocationPage extends StatefulWidget {
 class _MyLocationPageState extends State<MyLocationPage> {
   final Map<int, SubscriptionPlan?> _subscriptionCache = {};
   final Map<int, String?> _subscriptionIdCache = {};
+  final Map<int, String?> _subscriptionStatusCache = {};
   Future<void>? _prefetchFuture;
   bool _isPrefetching = false;
 
@@ -65,6 +66,8 @@ class _MyLocationPageState extends State<MyLocationPage> {
             Map<String, dynamic>.from(planJson),
           );
           _subscriptionIdCache[addr.id] = sub['id']?.toString();
+          _subscriptionStatusCache[addr.id] =
+              sub['status']?.toString().toLowerCase();
         } catch (_) {}
       }),
     );
@@ -97,6 +100,7 @@ class _MyLocationPageState extends State<MyLocationPage> {
               // Clear subscription cache so the next loaded state re-fetches fresh data
               _subscriptionCache.clear();
               _subscriptionIdCache.clear();
+              _subscriptionStatusCache.clear();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.successMessage!),
@@ -303,6 +307,9 @@ class _MyLocationPageState extends State<MyLocationPage> {
     final SubscriptionPlan? cachedPlan = _subscriptionCache[loc.id];
     final String plan = cachedPlan?.name ?? loc.subscriptionPlan ?? '-';
     final String status = loc.subscriptionStatus ?? '';
+    final String effectiveStatus =
+        _subscriptionStatusCache[loc.id] ?? status;
+    final bool isActive = effectiveStatus.toLowerCase() == 'active';
 
     return GestureDetector(
       onTap: () async {
@@ -413,27 +420,39 @@ class _MyLocationPageState extends State<MyLocationPage> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: SizedBox(
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: isUtama
-                                ? null
-                                : () => context.read<AddressBloc>().add(
-                                    SetDefaultAddress(loc.id),
-                                  ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: greenColor.withAlpha(125),
-                              disabledBackgroundColor: greenColor,
-
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        child: GestureDetector(
+                          // Absorb tap so it doesn't bubble to card's GestureDetector
+                          // when the button is disabled due to non-active subscription
+                          onTap: (!isActive && !isUtama) ? () {} : null,
+                          child: SizedBox(
+                            height: 44,
+                            child: ElevatedButton(
+                              onPressed: isUtama
+                                  ? null
+                                  : (isActive
+                                      ? () => context.read<AddressBloc>().add(
+                                          SetDefaultAddress(loc.id),
+                                        )
+                                      : null),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isUtama
+                                    ? greenColor
+                                    : (isActive
+                                        ? greenColor.withAlpha(125)
+                                        : Colors.grey.withAlpha(100)),
+                                disabledBackgroundColor: isUtama
+                                    ? greenColor
+                                    : Colors.grey.shade300,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              isUtama ? 'Alamat Utama' : 'Gunakan',
-                              style: whiteTextStyle.copyWith(
-                                fontSize: 13,
-                                fontWeight: semiBold,
+                              child: Text(
+                                isUtama ? 'Alamat Utama' : 'Gunakan',
+                                style: whiteTextStyle.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: semiBold,
+                                ),
                               ),
                             ),
                           ),

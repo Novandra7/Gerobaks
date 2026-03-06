@@ -1,12 +1,17 @@
+import 'dart:io';
+
+import 'package:bank_sha/services/end_user_api_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/schedule_api_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/waste_schedule_service.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/ui/pages/end_user/location/my_location_page.dart';
 import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 
 // Subscription check implemented for additional waste feature
 
@@ -27,6 +32,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   final _scheduledWeightController =
       TextEditingController(); // Controller untuk perkiraan berat sampah terjadwal
 
+  // Image picker for waste photos
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<XFile> _wasteImages = [];
+
+  // Address label from active subscription
+  String _addressLabel = '';
+
   // Pickup time selection
   TimeOfDay _selectedPickupTime = const TimeOfDay(
     hour: 6,
@@ -35,6 +47,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   final _pickupTimeController = TextEditingController(text: '06:00');
 
   bool _isLoading = false;
+  bool _isSubmitting = false;
   String? _userId;
 
   // Dynamic waste schedule info
@@ -74,6 +87,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     _weightController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _scheduledWeightController.dispose();
     _pickupTimeController.dispose();
     // Dispose dynamic weight controllers
     for (var controller in _weightControllers.values) {
@@ -97,8 +111,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       final localStorage = await LocalStorageService.getInstance();
       final userData = await localStorage.getUserData();
 
-      print('📦 User data from localStorage: $userData');
-
       if (userData != null) {
         _userId = userData['id']?.toString() ?? '';
 
@@ -107,13 +119,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
         final phone = userData['phone'] ?? '';
         final address = userData['address'] ?? '';
 
-        print('👤 Name: $name');
-        print('📞 Phone: $phone');
-        print('📍 Address: $address');
-
         _nameController.text = name;
         _phoneController.text = phone;
-        _addressController.text = address;
+        // Load address from active subscription, fallback to profile address
+        await _loadActiveSubscriptionAddress(fallback: address);
       } else {
         print('⚠️ User data is NULL - user may not be logged in');
       }
@@ -178,6 +187,158 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     }
   }
 
+  Future<void> _loadActiveSubscriptionAddress({String fallback = ''}) async {
+    try {
+      final addr = await EndUserApiService().getActiveSubscriptionAddress();
+      if (addr != null) {
+        final addressText =
+            addr['address_text'] as String? ?? addr['address'] as String? ?? '';
+        final label = addr['label'] as String? ?? '';
+        if (mounted) {
+          _addressController.text = addressText.isNotEmpty
+              ? addressText
+              : fallback;
+          _addressLabel = label;
+        }
+        return;
+      }
+    } catch (e) {
+      print('Error loading subscription address: $e');
+    }
+    if (mounted) {
+      _addressController.text = fallback;
+    }
+  }
+
+  Future<void> _pickWasteImageFromCamera() async {
+    final image = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+    );
+    if (image != null && mounted) {
+      setState(() => _wasteImages.add(image));
+    }
+  }
+
+  Future<void> _pickWasteImageFromGallery() async {
+    final images = await _imagePicker.pickMultiImage(imageQuality: 80);
+    if (images.isNotEmpty && mounted) {
+      setState(() => _wasteImages.addAll(images));
+    }
+  }
+
+  void _showWasteTypeSelector() {
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: greyColor.withAlpha(77),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 4, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Jenis Sampah',
+                    style: blackTextStyle.copyWith(
+                      fontSize: 16,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      setState(() {});
+                    },
+                    child: Text(
+                      'Selesai',
+                      style: TextStyle(color: greenColor, fontWeight: semiBold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            ..._wasteTypes.map((type) {
+              final isSelected = _selectedWasteTypes.contains(type);
+              return ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 2,
+                ),
+                leading: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? greenColor.withAlpha(26)
+                        : greyColor.withAlpha(20),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getWasteTypeIcon(type),
+                    color: isSelected ? greenColor : greyColor,
+                    size: 18,
+                  ),
+                ),
+                title: Text(
+                  type,
+                  style: blackTextStyle.copyWith(
+                    fontSize: 14,
+                    fontWeight: isSelected ? semiBold : medium,
+                  ),
+                ),
+                trailing: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: isSelected
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          key: const ValueKey('checked'),
+                          color: greenColor,
+                          size: 22,
+                        )
+                      : Icon(
+                          Icons.circle_outlined,
+                          key: const ValueKey('unchecked'),
+                          color: greyColor.withAlpha(128),
+                          size: 22,
+                        ),
+                ),
+                onTap: () {
+                  setSheetState(() {
+                    if (isSelected) {
+                      _selectedWasteTypes.remove(type);
+                      _weightControllers[type]?.dispose();
+                      _weightControllers.remove(type);
+                    } else {
+                      _selectedWasteTypes.add(type);
+                      _weightControllers[type] = TextEditingController();
+                    }
+                  });
+                  setState(() {});
+                },
+              );
+            }),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _selectPickupTime() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -185,9 +346,28 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     );
 
     if (picked != null && picked != _selectedPickupTime) {
+      final totalMinutes = picked.hour * 60 + picked.minute;
+      final isValid = totalMinutes >= 6 * 60 && totalMinutes <= 8 * 60;
+
+      if (!isValid) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Waktu penjemputan hanya tersedia antara 06:00 – 08:00',
+              ),
+              backgroundColor: Colors.red.shade400,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+        return;
+      }
       setState(() {
         _selectedPickupTime = picked;
-        // Format to HH:mm
         final hour = picked.hour.toString().padLeft(2, '0');
         final minute = picked.minute.toString().padLeft(2, '0');
         _pickupTimeController.text = '$hour:$minute';
@@ -198,42 +378,11 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   Future<void> _submitSchedule() async {
     if (_formKey.currentState!.validate() && _userId != null) {
       setState(() {
-        _isLoading = true;
+        _isSubmitting = true;
       });
 
       try {
-        // Use new pickup-schedules API endpoint
         final scheduleApiService = ScheduleApiService();
-
-        // Determine schedule day - map day of week to Indonesian
-        final scheduledDate = DateTime.now().add(const Duration(days: 1));
-        final dayOfWeek = scheduledDate.weekday;
-        String scheduleDay;
-        switch (dayOfWeek) {
-          case DateTime.monday:
-            scheduleDay = 'senin';
-            break;
-          case DateTime.tuesday:
-            scheduleDay = 'selasa';
-            break;
-          case DateTime.wednesday:
-            scheduleDay = 'rabu';
-            break;
-          case DateTime.thursday:
-            scheduleDay = 'kamis';
-            break;
-          case DateTime.friday:
-            scheduleDay = 'jumat';
-            break;
-          case DateTime.saturday:
-            scheduleDay = 'sabtu';
-            break;
-          case DateTime.sunday:
-            scheduleDay = 'minggu';
-            break;
-          default:
-            scheduleDay = 'senin';
-        }
 
         // Prepare additional wastes array
         List<Map<String, dynamic>>? additionalWastes;
@@ -255,17 +404,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           }
         }
 
-        // Prepare notes
-        String finalNotes = _notesController.text;
-        if (_hasScheduledWaste) {
-          String scheduledWasteNote = 'Sampah sesuai jadwal: $_todayWasteType';
-          if (finalNotes.isNotEmpty) {
-            finalNotes = '$finalNotes\n\n$scheduledWasteNote';
-          } else {
-            finalNotes = scheduledWasteNote;
-          }
-        }
-
         // Parse scheduled weight
         double? scheduledWeight;
         if (_hasScheduledWaste && _scheduledWeightController.text.isNotEmpty) {
@@ -276,38 +414,19 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           }
         }
 
-        // Calculate end time (+2 hours from start)
-        final startHour = _selectedPickupTime.hour;
-        final startMinute = _selectedPickupTime.minute;
-        final endHour = (startHour + 2) % 24; // Add 2 hours, wrap at 24
-        final endMinute = startMinute;
-
-        final pickupTimeStart =
-            '${startHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')}';
-        final pickupTimeEnd =
-            '${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}';
-
-        // 🔍 DEBUG: Print what we're sending to backend
-        print('🕐 DEBUG CREATE SCHEDULE:');
-        print('   Schedule Day: $scheduleDay');
-        print('   Pickup Time Start: $pickupTimeStart');
-        print('   Pickup Time End: $pickupTimeEnd');
-        print(
-          '   Selected Time: ${_selectedPickupTime.hour}:${_selectedPickupTime.minute}',
-        );
-
-        // Call new API endpoint
+        // Call API endpoint
         final response = await scheduleApiService.createPickupSchedule(
-          scheduleDay: scheduleDay,
-          wasteTypeScheduled: _todayWasteType,
           isScheduledActive: _hasScheduledWaste,
-          pickupTimeStart: pickupTimeStart, // ✅ Use selected time!
-          pickupTimeEnd: pickupTimeEnd, // ✅ Auto +2 hours
           hasAdditionalWaste: _hasAdditionalWaste,
           additionalWastes: additionalWastes,
-          notes: finalNotes.isNotEmpty ? finalNotes : null,
-          scheduledWeight:
-              scheduledWeight, // Kirim perkiraan berat sampah terjadwal
+          notes: _notesController.text.isNotEmpty
+              ? _notesController.text
+              : null,
+          scheduledWeight: scheduledWeight,
+          pickupTimeStart: _pickupTimeController.text.isNotEmpty
+              ? _pickupTimeController.text
+              : null,
+          wasteImages: _wasteImages.isNotEmpty ? _wasteImages : null,
         );
 
         // Check if successful
@@ -342,7 +461,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
           }
         }
       } catch (e) {
-        print('Error creating pickup schedule: $e');
         if (mounted) {
           DialogHelper.showErrorDialog(
             context: context,
@@ -353,7 +471,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       } finally {
         if (mounted) {
           setState(() {
-            _isLoading = false;
+            _isSubmitting = false;
           });
         }
       }
@@ -397,8 +515,8 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                       color: whiteColor,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 5,
+                          color: Colors.black.withAlpha(26),
+                          blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -454,10 +572,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: greenColor.withOpacity(0.1),
+                              color: greenColor.withAlpha(26),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: greenColor.withOpacity(0.3),
+                                color: greenColor.withAlpha(77),
                                 width: 1.5,
                               ),
                             ),
@@ -483,7 +601,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: greenColor.withOpacity(0.2),
+                                    color: greenColor.withAlpha(51),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
@@ -501,7 +619,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   children: [
                                     Icon(
                                       Icons.info_outline,
-                                      color: greenColor.withOpacity(0.8),
+                                      color: greenColor.withAlpha(204),
                                       size: 18,
                                     ),
                                     const SizedBox(width: 8),
@@ -538,12 +656,12 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               color: whiteColor,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: greenColor.withOpacity(0.2),
+                                color: greenColor.withAlpha(51),
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: greenColor.withOpacity(0.1),
+                                  color: greenColor.withAlpha(26),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -558,7 +676,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: greenColor.withOpacity(0.1),
+                                        color: greenColor.withAlpha(26),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
@@ -581,7 +699,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                             ),
                                           ),
                                           Text(
-                                            'Data tetap dari profil Anda',
+                                            'Lokasi dari langganan aktif Anda',
                                             style: greyTextStyle.copyWith(
                                               fontSize: 12,
                                               fontWeight: regular,
@@ -595,6 +713,41 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
 
                                 const SizedBox(height: 16),
 
+                                // Address label chip
+                                if (_addressLabel.isNotEmpty)
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: greenColor.withAlpha(26),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: greenColor.withAlpha(77),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.label_outline,
+                                          color: greenColor,
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          _addressLabel,
+                                          style: greenTextStyle.copyWith(
+                                            fontSize: 12,
+                                            fontWeight: medium,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
                                 // Address display
                                 Container(
                                   width: double.infinity,
@@ -603,7 +756,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                     color: lightBackgroundColor,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: greyColor.withOpacity(0.2),
+                                      color: greyColor.withAlpha(51),
                                     ),
                                   ),
                                   child: Column(
@@ -718,15 +871,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(
-                                              0.1,
-                                            ),
+                                            color: Colors.orange.withAlpha(26),
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
                                             border: Border.all(
-                                              color: Colors.orange.withOpacity(
-                                                0.3,
+                                              color: Colors.orange.withAlpha(
+                                                77,
                                               ),
                                             ),
                                           ),
@@ -779,248 +930,42 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Section title - Scheduled Waste with Toggle
-                          Row(
-                            children: [
-                              Icon(
-                                _getWasteTypeIcon(_todayWasteType),
-                                color: greenColor,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Sampah $_todayWasteType',
-                                  style: blackTextStyle.copyWith(
-                                    fontSize: 18,
-                                    fontWeight: semiBold,
-                                  ),
-                                ),
-                              ),
-                              // Toggle Switch
-                              Transform.scale(
-                                scale: 0.8,
-                                child: Switch(
-                                  value: _hasScheduledWaste,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _hasScheduledWaste = value;
-                                    });
-                                  },
-                                  activeColor: greenColor,
-                                  activeTrackColor: greenColor.withOpacity(0.3),
-                                  inactiveThumbColor: greyColor,
-                                  inactiveTrackColor: greyColor.withOpacity(
-                                    0.3,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Conditional Scheduled Waste Form
-                          if (_hasScheduledWaste) ...[
-                            // Info Card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.blue.withOpacity(0.2),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: Colors.blue,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'Sampah ${_todayWasteType.toLowerCase()} sesuai jadwal hari ini',
-                                      style: TextStyle(
-                                        color: Colors.blue.withOpacity(0.8),
-                                        fontSize: 14,
-                                        fontWeight: medium,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Scheduled waste info display
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: whiteColor,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: greenColor.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: greenColor.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(
-                                      _getWasteTypeIcon(_todayWasteType),
-                                      color: greenColor,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Jenis Sampah: $_todayWasteType',
-                                          style: blackTextStyle.copyWith(
-                                            fontSize: 16,
-                                            fontWeight: semiBold,
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () async {
+                                        await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const MyLocationPage(),
                                           ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Pengambilan sesuai jadwal harian',
-                                          style: greyTextStyle.copyWith(
-                                            fontSize: 14,
-                                            fontWeight: medium,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Form input perkiraan berat sampah terjadwal
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Perkiraan Berat (kg)',
-                                  style: blackTextStyle.copyWith(
-                                    fontSize: 14,
-                                    fontWeight: semiBold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _scheduledWeightController,
-                                  keyboardType: TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Masukkan perkiraan berat sampah',
-                                    hintStyle: greyTextStyle.copyWith(
-                                      fontSize: 14,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.scale_outlined,
-                                      color: greenColor,
-                                      size: 20,
-                                    ),
-                                    suffixText: 'kg',
-                                    suffixStyle: blackTextStyle.copyWith(
-                                      fontSize: 14,
-                                      fontWeight: medium,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: greyColor.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: greyColor.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
+                                        );
+                                        await _loadActiveSubscriptionAddress(
+                                          fallback: _addressController.text,
+                                        );
+                                        if (mounted) setState(() {});
+                                      },
+                                      icon: Icon(
+                                        Icons.edit_location_alt_outlined,
                                         color: greenColor,
-                                        width: 2,
+                                        size: 18,
+                                      ),
+                                      label: Text(
+                                        'Ubah Alamat',
+                                        style: greenTextStyle.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: medium,
+                                        ),
                                       ),
                                     ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Masukkan perkiraan berat sampah';
-                                    }
-                                    final weight = double.tryParse(value);
-                                    if (weight == null || weight <= 0) {
-                                      return 'Masukkan berat yang valid';
-                                    }
-                                    return null;
-                                  },
+                                  ],
                                 ),
                               ],
                             ),
-                          ] else ...[
-                            // Inactive state info for scheduled waste
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: greyColor.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: greyColor.withOpacity(0.2),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    _getWasteTypeIcon(_todayWasteType),
-                                    color: greyColor.withOpacity(0.6),
-                                    size: 48,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'Tidak ada sampah ${_todayWasteType.toLowerCase()}',
-                                    style: greyTextStyle.copyWith(
-                                      fontSize: 16,
-                                      fontWeight: medium,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Aktifkan toggle untuk mengambil sampah ${_todayWasteType.toLowerCase()} sesuai jadwal',
-                                    style: greyTextStyle.copyWith(fontSize: 14),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
 
                           const SizedBox(height: 24),
 
@@ -1083,11 +1028,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                     });
                                   },
                                   activeColor: greenColor,
-                                  activeTrackColor: greenColor.withOpacity(0.3),
+                                  activeTrackColor: greenColor.withAlpha(77),
                                   inactiveThumbColor: greyColor,
-                                  inactiveTrackColor: greyColor.withOpacity(
-                                    0.3,
-                                  ),
+                                  inactiveTrackColor: greyColor.withAlpha(77),
                                 ),
                               ),
                             ],
@@ -1101,10 +1044,10 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: greenColor.withOpacity(0.05),
+                                color: greenColor.withAlpha(13),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: greenColor.withOpacity(0.2),
+                                  color: greenColor.withAlpha(51),
                                 ),
                               ),
                               child: Row(
@@ -1123,9 +1066,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                             text:
                                                 'Tambahkan sampah selain yang dijadwalkan hari ini',
                                             style: TextStyle(
-                                              color: greenColor.withOpacity(
-                                                0.8,
-                                              ),
+                                              color: greenColor.withAlpha(204),
                                               fontSize: 14,
                                               fontWeight: medium,
                                             ),
@@ -1144,164 +1085,101 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Multi-select dropdown field
-                                DropdownButtonFormField<String>(
-                                  value: null, // Always null for multi-select
-                                  isExpanded: true,
-                                  decoration: InputDecoration(
-                                    labelText: 'Jenis Sampah',
-                                    hintText: _selectedWasteTypes.isEmpty
-                                        ? 'Pilih jenis sampah (dapat memilih lebih dari 1)'
-                                        : '${_selectedWasteTypes.length} jenis sampah dipilih',
-                                    labelStyle: greyTextStyle.copyWith(
-                                      fontSize: 14,
-                                      fontWeight: medium,
-                                    ),
-                                    hintStyle: _selectedWasteTypes.isEmpty
-                                        ? greyTextStyle.copyWith(fontSize: 14)
-                                        : blackTextStyle.copyWith(
-                                            fontSize: 14,
-                                            fontWeight: medium,
+                                FormField<List<String>>(
+                                  autovalidateMode:
+                                      AutovalidateMode.onUserInteraction,
+                                  validator: (_) => _selectedWasteTypes.isEmpty
+                                      ? 'Pilih minimal satu jenis sampah'
+                                      : null,
+                                  builder: (field) => Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      InkWell(
+                                        onTap: _showWasteTypeSelector,
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
                                           ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: greyColor.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: greyColor.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: greenColor),
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.category_outlined,
-                                      color: greenColor,
-                                    ),
-                                  ),
-                                  style: blackTextStyle.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: medium,
-                                  ),
-                                  items: _wasteTypes.map((type) {
-                                    final isSelected = _selectedWasteTypes
-                                        .contains(type);
-                                    return DropdownMenuItem<String>(
-                                      value: type,
-                                      child: StatefulBuilder(
-                                        builder: (context, setMenuState) {
-                                          return InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                if (isSelected) {
-                                                  _selectedWasteTypes.remove(
-                                                    type,
-                                                  );
-                                                  // Remove and dispose controller for this type
-                                                  _weightControllers[type]
-                                                      ?.dispose();
-                                                  _weightControllers.remove(
-                                                    type,
-                                                  );
-                                                } else {
-                                                  _selectedWasteTypes.add(type);
-                                                  // Create new controller for this type
-                                                  _weightControllers[type] =
-                                                      TextEditingController();
-                                                }
-                                              });
-                                              setMenuState(
-                                                () {},
-                                              ); // Update checkbox state
-                                            },
-                                            child: Container(
-                                              width: double.infinity,
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 4,
-                                                  ),
-                                              child: Row(
-                                                children: [
-                                                  Checkbox(
-                                                    value: _selectedWasteTypes
-                                                        .contains(type),
-                                                    onChanged: (bool? value) {
-                                                      setState(() {
-                                                        if (value == true) {
-                                                          _selectedWasteTypes
-                                                              .add(type);
-                                                          // Create new controller for this type
-                                                          _weightControllers[type] =
-                                                              TextEditingController();
-                                                        } else {
-                                                          _selectedWasteTypes
-                                                              .remove(type);
-                                                          // Remove and dispose controller for this type
-                                                          _weightControllers[type]
-                                                              ?.dispose();
-                                                          _weightControllers
-                                                              .remove(type);
-                                                        }
-                                                      });
-                                                      setMenuState(
-                                                        () {},
-                                                      ); // Update checkbox state
-                                                    },
-                                                    activeColor: greenColor,
-                                                    materialTapTargetSize:
-                                                        MaterialTapTargetSize
-                                                            .shrinkWrap,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Icon(
-                                                    _getWasteTypeIcon(type),
-                                                    color:
-                                                        _selectedWasteTypes
-                                                            .contains(type)
-                                                        ? greenColor
-                                                        : greyColor,
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: Text(
-                                                      type,
-                                                      style: TextStyle(
-                                                        color:
-                                                            _selectedWasteTypes
-                                                                .contains(type)
-                                                            ? greenColor
-                                                            : blackColor,
-                                                        fontWeight:
-                                                            _selectedWasteTypes
-                                                                .contains(type)
-                                                            ? semiBold
-                                                            : medium,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: field.hasError
+                                                  ? Colors.red.shade400
+                                                  : _selectedWasteTypes
+                                                        .isNotEmpty
+                                                  ? greenColor
+                                                  : greyColor.withAlpha(77),
+                                              width:
+                                                  field.hasError ||
+                                                      _selectedWasteTypes
+                                                          .isNotEmpty
+                                                  ? 1.5
+                                                  : 1.0,
                                             ),
-                                          );
-                                        },
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.category_outlined,
+                                                color:
+                                                    _selectedWasteTypes
+                                                        .isNotEmpty
+                                                    ? greenColor
+                                                    : greyColor,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  _selectedWasteTypes.isEmpty
+                                                      ? 'Pilih jenis sampah'
+                                                      : '${_selectedWasteTypes.length} jenis dipilih',
+                                                  style:
+                                                      _selectedWasteTypes
+                                                          .isEmpty
+                                                      ? greyTextStyle.copyWith(
+                                                          fontSize: 14,
+                                                        )
+                                                      : blackTextStyle.copyWith(
+                                                          fontSize: 14,
+                                                          fontWeight: medium,
+                                                        ),
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons
+                                                    .keyboard_arrow_down_rounded,
+                                                color:
+                                                    _selectedWasteTypes
+                                                        .isNotEmpty
+                                                    ? greenColor
+                                                    : greyColor,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
-                                    );
-                                  }).toList(),
-                                  onChanged: (String? value) {
-                                    // This prevents the dropdown from closing when an item is selected
-                                    // The actual selection is handled in the onTap of each item
-                                  },
-                                  validator: (value) {
-                                    if (_selectedWasteTypes.isEmpty) {
-                                      return 'Pilih minimal satu jenis sampah';
-                                    }
-                                    return null;
-                                  },
+                                      if (field.hasError)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 6,
+                                            left: 12,
+                                          ),
+                                          child: Text(
+                                            field.errorText!,
+                                            style: TextStyle(
+                                              color: Colors.red.shade700,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
 
                                 const SizedBox(height: 12),
@@ -1482,17 +1360,17 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: greyColor.withOpacity(0.05),
+                                color: greyColor.withAlpha(13),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: greyColor.withOpacity(0.2),
+                                  color: greyColor.withAlpha(51),
                                 ),
                               ),
                               child: Column(
                                 children: [
                                   Icon(
                                     Icons.remove_circle_outline,
-                                    color: greyColor.withOpacity(0.6),
+                                    color: greyColor.withAlpha(153),
                                     size: 48,
                                   ),
                                   const SizedBox(height: 12),
@@ -1513,6 +1391,190 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                               ),
                             ),
                           ],
+
+                          const SizedBox(height: 24),
+
+                          // Section title - Foto Sampah
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_camera_outlined,
+                                color: greenColor,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Foto Sampah',
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 18,
+                                    fontWeight: semiBold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Photo picker container
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: whiteColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: greenColor.withAlpha(51),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: greenColor.withAlpha(26),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tambahkan foto sampah (opsional)',
+                                  style: greyTextStyle.copyWith(
+                                    fontSize: 13,
+                                    fontWeight: regular,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: _pickWasteImageFromCamera,
+                                        icon: Icon(
+                                          Icons.camera_alt_outlined,
+                                          color: greenColor,
+                                          size: 18,
+                                        ),
+                                        label: Text(
+                                          'Kamera',
+                                          style: greenTextStyle.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: medium,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(color: greenColor),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: _pickWasteImageFromGallery,
+                                        icon: Icon(
+                                          Icons.photo_library_outlined,
+                                          color: greenColor,
+                                          size: 18,
+                                        ),
+                                        label: Text(
+                                          'Galeri',
+                                          style: greenTextStyle.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: medium,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(color: greenColor),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_wasteImages.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 88,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _wasteImages.length,
+                                      itemBuilder: (context, index) {
+                                        return Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Container(
+                                              margin: const EdgeInsets.only(
+                                                right: 8,
+                                                top: 4,
+                                              ),
+                                              width: 80,
+                                              height: 80,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                image: DecorationImage(
+                                                  image: FileImage(
+                                                    File(
+                                                      _wasteImages[index].path,
+                                                    ),
+                                                  ),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 0,
+                                              right: 4,
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _wasteImages.removeAt(
+                                                      index,
+                                                    );
+                                                  });
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    2,
+                                                  ),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        color: Colors.red,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                  child: Icon(
+                                                    Icons.close,
+                                                    color: whiteColor,
+                                                    size: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
 
                           const SizedBox(height: 16),
 
@@ -1553,6 +1615,76 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                             maxLines: 3,
                           ),
 
+                          const SizedBox(height: 24),
+                          // Form input perkiraan berat sampah terjadwal
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Perkiraan Berat (kg)',
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: semiBold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _scheduledWeightController,
+                                keyboardType: TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Masukkan perkiraan berat sampah',
+                                  hintStyle: greyTextStyle.copyWith(
+                                    fontSize: 14,
+                                  ),
+                                  prefixIcon: Icon(
+                                    Icons.scale_outlined,
+                                    color: greenColor,
+                                    size: 20,
+                                  ),
+                                  suffixText: 'kg',
+                                  suffixStyle: blackTextStyle.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: medium,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: greyColor.withAlpha(77),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: greyColor.withAlpha(77),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: greenColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Masukkan perkiraan berat sampah';
+                                  }
+                                  final weight = double.tryParse(value);
+                                  if (weight == null || weight <= 0) {
+                                    return 'Masukkan berat yang valid';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 24),
 
                           // Waktu Penjemputan section
@@ -1756,9 +1888,9 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
               ],
 
               CustomFilledButton(
-                title: _getButtonTitle(),
+                title: 'Jadwalkan Penjemputan',
                 onPressed: _submitSchedule,
-                isLoading: _isLoading,
+                isLoading: _isSubmitting,
               ),
             ],
           ),
@@ -1796,15 +1928,6 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
       default:
         return Icons.delete_outline;
     }
-  }
-
-  // Helper method to get button title based on selected options
-  String _getButtonTitle() {
-    if (!_hasScheduledWaste && !_hasAdditionalWaste) {
-      return 'Pilih Jenis Sampah';
-    }
-
-    return 'Buat Jadwal';
   }
 
   // Show subscription dialog when additional waste is requested without subscription

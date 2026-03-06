@@ -1,6 +1,7 @@
 import 'package:bank_sha/models/schedule_api_model.dart';
 import 'package:bank_sha/services/api_client.dart';
 import 'package:bank_sha/utils/api_routes.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ScheduleApiService {
   ScheduleApiService._internal();
@@ -122,38 +123,44 @@ class ScheduleApiService {
 
   // Pickup Schedule Methods - New API endpoint
   Future<Map<String, dynamic>> createPickupSchedule({
-    required String scheduleDay,
-    required String wasteTypeScheduled,
     required bool isScheduledActive,
-    required String pickupTimeStart,
-    required String pickupTimeEnd,
     required bool hasAdditionalWaste,
     List<Map<String, dynamic>>? additionalWastes,
     String? notes,
-    double? scheduledWeight, // Perkiraan berat sampah terjadwal
+    double? scheduledWeight,
+    String? pickupTimeStart,
+    List<XFile>? wasteImages,
   }) async {
-    final body = <String, dynamic>{
-      'schedule_day': scheduleDay,
-      'waste_type_scheduled': wasteTypeScheduled,
-      'is_scheduled_active': isScheduledActive,
-      'pickup_time_start': pickupTimeStart,
-      'pickup_time_end': pickupTimeEnd,
-      'has_additional_waste': hasAdditionalWaste,
-      if (additionalWastes != null && additionalWastes.isNotEmpty)
-        'additional_wastes': additionalWastes,
+    final fields = <String, dynamic>{
+      'is_scheduled_active': isScheduledActive ? '1' : '0',
+      'has_additional_waste': hasAdditionalWaste ? '1' : '0',
       if (notes != null && notes.isNotEmpty) 'notes': notes,
       if (scheduledWeight != null && scheduledWeight > 0)
-        'scheduled_weight': scheduledWeight,
+        'scheduled_weight': scheduledWeight.toString(),
+      if (pickupTimeStart != null && pickupTimeStart.isNotEmpty)
+        'pickup_time_start': pickupTimeStart,
     };
 
-    // 🔍 DEBUG: Print API request body
-    print('📤 API REQUEST TO BACKEND:');
-    print('   Endpoint: ${ApiRoutes.pickupSchedules}');
-    print('   Body: $body');
-    print('   pickup_time_start value: "$pickupTimeStart"');
-    print('   pickup_time_end value: "$pickupTimeEnd"');
+    // Expand additional_wastes as indexed form-data fields (Laravel convention)
+    if (additionalWastes != null && additionalWastes.isNotEmpty) {
+      for (int i = 0; i < additionalWastes.length; i++) {
+        fields['additional_wastes[$i][type]'] = additionalWastes[i]['type']
+            .toString();
+        fields['additional_wastes[$i][estimated_weight]'] =
+            additionalWastes[i]['estimated_weight'].toString();
+      }
+    }
 
-    final json = await _api.postJson(ApiRoutes.pickupSchedules, body);
+    final files = <String, dynamic>{};
+    if (wasteImages != null && wasteImages.isNotEmpty) {
+      files['waste_image'] = wasteImages.first;
+    }
+
+    final json = await _api.postMultipart(
+      ApiRoutes.pickupSchedules,
+      fields: fields,
+      files: files.isNotEmpty ? files : null,
+    );
     if (json is Map<String, dynamic>) {
       return json;
     }

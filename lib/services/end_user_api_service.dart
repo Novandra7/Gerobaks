@@ -658,6 +658,62 @@ class EndUserApiService {
   }
 
   // Address API
+
+  /// Returns the address associated with the user's currently active subscription.
+  /// Falls back to null if no active subscription or address is found.
+  Future<Map<String, dynamic>?> getActiveSubscriptionAddress() async {
+    try {
+      final headers = await _getHeaders();
+
+      // Fetch all subscriptions to find the active one
+      final subsResponse = await http.get(
+        Uri.parse('${ApiRoutes.baseUrl}${ApiRoutes.subscribe}'),
+        headers: headers,
+      );
+
+      if (subsResponse.statusCode == 200) {
+        final subsData = json.decode(subsResponse.body);
+        final List<dynamic> subsRaw =
+            (subsData['data'] as Map<String, dynamic>?)?['subscriptions'] ??
+            subsData['data'] ??
+            [];
+
+        Map<String, dynamic>? activeSub;
+        for (final s in subsRaw) {
+          if (s['status']?.toString().toLowerCase() == 'active') {
+            activeSub = Map<String, dynamic>.from(s as Map);
+            break;
+          }
+        }
+
+        if (activeSub == null) return null;
+
+        // Check for embedded address data first
+        final embedded =
+            activeSub['address'] ?? activeSub['user_address'];
+        if (embedded is Map) {
+          return Map<String, dynamic>.from(embedded);
+        }
+
+        // Otherwise look up address by address_id
+        final addressId =
+            activeSub['address_id'] ?? activeSub['user_address_id'];
+        if (addressId != null) {
+          final addresses = await getUserAddresses();
+          for (final addr in addresses) {
+            if (addr['id']?.toString() == addressId.toString()) {
+              return addr;
+            }
+          }
+        }
+      }
+      return null;
+    } catch (e) {
+      _logger.e('Error getting active subscription address: $e');
+      return null;
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getUserAddresses() async {
     try {
       final headers = await _getHeaders();

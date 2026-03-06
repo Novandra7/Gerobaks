@@ -18,7 +18,7 @@ class _AddLocationPageState extends State<AddLocationPage> {
   final _formKey = GlobalKey<FormState>();
   final _labelController = TextEditingController();
   final _addressController = TextEditingController();
-  bool _isDefault = false;
+
   double? _latitude;
   double? _longitude;
   String? _mapAddress;
@@ -69,7 +69,7 @@ class _AddLocationPageState extends State<AddLocationPage> {
         addressText: _addressController.text.trim(),
         latitude: _latitude.toString(),
         longitude: _longitude.toString(),
-        isDefault: _isDefault,
+        isDefault: false,
         subscriptionPlanId: _selectedPlan?.id,
       ),
     );
@@ -480,71 +480,6 @@ class _AddLocationPageState extends State<AddLocationPage> {
                     color: greyColor.withAlpha(77),
                     thickness: 1,
                     height: 1,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Toggle Default Address
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: whiteColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: greyColor.withAlpha(51)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: blackColor.withAlpha(10),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: _isDefault
-                                ? greenColor.withAlpha(25)
-                                : lightBackgroundColor,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(
-                            _isDefault
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            color: _isDefault ? greenColor : greyColor,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Jadikan Alamat Utama',
-                                style: blackTextStyle.copyWith(
-                                  fontSize: 14,
-                                  fontWeight: medium,
-                                ),
-                              ),
-                              Text(
-                                'Alamat ini akan digunakan sebagai default',
-                                style: greyTextStyle.copyWith(fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch.adaptive(
-                          value: _isDefault,
-                          onChanged: (val) => setState(() => _isDefault = val),
-                          activeThumbColor: greenColor,
-                        ),
-                      ],
-                    ),
                   ),
                   const SizedBox(height: 32),
 
