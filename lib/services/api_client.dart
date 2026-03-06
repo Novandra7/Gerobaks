@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bank_sha/utils/api_routes.dart';
 import 'package:bank_sha/utils/app_config.dart';
@@ -294,6 +295,10 @@ class ApiClient {
         for (var entry in files.entries) {
           final file = entry.value;
           if (file is File) {
+            request.files.add(
+              await http.MultipartFile.fromPath(entry.key, file.path),
+            );
+          } else if (file is XFile) {
             request.files.add(
               await http.MultipartFile.fromPath(entry.key, file.path),
             );
