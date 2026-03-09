@@ -126,16 +126,6 @@ class _HomePageState extends State<HomePage> {
           final oldStatus = cachedSchedule['status'];
 
           if (oldStatus != newStatus) {
-            if (_debugMode) {
-              print('');
-              print('🔔 [Global Polling] STATUS CHANGE DETECTED!');
-              print('   Schedule ID: $scheduleId');
-              print('   Old Status: $oldStatus');
-              print('   New Status: $newStatus');
-              print('   Current Page: ${_getCurrentPageName()}');
-              print('');
-            }
-
             // Show popup notification
             _showScheduleStatusPopup(oldStatus, newStatus, newSchedule);
           }
@@ -144,13 +134,6 @@ class _HomePageState extends State<HomePage> {
 
       // Update cache
       _cachedSchedules = schedules;
-
-      // Refresh activity page if user is on it
-      if (_currentIndex == 1) {
-        setState(() {
-          _activityPageKey++;
-        });
-      }
     } catch (e) {
       if (_debugMode) {
         print('❌ [Global Polling] Error: $e');
