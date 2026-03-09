@@ -295,12 +295,9 @@ class _HomePageState extends State<HomePage> {
         currentIndex: _currentIndex,
         onTabTapped: _onTabTapped,
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: _buildPages()[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _buildPages(),
       ),
     );
   }
