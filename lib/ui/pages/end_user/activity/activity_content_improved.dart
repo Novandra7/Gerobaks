@@ -1,18 +1,15 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:bank_sha/models/activity_model_improved.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/activity_item_improved.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:bank_sha/services/end_user_api_service.dart';
-import 'package:bank_sha/services/in_app_notification_service.dart';
 
 class ActivityContentImproved extends StatefulWidget {
   final DateTime? selectedDate;
   final bool showActive;
   final String? filterCategory;
   final String? searchQuery;
-  final Future<void> Function()? onRefresh;
 
   const ActivityContentImproved({
     super.key,
@@ -20,7 +17,6 @@ class ActivityContentImproved extends StatefulWidget {
     required this.showActive,
     this.filterCategory,
     this.searchQuery,
-    this.onRefresh,
   });
 
   @override
@@ -30,13 +26,9 @@ class ActivityContentImproved extends StatefulWidget {
 
 class _ActivityContentImprovedState extends State<ActivityContentImproved> {
   bool _isLoading = true;
+  bool _isFirstLoad = true;
   List<Map<String, dynamic>> _schedules = [];
   late EndUserApiService _apiService;
-  Timer? _refreshTimer;
-  bool _isRefreshing = false;
-
-  // Debug mode - Set true untuk lihat log polling
-  static const bool _debugMode = true;
 
   @override
   void initState() {
@@ -44,213 +36,18 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
     _initializeServices();
   }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
   Future<void> _initializeServices() async {
     _apiService = EndUserApiService();
     await _apiService.initialize();
     await _loadSchedules();
-
-    // Start auto-refresh timer (setiap 10 detik) untuk detect status changes
-    _startAutoRefresh();
-  }
-
-  void _startAutoRefresh() {
-    _refreshTimer?.cancel();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (mounted && !_isRefreshing && widget.showActive) {
-        // Only auto-refresh if on "Aktif" tab
-        _refreshSchedulesInBackground();
-      }
-    });
-  }
-
-  Future<void> _refreshSchedulesInBackground() async {
-    if (_isRefreshing) return;
-
-    _isRefreshing = true;
-    try {
-      if (_debugMode) print('🔄 [Polling] Checking for schedule updates...');
-
-      final schedules = await _apiService.getUserPickupSchedules();
-
-      if (_debugMode) {
-        print('📦 [Polling] Got ${schedules.length} schedules from API');
-      }
-
-      if (mounted) {
-        // Check if there are any status changes
-        bool hasChanges = false;
-        if (_schedules.length != schedules.length) {
-          hasChanges = true;
-          if (_debugMode) {
-            print(
-              '📊 [Polling] Schedule count changed: ${_schedules.length} → ${schedules.length}',
-            );
-          }
-        } else {
-          for (int i = 0; i < schedules.length; i++) {
-            final oldSchedule = _schedules.firstWhere(
-              (s) => s['id'] == schedules[i]['id'],
-              orElse: () => {},
-            );
-
-            if (oldSchedule.isNotEmpty &&
-                oldSchedule['status'] != schedules[i]['status']) {
-              hasChanges = true;
-
-              if (_debugMode) {
-                print('');
-                print('🔔 [Status Change Detected!]');
-                print('   Schedule ID: ${schedules[i]['id']}');
-                print('   Old Status: ${oldSchedule['status']}');
-                print('   New Status: ${schedules[i]['status']}');
-                print('   Address: ${schedules[i]['pickup_address']}');
-                print('   Day: ${schedules[i]['schedule_day']}');
-                print('   Time: ${schedules[i]['pickup_time_start']}');
-                print('');
-              }
-
-              // Show notification for status change
-              final oldStatus = oldSchedule['status'];
-              final newStatus = schedules[i]['status'];
-              final address = schedules[i]['pickup_address'] ?? 'lokasi Anda';
-              final scheduleDay = schedules[i]['schedule_day'] ?? '';
-              final pickupTime = schedules[i]['pickup_time_start'] ?? '';
-
-              if (oldStatus == 'pending' && newStatus == 'accepted') {
-                if (_debugMode) print('✅ Showing "Jadwal Diterima" banner...');
-                InAppNotificationService.show(
-                  context: context,
-                  title: 'Jadwal Diterima! 🎉',
-                  message: 'Mitra telah menerima jadwal penjemputan Anda',
-                  subtitle: '$scheduleDay • $pickupTime',
-                  type: InAppNotificationType.success,
-                  duration: const Duration(seconds: 5),
-                );
-              } else if ((oldStatus == 'pending' || oldStatus == 'accepted') &&
-                  (newStatus == 'in_progress' || newStatus == 'on_the_way')) {
-                if (_debugMode)
-                  print('🚛 Showing "Mitra On The Way" banner...');
-                InAppNotificationService.show(
-                  context: context,
-                  title: 'Mitra Dalam Perjalanan 🚛',
-                  message: 'Mitra sedang menuju ke $address',
-                  subtitle: '$scheduleDay • $pickupTime',
-                  type: InAppNotificationType.info,
-                  duration: const Duration(seconds: 5),
-                );
-              } else if (newStatus == 'arrived') {
-                if (_debugMode) print('📍 Showing "Mitra Arrived" banner...');
-                InAppNotificationService.show(
-                  context: context,
-                  title: 'Mitra Sudah Tiba! 📍',
-                  message: 'Mitra sudah sampai di lokasi penjemputan',
-                  subtitle: '$scheduleDay • $pickupTime',
-                  type: InAppNotificationType.warning,
-                  duration: const Duration(seconds: 5),
-                );
-              } else if (newStatus == 'completed') {
-                if (_debugMode) print('✅ Showing "Pickup Completed" banner...');
-                final totalWeight = schedules[i]['total_weight_kg'];
-                final points = schedules[i]['total_points'];
-                final subtitle = totalWeight != null && points != null
-                    ? '$totalWeight kg • +$points poin'
-                    : '$scheduleDay • $pickupTime';
-                InAppNotificationService.show(
-                  context: context,
-                  title: 'Penjemputan Selesai! ✅',
-                  message: 'Terima kasih telah menggunakan layanan kami',
-                  subtitle: subtitle,
-                  type: InAppNotificationType.completed,
-                  duration: const Duration(seconds: 5),
-                );
-              }
-            }
-          }
-        }
-
-        if (hasChanges) {
-          if (_debugMode) print('♻️ [Polling] Updating UI with new data...');
-          setState(() {
-            _schedules = schedules;
-          });
-        } else {
-          if (_debugMode) print('⏹️ [Polling] No changes detected');
-        }
-      }
-    } catch (e) {
-      if (_debugMode) print('❌ [Polling Error] $e');
-    } finally {
-      _isRefreshing = false;
-    }
-  }
-
-  void _showStatusChangeNotificationWithDetails(
-    String message,
-    Color color,
-    String scheduleDay,
-    String pickupTime, {
-    String? extraInfo,
-  }) {
-    if (!mounted) return;
-
-    // Tentukan tipe notifikasi berdasarkan message
-    InAppNotificationType type;
-    String title;
-    String body;
-    String? subtitle;
-
-    if (message.contains('diterima oleh mitra')) {
-      type = InAppNotificationType.success;
-      title = 'Jadwal Diterima! 🎉';
-      body = 'Mitra telah menerima jadwal penjemputan Anda';
-      subtitle = '$scheduleDay • $pickupTime';
-    } else if (message.contains('menuju ke')) {
-      type = InAppNotificationType.info;
-      title = 'Mitra Dalam Perjalanan 🚛';
-      body = message.replaceAll('🚛 ', '');
-      subtitle = '$scheduleDay • $pickupTime';
-    } else if (message.contains('sudah tiba')) {
-      type = InAppNotificationType.warning;
-      title = 'Mitra Sudah Tiba! 📍';
-      body = 'Mitra sudah sampai di lokasi penjemputan';
-      subtitle = '$scheduleDay • $pickupTime';
-    } else if (message.contains('Pengambilan sampah selesai')) {
-      type = InAppNotificationType.completed;
-      title = 'Penjemputan Selesai! ✅';
-      body = 'Terima kasih telah menggunakan layanan kami';
-      subtitle = extraInfo ?? '$scheduleDay • $pickupTime';
-    } else {
-      type = InAppNotificationType.info;
-      title = 'Notifikasi';
-      body = message;
-      subtitle = '$scheduleDay • $pickupTime';
-    }
-
-    // Tampilkan in-app notification banner
-    InAppNotificationService.show(
-      context: context,
-      title: title,
-      message: body,
-      subtitle: subtitle,
-      type: type,
-      duration: const Duration(seconds: 5),
-      onTap: () {
-        // Refresh list saat di-tap
-        _loadSchedules();
-      },
-    );
   }
 
   Future<void> _loadSchedules() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (_isFirstLoad) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       print('🔄 Loading schedules from pickup-schedules endpoint...');
@@ -258,13 +55,13 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
       print('   - Date Filter: ${widget.selectedDate}');
       print('   - Category Filter: ${widget.filterCategory}');
 
-      // Use pickup-schedules as primary endpoint (already working and tested!)
       final schedules = await _apiService.getUserPickupSchedules();
 
       if (mounted) {
         setState(() {
           _schedules = schedules;
           _isLoading = false;
+          _isFirstLoad = false;
         });
 
         print('✅ Loaded ${_schedules.length} schedules successfully');
@@ -275,20 +72,9 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
         setState(() {
           _schedules = [];
           _isLoading = false;
+          _isFirstLoad = false;
         });
       }
-    }
-  }
-
-  @override
-  void didUpdateWidget(ActivityContentImproved oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // When filters change, reload data
-    if (oldWidget.selectedDate != widget.selectedDate ||
-        oldWidget.filterCategory != widget.filterCategory ||
-        oldWidget.showActive != widget.showActive ||
-        oldWidget.searchQuery != widget.searchQuery) {
-      _loadSchedules();
     }
   }
 
@@ -359,10 +145,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
           );
         }
       } catch (e) {
-        // Log error dengan detail
-        print('❌ ERROR parsing schedule datetime: $e');
-        print('   Schedule data: $schedule');
-
         // Re-throw exception agar developer tahu ada masalah
         rethrow;
       }
@@ -374,9 +156,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
 
       if (schedule['actual_weights'] != null &&
           schedule['status'] == 'completed') {
-        print('🔍 Parsing completed schedule #${schedule['id']}');
         final weights = schedule['actual_weights'];
-        print('   📦 Actual weights: $weights');
         trashDetails = [];
         int calculatedWeight = 0;
         int calculatedPoints = 0;
@@ -395,8 +175,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
             calculatedWeight += weightValue;
             calculatedPoints += points;
 
-            print('   ✅ $type: ${weightValue}kg = $points poin');
-
             trashDetails!.add(
               TrashDetail(
                 type: type.toString(),
@@ -410,9 +188,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
 
         totalWeight = calculatedWeight;
         totalPoints = calculatedPoints;
-        print(
-          '   📊 Total: ${totalWeight}kg, $totalPoints poin, ${trashDetails.length} jenis',
-        );
       }
 
       // Parse pickup_photos jika ada
@@ -586,66 +361,21 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
       return _buildEmptyState();
     }
 
-    return Stack(
-      children: [
-        RefreshIndicator(
-          onRefresh: widget.onRefresh ?? _loadSchedules,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            itemCount: filteredActivities.length,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                child: ActivityItemImproved(
-                  activity: filteredActivities[index],
-                ),
-              );
-            },
-          ),
-        ),
-        // Auto-refresh indicator
-        if (_isRefreshing && widget.showActive)
-          Positioned(
-            top: 8,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Checking updates...',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+    return RefreshIndicator(
+      onRefresh: _loadSchedules,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        itemCount: filteredActivities.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: ActivityItemImproved(
+              activity: filteredActivities[index],
+              onCancelled: _loadSchedules,
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:bank_sha/models/activity_model_improved.dart';
 import 'package:bank_sha/ui/widgets/modals/activity_detail_modal.dart';
 
-void showActivityDetailModal(BuildContext context, ActivityModel activity) {
+void showActivityDetailModal(
+  BuildContext context,
+  ActivityModel activity, {
+  VoidCallback? onCancelled,
+}) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -23,7 +27,10 @@ void showActivityDetailModal(BuildContext context, ActivityModel activity) {
           opacity: 1.0,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          child: ActivityDetailModal(activity: activity),
+          child: ActivityDetailModal(
+            activity: activity,
+            onCancelled: onCancelled,
+          ),
         ),
       );
     },

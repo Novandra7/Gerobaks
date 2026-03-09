@@ -5,8 +5,13 @@ import 'package:flutter/material.dart';
 
 class ActivityItemImproved extends StatelessWidget {
   final ActivityModel activity;
+  final VoidCallback? onCancelled;
 
-  const ActivityItemImproved({super.key, required this.activity});
+  const ActivityItemImproved({
+    super.key,
+    required this.activity,
+    this.onCancelled,
+  });
 
   Color getStatusColor() {
     switch (activity.status.toLowerCase()) {
@@ -48,7 +53,7 @@ class ActivityItemImproved extends StatelessWidget {
     final statusColor = getStatusColor();
 
     return GestureDetector(
-      onTap: () => showActivityDetailModal(context, activity),
+      onTap: () => showActivityDetailModal(context, activity, onCancelled: onCancelled),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -204,7 +209,7 @@ class ActivityItemImproved extends StatelessWidget {
                       const Spacer(),
                       TextButton(
                         onPressed: () =>
-                            showActivityDetailModal(context, activity),
+                            showActivityDetailModal(context, activity, onCancelled: onCancelled),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
