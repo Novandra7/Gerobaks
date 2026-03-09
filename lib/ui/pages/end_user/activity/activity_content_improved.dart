@@ -24,7 +24,11 @@ class ActivityContentImproved extends StatefulWidget {
       _ActivityContentImprovedState();
 }
 
-class _ActivityContentImprovedState extends State<ActivityContentImproved> {
+class _ActivityContentImprovedState extends State<ActivityContentImproved>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool _isLoading = true;
   bool _isFirstLoad = true;
   List<Map<String, dynamic>> _schedules = [];
@@ -351,6 +355,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     if (_isLoading) {
       return _buildSkeletonLoading();
     }

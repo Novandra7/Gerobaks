@@ -13,7 +13,10 @@ class ActivityPageImproved extends StatefulWidget {
 }
 
 class _ActivityPageImprovedState extends State<ActivityPageImproved>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late TabController _tabController;
   DateTime? selectedDate;
   String currentFilter = 'Semua';
@@ -177,6 +180,7 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // required by AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: uicolor,
       appBar: CustomAppHeaderImproved(
