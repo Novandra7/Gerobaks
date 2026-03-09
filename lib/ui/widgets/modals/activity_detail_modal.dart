@@ -3,12 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:bank_sha/models/activity_model_improved.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/ui/widgets/shared/dialog_helper.dart';
-import 'package:bank_sha/ui/widgets/shared/reschedule_dialog.dart';
+import 'package:bank_sha/services/end_user_api_service.dart';
 
 class ActivityDetailModal extends StatelessWidget {
   final ActivityModel activity;
+  final VoidCallback? onCancelled;
 
-  const ActivityDetailModal({super.key, required this.activity});
+  const ActivityDetailModal({
+    super.key,
+    required this.activity,
+    this.onCancelled,
+  });
 
   // Format datetime string dengan benar, menangani baik '\n' atau '\\n' sebagai separator
   String _formatDateTime(String dateTimeStr) {
@@ -32,32 +37,6 @@ class ActivityDetailModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔍 DEBUG LOGGING - Cek kenapa tombol tracking tidak muncul
-    print('🔍 ===== ACTIVITY DETAIL DEBUG =====');
-    print('🔍 ID: ${activity.id}');
-    print('🔍 Status (original): "${activity.status}"');
-    print('🔍 Status (lowercase): "${activity.status.toLowerCase()}"');
-    print('🔍 Status (trimmed): "${activity.status.toLowerCase().trim()}"');
-    print('🔍 Is Active: ${activity.isActive}');
-
-    // Check tracking button condition
-    final isMenujuLokasi =
-        activity.status.toLowerCase().trim() == 'menuju lokasi';
-    final isSedangDiproses =
-        activity.status.toLowerCase().trim() == 'sedang diproses';
-    final isOnTheWay = activity.status.toLowerCase().trim() == 'on_the_way';
-    final isArrived = activity.status.toLowerCase().trim() == 'arrived';
-
-    print('🔍 Check conditions:');
-    print('   - Is "menuju lokasi": $isMenujuLokasi');
-    print('   - Is "sedang diproses": $isSedangDiproses');
-    print('   - Is "on_the_way": $isOnTheWay');
-    print('   - Is "arrived": $isArrived');
-    print(
-      '🔍 Should show tracking button: ${activity.isActive && (isMenujuLokasi || isSedangDiproses || isOnTheWay || isArrived)}',
-    );
-    print('🔍 ===================================');
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -137,6 +116,8 @@ class ActivityDetailModal extends StatelessWidget {
           _buildInfoItem('Judul', activity.title),
           _buildInfoItem('Alamat', activity.address),
           _buildInfoItem('Waktu', _formatDateTime(activity.dateTime)),
+          if (activity.notes != null && activity.notes!.isNotEmpty)
+            _buildInfoItem('Catatan', activity.notes!),
 
           const SizedBox(height: 20),
 
@@ -176,26 +157,6 @@ class ActivityDetailModal extends StatelessWidget {
                     ),
                     icon: Icon(Icons.gps_fixed, size: 20),
                     label: Text('Lacak Mitra'),
-                  ),
-                ),
-
-              if (activity.isActive &&
-                  activity.status.toLowerCase() == 'dijadwalkan')
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showRescheduleDialog(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: whiteColor,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text('Atur Ulang Jadwal'),
                   ),
                 ),
 
@@ -313,33 +274,6 @@ class ActivityDetailModal extends StatelessWidget {
     return trackableStatuses.contains(status.toLowerCase().trim());
   }
 
-  void _showRescheduleDialog(BuildContext context) {
-    RescheduleDialog.show(
-      context: context,
-      initialDate: activity.date,
-      onReschedule: (newDate, newTime) {
-        // Combine date and time into a single DateTime
-        DateTime rescheduledDateTime = DateTime(
-          newDate.year,
-          newDate.month,
-          newDate.day,
-          newTime.hour,
-          newTime.minute,
-        );
-
-        // Show success message
-        ToastHelper.showToast(
-          context: context,
-          message:
-              'Jadwal berhasil diperbarui ke ${rescheduledDateTime.toString()}',
-          isSuccess: true,
-        );
-
-        // In a real app, you would update the activity in your backend
-      },
-    );
-  }
-
   void _showCancelConfirmationDialog(BuildContext context) {
     DialogHelper.showConfirmDialog(
       context: context,
@@ -349,14 +283,66 @@ class ActivityDetailModal extends StatelessWidget {
       cancelText: 'Tidak',
       icon: Icons.cancel_outlined,
       isDestructiveAction: true,
-    ).then((confirmed) {
+    ).then((confirmed) async {
       if (confirmed) {
-        // Simulasi pembatalan
-        ToastHelper.showToast(
-          context: context,
-          message: 'Aktivitas berhasil dibatalkan',
-          isSuccess: true,
-        );
+        final scheduleId = int.tryParse(activity.id);
+        if (scheduleId == null) {
+          if (context.mounted) {
+            ToastHelper.showToast(
+              context: context,
+              message: 'Gagal membatalkan: ID jadwal tidak valid',
+              isSuccess: false,
+            );
+          }
+          return;
+        }
+
+        // Show loading dialog
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        try {
+          final apiService = EndUserApiService();
+          await apiService.initialize();
+          final success = await apiService.cancelSchedule(scheduleId);
+
+          // Dismiss loading
+          if (context.mounted) Navigator.pop(context);
+
+          if (context.mounted) {
+            if (success) {
+              ToastHelper.showToast(
+                context: context,
+                message: 'Aktivitas berhasil dibatalkan',
+                isSuccess: true,
+              );
+              onCancelled?.call();
+            } else {
+              ToastHelper.showToast(
+                context: context,
+                message: 'Gagal membatalkan aktivitas',
+                isSuccess: false,
+              );
+            }
+          }
+        } catch (e) {
+          // Dismiss loading
+          if (context.mounted) Navigator.pop(context);
+          if (context.mounted) {
+            ToastHelper.showToast(
+              context: context,
+              message: 'Terjadi kesalahan: ${e.toString()}',
+              isSuccess: false,
+            );
+          }
+        }
       }
     });
   }
