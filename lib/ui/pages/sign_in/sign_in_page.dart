@@ -323,7 +323,7 @@ class _SignInPageState extends State<SignInPage> {
 
       // Simpan data user dengan role yang benar untuk backward compatibility
       await localStorage.saveUserData(userData);
-      
+
       // IMPORTANT: Also save to SharedPreferences for ApiServiceManager
       // Ensure required fields exist
       if (!userData.containsKey('created_at')) {
@@ -332,11 +332,11 @@ class _SignInPageState extends State<SignInPage> {
       if (!userData.containsKey('updated_at')) {
         userData['updated_at'] = DateTime.now().toIso8601String();
       }
-      
+
       final prefs = await SharedPreferences.getInstance();
       final userJson = jsonEncode(userData);
       await prefs.setString('current_user', userJson);
-      
+
       // Verify save was successful
       final verifyJson = prefs.getString('current_user');
       if (verifyJson != null) {
@@ -351,7 +351,7 @@ class _SignInPageState extends State<SignInPage> {
         _emailController.text,
         _passwordController.text,
       );
-      
+
       // Reload ApiServiceManager auth state
       await ApiServiceManager().reloadAuthState();
 
@@ -388,45 +388,34 @@ class _SignInPageState extends State<SignInPage> {
           userData['role'] = userRole;
           await localStorage.saveUserData(userData);
         }
-
         // Navigate berdasarkan role
-        switch (userRole) {
-          case 'mitra':
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/mitra-dashboard-new',
-              (route) => false,
-            );
-            break;
-          case 'admin':
-            // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/mitra-dashboard-new',
-              (route) => false,
-            );
-            break;
-          case 'end_user':
-          default:
-
-            // ❌ DISABLED: Polling service (menyebabkan duplicate popup)
-            // FCM push notification sudah handle popup, tidak perlu polling
-            // See: FIX_DOUBLE_NOTIFICATION_POPUP.md
-            // try {
-            //   final GlobalNotificationPollingService notificationService =
-            //       GlobalNotificationPollingService();
-            //   await notificationService.startPolling();
-            //   print('✅ Global notification polling started for end_user');
-            // } catch (e) {
-            //   print('⚠️ Failed to start notification polling: $e');
-            // }
-
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/home',
-              (route) => false,
-            );
-            break;
+        if (mounted) {
+          // Pastikan widget masih mounted sebelum navigasi
+          switch (userRole) {
+            case 'mitra':
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/mitra-dashboard-new',
+                (route) => false,
+              );
+              break;
+            case 'admin':
+              // Untuk sementara redirect ke mitra dashboard, bisa diganti nanti
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/mitra-dashboard-new',
+                (route) => false,
+              );
+              break;
+            case 'end_user':
+            default:
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+              break;
+          }
         }
       }
     } catch (e) {
