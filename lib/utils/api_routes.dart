@@ -49,6 +49,8 @@ class ApiRoutes {
       '/api/mitra/pickup-schedules/$id/complete';
   static String mitraPickupCancel(int id) =>
       '/api/mitra/pickup-schedules/$id/cancel';
+  static String mitraPickupRelease(int id) =>
+      '/api/mitra/pickup-schedules/$id/release';
   static const String mitraPickupMyActive =
       '/api/mitra/pickup-schedules/my-active';
   static const String mitraPickupHistory =

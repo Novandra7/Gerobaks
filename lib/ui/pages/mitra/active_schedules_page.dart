@@ -173,6 +173,7 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
     );
 
     if (confirmed != true || reasonController.text.isEmpty) return;
+    if (!mounted) return;
 
     try {
       showDialog(
@@ -200,14 +201,14 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
         ),
       );
 
-      await _apiService.cancelSchedule(schedule.id, reasonController.text);
+      await _apiService.releaseSchedule(schedule.id, reasonController.text.trim());
 
       if (mounted) {
         Navigator.pop(context); // Close loading
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '✅ Jadwal berhasil dibatalkan',
+              '✅ Jadwal berhasil dikembalikan ke pending',
               style: whiteTextStyle.copyWith(fontWeight: medium),
             ),
             backgroundColor: orangeColor,
@@ -225,7 +226,7 @@ class _ActiveSchedulesPageState extends State<ActiveSchedulesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Gagal membatalkan jadwal: $e',
+              '❌ Gagal melepas jadwal: $e',
               style: whiteTextStyle.copyWith(fontWeight: medium),
             ),
             backgroundColor: redcolor,

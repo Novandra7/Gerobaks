@@ -408,14 +408,13 @@ class _EditProfileState extends State<EditProfile> {
                                 fontWeight: medium,
                               ),
                             ),
-                            if (_user != null)
-                              Container(
+                            Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _user!.isPhoneVerified
+                                  color: (_user?.isPhoneVerified ?? false)
                                       ? greenColor
                                       : Colors.red,
                                   borderRadius: BorderRadius.circular(12),
@@ -424,7 +423,7 @@ class _EditProfileState extends State<EditProfile> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      _user!.isPhoneVerified
+                                      (_user?.isPhoneVerified ?? false)
                                           ? Icons.check_circle_outline
                                           : Icons.info_outline,
                                       color: Colors.white,
@@ -432,7 +431,7 @@ class _EditProfileState extends State<EditProfile> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      _user!.isPhoneVerified
+                                      (_user?.isPhoneVerified ?? false)
                                           ? 'Terverifikasi'
                                           : 'Belum Verifikasi',
                                       style: whiteTextStyle.copyWith(
@@ -461,7 +460,7 @@ class _EditProfileState extends State<EditProfile> {
                               horizontal: 20,
                               vertical: 15,
                             ),
-                            suffixIcon: _user != null && !_user!.isPhoneVerified
+                            suffixIcon: _user != null && !(_user?.isPhoneVerified ?? false)
                                 ? GestureDetector(
                                     onTap: () => _showPhoneVerificationDialog(),
                                     child: Container(

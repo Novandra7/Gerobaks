@@ -588,7 +588,7 @@ class _MyprofileState extends State<Myprofile> {
                   CustomFilledButton(
                     title: 'Edit Profile',
                     onPressed: () async {
-                      final result = await Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const EditProfile(),

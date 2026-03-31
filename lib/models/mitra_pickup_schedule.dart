@@ -1,5 +1,26 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:bank_sha/utils/app_config.dart';
+
+class AdditionalWaste {
+  final String type;
+  final double estimatedWeight;
+
+  AdditionalWaste({required this.type, required this.estimatedWeight});
+
+  factory AdditionalWaste.fromJson(Map<String, dynamic> json) {
+    return AdditionalWaste(
+      type: json['type'] ?? '',
+      estimatedWeight: MitraPickupSchedule._parseDouble(json['estimated_weight']) ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'estimated_weight': estimatedWeight,
+      };
+}
 
 /// Model untuk Mitra Pickup Schedule
 class MitraPickupSchedule {
@@ -12,8 +33,11 @@ class MitraPickupSchedule {
   final double longitude;
   final String scheduleDay;
   final String wasteTypeScheduled;
-  final String? userWasteTypes; // NEW: Semua jenis sampah yang user input
-  final Map<String, dynamic>? estimatedWeights; // NEW: Estimasi berat per jenis
+  final String scheduledWeight;
+  final String? userWasteTypes;
+  final Map<String, dynamic>? estimatedWeights;
+  final double totalEstimatedWeight;
+  final List<AdditionalWaste>? additionalWastes;
   final DateTime scheduledPickupAt;
   final String pickupTimeStart;
   final String pickupTimeEnd;
@@ -27,6 +51,8 @@ class MitraPickupSchedule {
   final Map<String, dynamic>? actualWeights;
   final double? totalWeight;
   final List<String>? pickupPhotos;
+  final String? wasteImage;
+  final String? profilePicture;
 
   MitraPickupSchedule({
     required this.id,
@@ -38,8 +64,11 @@ class MitraPickupSchedule {
     required this.longitude,
     required this.scheduleDay,
     required this.wasteTypeScheduled,
-    this.userWasteTypes, // NEW: Optional
-    this.estimatedWeights, // NEW: Optional
+    required this.scheduledWeight,
+    this.userWasteTypes,
+    this.estimatedWeights,
+    required this.totalEstimatedWeight,
+    this.additionalWastes,
     required this.scheduledPickupAt,
     required this.pickupTimeStart,
     required this.pickupTimeEnd,
@@ -53,6 +82,8 @@ class MitraPickupSchedule {
     this.actualWeights,
     this.totalWeight,
     this.pickupPhotos,
+    this.wasteImage,
+    this.profilePicture,
   });
 
   /// Helper method untuk parse double dari berbagai format
@@ -64,6 +95,89 @@ class MitraPickupSchedule {
       final parsed = double.tryParse(value);
       return parsed;
     }
+    return null;
+  }
+
+  static Map<String, dynamic>? _normalizeEstimatedWeights(dynamic value) {
+    if (value == null) return null;
+
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    if (value is List) {
+      final normalized = <String, dynamic>{};
+      for (final item in value) {
+        if (item is! Map) continue;
+
+        final type = item['type'] ?? item['waste_type'] ?? item['name'];
+        final weight =
+            item['estimated_weight'] ?? item['weight'] ?? item['value'];
+        if (type == null) continue;
+
+        normalized[type.toString()] = _parseDouble(weight) ?? 0.0;
+      }
+      return normalized.isNotEmpty ? normalized : null;
+    }
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+      try {
+        return _normalizeEstimatedWeights(jsonDecode(trimmed));
+      } on FormatException {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
+  static List<AdditionalWaste>? _normalizeAdditionalWastes(dynamic value) {
+    if (value == null) return null;
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+      try {
+        return _normalizeAdditionalWastes(jsonDecode(trimmed));
+      } on FormatException {
+        return null;
+      }
+    }
+
+    if (value is List) {
+      final wastes = value.whereType<Map>().map((waste) {
+        final payload = Map<String, dynamic>.from(waste);
+        if (!payload.containsKey('estimated_weight') &&
+            payload.containsKey('weight')) {
+          payload['estimated_weight'] = payload['weight'];
+        }
+        return AdditionalWaste.fromJson(payload);
+      }).toList();
+      return wastes.isNotEmpty ? wastes : null;
+    }
+
+    if (value is Map) {
+      if (value.containsKey('type')) {
+        final payload = Map<String, dynamic>.from(value);
+        if (!payload.containsKey('estimated_weight') &&
+            payload.containsKey('weight')) {
+          payload['estimated_weight'] = payload['weight'];
+        }
+        return [AdditionalWaste.fromJson(payload)];
+      }
+
+      final wastes = <AdditionalWaste>[];
+      for (final child in value.values) {
+        final parsed = _normalizeAdditionalWastes(child);
+        if (parsed != null) {
+          wastes.addAll(parsed);
+        }
+      }
+      return wastes.isNotEmpty ? wastes : null;
+    }
+
     return null;
   }
 
@@ -104,21 +218,109 @@ class MitraPickupSchedule {
 
   /// Convert relative path to full URL if needed
   static String _normalizePhotoUrl(String path, String apiBaseUrl) {
+    final normalizedPath = path.replaceAll('\\', '/').trim();
+    if (normalizedPath.isEmpty) return normalizedPath;
+
     // If already full URL, return as is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
+    if (normalizedPath.startsWith('http://') ||
+        normalizedPath.startsWith('https://')) {
+      return normalizedPath;
     }
 
     // Remove leading slash if exists
-    final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    final cleanPath = normalizedPath.startsWith('/')
+        ? normalizedPath.substring(1)
+        : normalizedPath;
+
+    // Build URL from origin (scheme + host + port), not full api path.
+    // This prevents malformed URLs when apiBaseUrl accidentally includes `/api`.
+    final apiUri = Uri.tryParse(apiBaseUrl);
+    final origin = (apiUri != null &&
+            apiUri.hasScheme &&
+            apiUri.host.isNotEmpty &&
+            apiUri.authority.isNotEmpty)
+        ? '${apiUri.scheme}://${apiUri.authority}'
+        : apiBaseUrl;
 
     // Combine with base URL
-    return '$apiBaseUrl/$cleanPath';
+    return '$origin/$cleanPath';
+  }
+
+  static List<String>? _normalizePickupPhotos(dynamic value, String apiBaseUrl) {
+    if (value == null) return null;
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return [_normalizePhotoUrl(trimmed, apiBaseUrl)];
+      }
+
+      try {
+        return _normalizePickupPhotos(jsonDecode(trimmed), apiBaseUrl);
+      } on FormatException {
+        return [_normalizePhotoUrl(trimmed, apiBaseUrl)];
+      }
+    }
+
+    if (value is List) {
+      final photos = <String>[];
+      for (final item in value) {
+        if (item is String) {
+          photos.add(_normalizePhotoUrl(item, apiBaseUrl));
+          continue;
+        }
+
+        if (item is Map) {
+          final source =
+              item['url'] ??
+              item['path'] ??
+              item['photo'] ??
+              item['photo_url'] ??
+              item['full_url'];
+          if (source != null) {
+            photos.add(_normalizePhotoUrl(source.toString(), apiBaseUrl));
+          }
+        }
+      }
+
+      return photos.isNotEmpty ? photos : null;
+    }
+
+    if (value is Map) {
+      return _normalizePickupPhotos(value.values.toList(), apiBaseUrl);
+    }
+
+    return null;
   }
 
   factory MitraPickupSchedule.fromJson(Map<String, dynamic> json) {
     // Get API base URL from app config
     final apiBaseUrl = AppConfig.apiBaseUrl;
+
+    String? normalizeOptionalPhoto(dynamic value) {
+      if (value == null) return null;
+      final raw = value.toString().trim();
+      if (raw.isEmpty || raw.toLowerCase() == 'null') return null;
+      return _normalizePhotoUrl(raw, apiBaseUrl);
+    }
+
+    final rawWasteImage =
+        json['waste_image'] ??
+        json['wasteImage'] ??
+        json['waste_image_url'] ??
+        json['waste_photo'] ??
+        json['photo'] ??
+        json['schedule']?['waste_image'] ??
+        json['schedule']?['waste_image_url'] ??
+        json['pickup_schedule']?['waste_image'];
+
+    final rawProfilePicture =
+        json['profile_picture'] ??
+        json['profilePicture'] ??
+        json['user']?['profile_picture'] ??
+        json['user']?['profilePicUrl'];
 
     return MitraPickupSchedule(
       id: json['id'] ?? 0,
@@ -130,10 +332,13 @@ class MitraPickupSchedule {
       longitude: _parseDouble(json['longitude']) ?? 0.0,
       scheduleDay: json['schedule_day'] ?? '',
       wasteTypeScheduled: json['waste_type_scheduled'] ?? '',
-      userWasteTypes: json['user_waste_types'], // NEW: Parse user's waste types
-      estimatedWeights: json['estimated_weights'] != null
-          ? Map<String, dynamic>.from(json['estimated_weights'])
-          : null, // NEW: Parse estimated weights
+      scheduledWeight: json['scheduled_weight']?.toString() ?? '0.00',
+      userWasteTypes: json['user_waste_types'],
+      estimatedWeights: _normalizeEstimatedWeights(json['estimated_weights']),
+      totalEstimatedWeight: _parseDouble(json['total_estimated_weight']) ?? 0.0,
+      additionalWastes: _normalizeAdditionalWastes(
+        json['additional_wastes'] ?? json['additional_waste'],
+      ),
       scheduledPickupAt: json['scheduled_pickup_at'] != null
           ? DateTime.parse(json['scheduled_pickup_at'])
           : DateTime.now(),
@@ -154,13 +359,12 @@ class MitraPickupSchedule {
           : null,
       actualWeights: _normalizeActualWeights(json['actual_weights']),
       totalWeight: _parseDouble(json['total_weight']),
-      pickupPhotos: json['pickup_photos'] != null
-          ? (json['pickup_photos'] as List)
-                .map(
-                  (photo) => _normalizePhotoUrl(photo.toString(), apiBaseUrl),
-                )
-                .toList()
-          : null,
+      pickupPhotos: _normalizePickupPhotos(
+        json['pickup_photos'] ?? json['photos'],
+        apiBaseUrl,
+      ),
+      wasteImage: normalizeOptionalPhoto(rawWasteImage),
+      profilePicture: normalizeOptionalPhoto(rawProfilePicture),
     );
   }
 
@@ -175,8 +379,11 @@ class MitraPickupSchedule {
       'longitude': longitude,
       'schedule_day': scheduleDay,
       'waste_type_scheduled': wasteTypeScheduled,
-      'user_waste_types': userWasteTypes, // NEW
-      'estimated_weights': estimatedWeights, // NEW
+      'scheduled_weight': scheduledWeight,
+      'user_waste_types': userWasteTypes,
+      'estimated_weights': estimatedWeights,
+      'total_estimated_weight': totalEstimatedWeight,
+      'additional_wastes': additionalWastes?.map((w) => w.toJson()).toList(),
       'scheduled_pickup_at': scheduledPickupAt.toIso8601String(),
       'pickup_time_start': pickupTimeStart,
       'pickup_time_end': pickupTimeEnd,
@@ -190,16 +397,18 @@ class MitraPickupSchedule {
       'actual_weights': actualWeights,
       'total_weight': totalWeight,
       'pickup_photos': pickupPhotos,
+      'waste_image': wasteImage,
+      'profile_picture': profilePicture,
     };
   }
 
   // Helpers
   bool get isPending => status == 'pending';
-  bool get isAccepted =>
-      status == 'accepted'; // NEW: Status accepted dari backend
+  bool get isAssigned => status == 'assigned';
+  bool get isAccepted => status == 'accepted';
   bool get isOnProgress => status == 'on_progress';
-  bool get isOnTheWay => status == 'on_the_way'; // NEW: Status on_the_way
-  bool get isArrived => status == 'arrived'; // NEW: Status arrived
+  bool get isOnTheWay => status == 'on_the_way';
+  bool get isArrived => status == 'arrived';
   bool get isCompleted => status == 'completed';
   bool get isCancelled => status == 'cancelled';
 
@@ -207,12 +416,14 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return 'Menunggu';
+      case 'assigned':
+        return 'Ditugaskan';
       case 'accepted':
-        return 'Diterima'; // NEW
+        return 'Diterima';
       case 'on_the_way':
-        return 'Menuju Lokasi'; // NEW
+        return 'Menuju Lokasi';
       case 'arrived':
-        return 'Sudah Sampai'; // NEW
+        return 'Sudah Sampai';
       case 'on_progress':
         return 'Dalam Proses';
       case 'completed':
@@ -228,12 +439,14 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return const Color(0xFFFF8C00); // orangeColor
+      case 'assigned':
+        return const Color(0xFF00BB38); // greenColor
       case 'accepted':
-        return const Color(0xFF00BB38); // greenColor - NEW
+        return const Color(0xFF00BB38); // greenColor
       case 'on_the_way':
-        return const Color(0xFF53C1F9); // blueColor - NEW
+        return const Color(0xFF53C1F9); // blueColor
       case 'arrived':
-        return const Color(0xFF9C27B0); // purpleColor - NEW
+        return const Color(0xFF9C27B0); // purpleColor
       case 'on_progress':
         return const Color(0xFF53C1F9); // blueColor
       case 'completed':
@@ -249,12 +462,14 @@ class MitraPickupSchedule {
     switch (status) {
       case 'pending':
         return Icons.schedule;
+      case 'assigned':
+        return Icons.assignment_turned_in_outlined;
       case 'accepted':
-        return Icons.check_circle_outline; // NEW
+        return Icons.check_circle_outline;
       case 'on_the_way':
-        return Icons.directions_car; // NEW
+        return Icons.directions_car;
       case 'arrived':
-        return Icons.location_on; // NEW
+        return Icons.location_on;
       case 'on_progress':
         return Icons.local_shipping;
       case 'completed':

@@ -48,6 +48,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _handleRootBackNavigation() {
+    if (_currentIndex != 0) {
+      setState(() {
+        _currentIndex = 0;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -243,9 +251,16 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: uicolor,
-      floatingActionButton: Container(
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleRootBackNavigation();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: uicolor,
+        floatingActionButton: Container(
         height: 60,
         width: 60,
         margin: const EdgeInsets.only(top: 30),
@@ -290,14 +305,15 @@ class _HomePageState extends State<HomePage> {
           child: Icon(Icons.add_rounded, color: whiteColor, size: 32),
         ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        onTabTapped: _onTabTapped,
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _buildPages(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _currentIndex,
+          onTabTapped: _onTabTapped,
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _buildPages(),
+        ),
       ),
     );
   }

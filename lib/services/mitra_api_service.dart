@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 import '../models/mitra_pickup_schedule.dart';
 import '../utils/api_routes.dart';
@@ -75,13 +76,18 @@ class MitraApiService {
           Map<String, dynamic>? pagination;
 
           if (data['data'] is List) {
-            // API returns schedules directly in data['data']
             schedulesList = data['data'] as List;
             pagination = null;
           } else if (data['data'] is Map<String, dynamic>) {
-            // API returns nested structure with schedules key
-            schedulesList = (data['data']['schedules'] as List?) ?? [];
-            pagination = data['data']['pagination'] as Map<String, dynamic>?;
+            final dataMap = data['data'] as Map<String, dynamic>;
+            schedulesList = (dataMap['schedules'] as List?) ?? [];
+            // API returns pagination info flat in data, not nested
+            pagination = {
+              'current_page': dataMap['current_page'] ?? 1,
+              'last_page': dataMap['last_page'] ?? 1,
+              'per_page': dataMap['per_page'] ?? 20,
+              'total': dataMap['total'] ?? 0,
+            };
           } else {
             schedulesList = [];
             pagination = null;
@@ -91,23 +97,30 @@ class MitraApiService {
               .map((json) => MitraPickupSchedule.fromJson(json))
               .toList();
 
+          final currentPage = pagination?['current_page'] as int? ?? page;
+          final lastPage = pagination?['last_page'] as int? ?? 1;
+
           _logger.i(
-            '✅ Loaded ${schedules.length} available schedules (page $page)',
+            '✅ Loaded ${schedules.length} available schedules (page $currentPage/$lastPage)',
           );
 
           return {
             'schedules': schedules,
-            'pagination': pagination ?? {},
-            'has_more':
-                schedules.length >=
-                20, // If we got 20 items, likely more pages exist
+            'current_page': currentPage,
+            'last_page': lastPage,
+            'per_page': pagination?['per_page'] ?? 20,
+            'total': pagination?['total'] ?? 0,
+            'has_more': currentPage < lastPage,
           };
         }
 
         _logger.w('⚠️ No schedules data in response');
         return {
           'schedules': <MitraPickupSchedule>[],
-          'pagination': {},
+          'current_page': 1,
+          'last_page': 1,
+          'per_page': 20,
+          'total': 0,
           'has_more': false,
         };
       } else if (response.statusCode == 401) {
@@ -184,6 +197,7 @@ class MitraApiService {
         }
         throw Exception('Gagal menerima jadwal');
       } else if (response.statusCode == 409) {
+        print(response.body);
         throw Exception('Jadwal sudah diterima oleh mitra lain');
       } else {
         final error = json.decode(response.body);
@@ -273,8 +287,8 @@ class MitraApiService {
   /// Complete pickup with photos and weights
   Future<Map<String, dynamic>> completePickup({
     required int scheduleId,
-    required Map<String, double> actualWeights,
-    required List<String> photosPaths,
+    required List<Map<String, dynamic>> actualWeights,
+    required List<XFile> photos,
     String? notes,
   }) async {
     try {
@@ -288,26 +302,35 @@ class MitraApiService {
       request.headers['Authorization'] = 'Bearer $token';
       request.headers['Accept'] = 'application/json';
 
-      // Add actual weights
-      actualWeights.forEach((wasteType, weight) {
-        request.fields['actual_weights[$wasteType]'] = weight.toString();
-      });
+      // Send as multipart array fields so Laravel can validate `actual_weights` as array
+      for (int i = 0; i < actualWeights.length; i++) {
+        final item = actualWeights[i];
+        final type = item['type']?.toString() ?? '';
+        final weight = item['weight'] ?? item['estimated_weight'];
+
+        if (type.isEmpty || weight == null) continue;
+
+        request.fields['actual_weights[$i][type]'] = type;
+        request.fields['actual_weights[$i][weight]'] = weight.toString();
+      }
 
       // Add notes
       if (notes != null && notes.isNotEmpty) {
         request.fields['notes'] = notes;
       }
 
-      // Add photos
-      for (var i = 0; i < photosPaths.length; i++) {
-        final file = await http.MultipartFile.fromPath(
+      // Add photos using fromBytes — compatible with Flutter Web and native
+      for (final photo in photos) {
+        final bytes = await photo.readAsBytes();
+        final file = http.MultipartFile.fromBytes(
           'photos[]',
-          photosPaths[i],
+          bytes,
+          filename: photo.name,
         );
         request.files.add(file);
       }
 
-      _logger.i('📤 Sending request with ${photosPaths.length} photos');
+      _logger.i('📤 Sending request with ${photos.length} photos');
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -331,14 +354,14 @@ class MitraApiService {
     }
   }
 
-  /// Cancel schedule
-  Future<void> cancelSchedule(int scheduleId, String reason) async {
+  /// Release assigned schedule back to pending
+  Future<void> releaseSchedule(int scheduleId, String reason) async {
     try {
       final token = await _getToken();
 
       final url =
-          '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupCancel(scheduleId)}';
-      _logger.i('❌ Cancelling schedule: $url');
+          '${ApiRoutes.baseUrl}${ApiRoutes.mitraPickupRelease(scheduleId)}';
+      _logger.i('🔄 Releasing schedule back to pending: $url');
 
       final response = await http.post(
         Uri.parse(url),
@@ -351,19 +374,19 @@ class MitraApiService {
       );
 
       if (response.statusCode == 200) {
-        _logger.i('✅ Schedule cancelled');
+        _logger.i('✅ Schedule released to pending');
       } else {
         final error = json.decode(response.body);
-        throw Exception(error['message'] ?? 'Gagal membatalkan jadwal');
+        throw Exception(error['message'] ?? 'Gagal melepas jadwal ke pending');
       }
     } catch (e) {
-      _logger.e('❌ Error cancelling schedule: $e');
+      _logger.e('❌ Error releasing schedule: $e');
       rethrow;
     }
   }
 
   /// Get mitra's active schedules
-  Future<List<MitraPickupSchedule>> getMyActiveSchedules() async {
+  Future<List<MitraPickupSchedule>> getMyActiveSchedules() async {  
     try {
       final token = await _getToken();
 

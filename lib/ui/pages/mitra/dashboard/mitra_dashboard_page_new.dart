@@ -123,30 +123,46 @@ class _MitraDashboardPageNewState extends State<MitraDashboardPageNew> {
     }
   }
 
+  void _handleRootBackNavigation() {
+    if (_currentIndex != 0) {
+      setState(() {
+        _currentIndex = 0;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: lightBackgroundColor,
-      bottomNavigationBar: CustomBottomNavBarMitraNew(
-        currentIndex: _currentIndex,
-        onTabTapped: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleRootBackNavigation();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: lightBackgroundColor,
+        bottomNavigationBar: CustomBottomNavBarMitraNew(
+          currentIndex: _currentIndex,
+          onTabTapped: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
 
-          // Refresh dashboard statistics ketika kembali ke tab dashboard (index 0)
-          if (index == 0 && _dashboardKey.currentState != null) {
-            print('🔄 Tab switched to dashboard - refreshing statistics...');
-            _dashboardKey.currentState!._loadStatistics();
-          }
-        },
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: _pages[_currentIndex],
+            // Refresh dashboard statistics ketika kembali ke tab dashboard (index 0)
+            if (index == 0 && _dashboardKey.currentState != null) {
+              print('🔄 Tab switched to dashboard - refreshing statistics...');
+              _dashboardKey.currentState!._loadStatistics();
+            }
+          },
+        ),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: _pages[_currentIndex],
+        ),
       ),
     );
   }
@@ -188,8 +204,11 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew>
       case 'rabu':
         return 'B3';
       case 'kamis':
+        return 'Campuran';
       case 'jumat':
+        return 'Organik';
       case 'sabtu':
+        return 'Elektronik';
       case 'minggu':
         return 'Campuran';
       default:
@@ -285,9 +304,6 @@ class _MitraDashboardContentNewState extends State<MitraDashboardContentNew>
     if (_lastRefreshTime != null &&
         DateTime.now().difference(_lastRefreshTime!) <
             const Duration(seconds: 10)) {
-      print(
-        '⏸️ Skipping refresh - too soon (${DateTime.now().difference(_lastRefreshTime!).inSeconds}s ago)',
-      );
       return;
     }
 

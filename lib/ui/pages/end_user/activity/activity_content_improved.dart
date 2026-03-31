@@ -54,24 +54,22 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
     }
 
     try {
-      print('🔄 Loading schedules from pickup-schedules endpoint...');
-      print('   - Show Active: ${widget.showActive}');
-      print('   - Date Filter: ${widget.selectedDate}');
-      print('   - Category Filter: ${widget.filterCategory}');
-
       final schedules = await _apiService.getUserPickupSchedules();
+      final activeSchedules = schedules.where((schedule) {
+        final deletedAt = schedule['deleted_at'];
+        if (deletedAt == null) return true;
+        if (deletedAt is String && deletedAt.trim().isEmpty) return true;
+        return false;
+      }).toList();
 
       if (mounted) {
         setState(() {
-          _schedules = schedules;
+          _schedules = activeSchedules;
           _isLoading = false;
           _isFirstLoad = false;
         });
-
-        print('✅ Loaded ${_schedules.length} schedules successfully');
       }
     } catch (e) {
-      print("❌ Error loading schedules: $e");
       if (mounted) {
         setState(() {
           _schedules = [];
@@ -130,18 +128,9 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         // Priority 2: Gunakan scheduled_at (alternative)
         else if (schedule['scheduled_at'] != null) {
           scheduledDate = DateTime.parse(schedule['scheduled_at']);
-
-          print('✅ Using scheduled_at: $scheduledDate');
         }
         // ❌ TIDAK ADA FALLBACK - Field harus ada dari backend!
         else {
-          // Log error jika field tidak ada
-          print(
-            '❌ ERROR: Backend tidak mengirim schedule_date, pickup_time_start, atau scheduled_at!',
-          );
-          print('   Schedule ID: ${schedule['id']}');
-          print('   Backend HARUS deploy dengan field yang benar!');
-
           // Throw exception agar kita tahu ada masalah
           throw Exception(
             'Backend error: Missing required fields (schedule_date, pickup_time_start, scheduled_at). '
@@ -163,21 +152,21 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         final weights = schedule['actual_weights'];
         trashDetails = [];
         int calculatedWeight = 0;
-        int calculatedPoints = 0;
+
+        int parseWeightToInt(dynamic value) {
+          if (value is num) return value.toInt();
+          if (value is String) {
+            return double.tryParse(value.trim().replaceAll(',', '.'))?.toInt() ?? 0;
+          }
+          return 0;
+        }
 
         if (weights is Map) {
           weights.forEach((type, weight) {
-            final weightValue = (weight is String)
-                ? double.tryParse(weight)?.toInt() ?? 0
-                : (weight is num)
-                ? weight.toInt()
-                : 0;
-
-            // Kalkulasi poin (contoh: 10 poin per kg)
+            final weightValue = parseWeightToInt(weight);
             final points = weightValue * 10;
 
             calculatedWeight += weightValue;
-            calculatedPoints += points;
 
             trashDetails!.add(
               TrashDetail(
@@ -188,10 +177,41 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
               ),
             );
           });
+        } else if (weights is List) {
+          for (final item in weights) {
+            if (item is! Map) continue;
+            final type = item['type']?.toString();
+            if (type == null || type.trim().isEmpty) continue;
+
+            final weightValue = parseWeightToInt(item['weight']);
+            final points = weightValue * 10;
+
+            calculatedWeight += weightValue;
+
+            trashDetails.add(
+              TrashDetail(
+                type: type,
+                weight: weightValue,
+                points: points,
+                icon: _getTrashIcon(type),
+              ),
+            );
+          }
         }
 
-        totalWeight = calculatedWeight;
-        totalPoints = calculatedPoints;
+        if (trashDetails.isEmpty) {
+          trashDetails = null;
+        }
+
+        totalWeight = parseWeightToInt(schedule['total_weight']);
+        totalWeight = totalWeight > 0 ? totalWeight : calculatedWeight;
+
+        if (schedule['total_points'] is num) {
+          totalPoints = (schedule['total_points'] as num).toInt();
+        } else {
+          final pointsFromApi = int.tryParse(schedule['total_points']?.toString() ?? '');
+          totalPoints = pointsFromApi ?? (totalWeight * 10);
+        }
       }
 
       // Parse pickup_photos jika ada
@@ -210,9 +230,16 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         completedBy = schedule['mitra_name'].toString();
       }
 
+      final wasteSummary = schedule['waste_summary']?.toString().trim();
+      final wasteTypeScheduled = schedule['waste_type_scheduled']?.toString().trim();
+
       return ActivityModel(
         id: schedule['id']?.toString() ?? '',
-        title: schedule['service_type'] ?? 'Layanan Sampah',
+        title: (wasteSummary != null && wasteSummary.isNotEmpty)
+            ? 'Pickup $wasteSummary'
+            : (wasteTypeScheduled != null && wasteTypeScheduled.isNotEmpty)
+                ? 'Pickup $wasteTypeScheduled'
+                : 'Layanan Sampah',
         address: schedule['pickup_address'] ?? '',
         dateTime: _formatDateTime(scheduledDate),
         status: _mapStatusToReadableStatus(schedule['status']),
@@ -286,6 +313,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
       case 'pending':
         return 'Dijadwalkan';
       case 'accepted':
+      case 'assigned':
       case 'on_progress':
         return 'Sedang Diproses'; // ✅ Match dengan activity_item_improved.dart & activity_model_improved.dart
       case 'in_progress':
@@ -306,6 +334,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
     // Active schedules are those that are pending, accepted, on_progress, in_progress, or arrived
     return status == 'pending' ||
         status == 'accepted' ||
+        status == 'assigned' ||
         status == 'on_progress' || // ✅ Keep on_progress in active tab
         status == 'in_progress' ||
         status == 'on_the_way' ||

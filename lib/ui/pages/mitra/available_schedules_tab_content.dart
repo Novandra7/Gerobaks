@@ -7,7 +7,9 @@ import '../../../services/mitra_api_service.dart';
 /// Content widget for Available Schedules tab (without AppBar)
 /// To be used inside JadwalMitraPageNew
 class AvailableSchedulesTabContent extends StatefulWidget {
-  const AvailableSchedulesTabContent({super.key});
+  final VoidCallback? onScheduleAccepted;
+
+  const AvailableSchedulesTabContent({super.key, this.onScheduleAccepted});
 
   @override
   State<AvailableSchedulesTabContent> createState() =>
@@ -27,6 +29,7 @@ class _AvailableSchedulesTabContentState
   // Pagination
   int _currentPage = 1;
   bool _hasMorePages = true;
+  int _totalSchedules = 0;
 
   // Filters
   String? _selectedWasteType;
@@ -66,10 +69,12 @@ class _AvailableSchedulesTabContentState
 
   Future<void> _initializeService() async {
     await _apiService.initialize();
-    _loadSchedules();
+    if (!mounted) return;
+    await _loadSchedules();
   }
 
   Future<void> _loadSchedules() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -89,14 +94,20 @@ class _AvailableSchedulesTabContentState
       );
 
       final schedules = result['schedules'] as List<MitraPickupSchedule>;
-      final hasMore = result['has_more'] as bool? ?? false;
+      final currentPage = result['current_page'] as int? ?? 1;
+      final lastPage = result['last_page'] as int? ?? 1;
+      final total = result['total'] as int? ?? schedules.length;
 
+      if (!mounted) return;
       setState(() {
         _schedules = schedules;
-        _hasMorePages = hasMore;
+        _currentPage = currentPage;
+        _hasMorePages = currentPage < lastPage;
+        _totalSchedules = total;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -105,7 +116,7 @@ class _AvailableSchedulesTabContentState
   }
 
   Future<void> _loadMoreSchedules() async {
-    if (_isLoadingMore || !_hasMorePages || _isLoading) return;
+    if (!mounted || _isLoadingMore || !_hasMorePages || _isLoading) return;
 
     setState(() {
       _isLoadingMore = true;
@@ -122,30 +133,33 @@ class _AvailableSchedulesTabContentState
       );
 
       final moreSchedules = result['schedules'] as List<MitraPickupSchedule>;
-      final hasMore = result['has_more'] as bool? ?? false;
+      final currentPage = result['current_page'] as int? ?? _currentPage + 1;
+      final lastPage = result['last_page'] as int? ?? 1;
+      final total = result['total'] as int? ?? _totalSchedules;
 
+      if (!mounted) return;
       setState(() {
         if (moreSchedules.isEmpty) {
           _hasMorePages = false;
         } else {
           _schedules.addAll(moreSchedules);
-          _currentPage++;
-          _hasMorePages = hasMore;
+          _currentPage = currentPage;
+          _hasMorePages = currentPage < lastPage;
+          _totalSchedules = total;
         }
         _isLoadingMore = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isLoadingMore = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat jadwal lainnya: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memuat jadwal lainnya: $e'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -296,70 +310,231 @@ class _AvailableSchedulesTabContentState
   }
 
   Future<void> _acceptSchedule(MitraPickupSchedule schedule) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: whiteColor,
-        title: Text(
-          'Terima Jadwal?',
-          style: blackTextStyle.copyWith(fontSize: 20, fontWeight: bold),
-          textAlign: TextAlign.center,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: BoxDecoration(
+          color: whiteColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        content: Text(
-          'Apakah Anda yakin ingin menerima jadwal pengambilan dari ${schedule.userName}?',
-          style: blackTextStyle.copyWith(fontSize: 15, fontWeight: regular),
-          textAlign: TextAlign.center,
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+          left: 24,
+          right: 24,
+          top: 16,
         ),
-        contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: greyColor.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: greenColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline,
+                color: greenColor,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Title
+            Text(
+              'Terima Jadwal?',
+              style: blackTextStyle.copyWith(fontSize: 20, fontWeight: bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Pastikan Anda siap menangani jadwal ini',
+              style: greyTextStyle.copyWith(fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+
+            // Detail card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: greyColor.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: greyColor.withOpacity(0.15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Customer
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 18, color: greenColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              schedule.userName,
+                              style: blackTextStyle.copyWith(
+                                fontWeight: semiBold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              schedule.userPhone,
+                              style: greyTextStyle.copyWith(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    'Batal',
-                    style: TextStyle(
-                      color: blueColor,
-                      fontWeight: semiBold,
-                      fontSize: 16,
+                  Divider(height: 16, color: greyColor.withOpacity(0.2)),
+
+                  // Address
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 18,
+                        color: redcolor,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          schedule.pickupAddress,
+                          style: blackTextStyle.copyWith(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Schedule time
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, size: 18, color: blueColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${schedule.scheduleDay} · ${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
+                          style: blackTextStyle.copyWith(fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Waste summary
+                  if (schedule.wasteSummary.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: orangeColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                schedule.wasteSummary,
+                                style: blackTextStyle.copyWith(fontSize: 13),
+                              ),
+                              if (schedule.scheduledWeight != '0.00') ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${schedule.wasteTypeScheduled}: ${schedule.scheduledWeight} kg',
+                                  style: greyTextStyle.copyWith(fontSize: 12),
+                                ),
+                              ],
+                              if (schedule.additionalWastes != null &&
+                                  schedule.additionalWastes!.isNotEmpty)
+                                ...schedule.additionalWastes!.map(
+                                  (w) => Text(
+                                    '${w.type}: ~${w.estimatedWeight} kg (estimasi)',
+                                    style: greyTextStyle.copyWith(fontSize: 12),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(sheetContext, false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: greyColor.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Batal',
+                      style: blackTextStyle.copyWith(
+                        fontWeight: semiBold,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: greenColor,
-                    foregroundColor: whiteColor,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(sheetContext, true),
+                    icon: const Icon(Icons.check_circle, size: 20),
+                    label: Text(
+                      'Ya, Terima',
+                      style: whiteTextStyle.copyWith(
+                        fontWeight: semiBold,
+                        fontSize: 15,
+                      ),
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Ya, Terima',
-                    style: whiteTextStyle.copyWith(
-                      fontWeight: semiBold,
-                      fontSize: 16,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: greenColor,
+                      foregroundColor: whiteColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
 
@@ -411,7 +586,20 @@ class _AvailableSchedulesTabContentState
             ),
           ),
         );
-        _loadSchedules(); // Refresh list
+        // Optimistic update: remove the accepted schedule from list immediately.
+        // This avoids calling _loadSchedules() (which triggers setState) in the
+        // same callback as onScheduleAccepted (which also triggers setState in
+        // Pickup tab via ValueNotifier) — two setState chains in one frame caused
+        // the call stack error.
+        setState(() {
+          _schedules.removeWhere((s) => s.id == schedule.id);
+          _totalSchedules = _totalSchedules > 0 ? _totalSchedules - 1 : 0;
+        });
+        // Notify parent on next frame to switch tab + refresh Pickup.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onScheduleAccepted?.call();
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -448,7 +636,7 @@ class _AvailableSchedulesTabContentState
             children: [
               Expanded(
                 child: Text(
-                  'Menampilkan ${_schedules.length} jadwal tersedia',
+                  'Menampilkan ${_schedules.length}${_totalSchedules > 0 ? ' dari $_totalSchedules' : ''} jadwal tersedia',
                   style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
               ),
@@ -599,12 +787,12 @@ class _ScheduleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: greenColor.withOpacity(0.1),
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 3,
+      shadowColor: blueColor.withOpacity(0.2),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: greenColor.withOpacity(0.1), width: 1),
+        side: BorderSide(color: blueColor.withOpacity(0.1), width: 1),
       ),
       child: InkWell(
         onTap: onTap,
@@ -613,7 +801,7 @@ class _ScheduleCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
-              colors: [whiteColor, greenui],
+              colors: [whiteColor, lightBackgroundColor],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -623,11 +811,13 @@ class _ScheduleCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // User Info
+                // User Info + Status
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: greenColor.withOpacity(0.1),
                         shape: BoxShape.circle,
@@ -636,7 +826,17 @@ class _ScheduleCard extends StatelessWidget {
                           width: 2,
                         ),
                       ),
-                      child: Icon(Icons.person, color: greenColor, size: 24),
+                      child: Text(
+                        (schedule.userName.trim().isNotEmpty
+                                ? schedule.userName.trim()[0]
+                                : '?')
+                            .toUpperCase(),
+                        style: TextStyle(
+                          color: greenColor,
+                          fontSize: 20,
+                          fontWeight: bold,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -694,6 +894,7 @@ class _ScheduleCard extends StatelessWidget {
                   ],
                 ),
                 Divider(height: 24, color: greyColor.withOpacity(0.3)),
+                const SizedBox(height: 12),
 
                 // Address
                 Row(
@@ -739,7 +940,7 @@ class _ScheduleCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              schedule.pickupTimeStart,
+                              '${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
                               style: greyTextStyle.copyWith(
                                 fontSize: 13,
                                 fontWeight: medium,
@@ -753,7 +954,7 @@ class _ScheduleCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Waste Types
+                // Waste Types & Weights
                 if (schedule.wasteSummary.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -762,23 +963,60 @@ class _ScheduleCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: orangeColor.withOpacity(0.2)),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 20,
-                          color: orangeColor,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: orangeColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                schedule.wasteSummary,
+                                style: blackTextStyle.copyWith(
+                                  fontSize: 14,
+                                  fontWeight: medium,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            schedule.wasteSummary,
-                            style: blackTextStyle.copyWith(
-                              fontSize: 14,
-                              fontWeight: medium,
+                        // Scheduled weight for main waste type
+                        if (schedule.scheduledWeight != '0.00') ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              const SizedBox(width: 28),
+                              Text(
+                                '${schedule.wasteTypeScheduled}: ${schedule.scheduledWeight} kg',
+                                style: greyTextStyle.copyWith(fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ],
+                        // Additional wastes
+                        if (schedule.additionalWastes != null &&
+                            schedule.additionalWastes!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          ...schedule.additionalWastes!.map(
+                            (w) => Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 28),
+                                  Text(
+                                    '${w.type}: ~${w.estimatedWeight} kg (tambahan)',
+                                    style: greyTextStyle.copyWith(fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

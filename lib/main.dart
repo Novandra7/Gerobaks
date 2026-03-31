@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:developer' as developer;
+import 'package:bank_sha/models/mitra_pickup_schedule.dart';
 import 'package:bank_sha/shared/route_observer.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/buat_keluhan_page.dart';
 import 'package:bank_sha/ui/pages/end_user/buat_keluhan/golden_keluhan_pages.dart';
@@ -273,11 +274,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // App is paused/backgrounded - cleanup resources
-      NavigationHelper.cleanupResources();
+      // App is paused/backgrounded - keep resources to preserve app state
+      print("App paused - preserving navigation resources");
     } else if (state == AppLifecycleState.resumed) {
-      // App is resumed - can reinitialize if needed
-      print("App resumed - resources were cleaned up");
+      print("App resumed - navigation state preserved");
+    } else if (state == AppLifecycleState.detached) {
+      // App is detached/terminating - safe to cleanup resources.
+      NavigationHelper.cleanupResources();
     }
   }
 
@@ -338,6 +341,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/mitra-pickup': (context) => const MitraHomePage(),
           '/mitra-pickup-available': (context) =>
               const AvailableSchedulesPage(),
+          '/mitra/schedule-detail': (context) => ScheduleDetailPage(
+            schedule:
+                ModalRoute.of(context)?.settings.arguments
+                    as MitraPickupSchedule,
+          ),
           '/mitra-pickup-active': (context) => const ActiveSchedulesPage(),
           '/mitra-pickup-history': (context) => const HistoryPage(),
           '/notif': (context) => const NotificationPage(),

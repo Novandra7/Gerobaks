@@ -36,15 +36,15 @@ class WasteScheduleService {
     },
     5: {
       // Jumat
-      'type': 'Campuran',
-      'description': 'Pengambilan sampah campuran',
+      'type': 'Organik',
+      'description': 'Pengambilan sampah organik (sisa makanan, daun)',
       'time': '06:00',
-      'icon': 'delete',
+      'icon': 'eco',
     },
     6: {
       // Sabtu
-      'type': 'Campuran',
-      'description': 'Pengambilan sampah campuran',
+      'type': 'Elektronik',
+      'description': 'Pengambilan sampah elektronik (gadget, kabel)',
       'time': '06:00',
       'icon': 'delete',
     },
