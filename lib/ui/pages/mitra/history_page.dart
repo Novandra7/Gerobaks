@@ -22,8 +22,6 @@ class _HistoryPageState extends State<HistoryPage> {
 
   int _currentPage = 1;
   int _totalPages = 1;
-  DateTime? _dateFrom;
-  DateTime? _dateTo;
 
   @override
   void initState() {
@@ -69,17 +67,11 @@ class _HistoryPageState extends State<HistoryPage> {
       final result = await _apiService.getHistory(
         page: _currentPage,
         perPage: 20,
-        dateFrom: _dateFrom != null
-            ? DateFormat('yyyy-MM-dd').format(_dateFrom!)
-            : null,
-        dateTo: _dateTo != null
-            ? DateFormat('yyyy-MM-dd').format(_dateTo!)
-            : null,
       );
 
       setState(() {
         _schedules = result['schedules'] as List<MitraPickupSchedule>;
-        _totalPages = result['total_pages'] as int;
+        _totalPages = (result['total_pages'] as int?) ?? 1;
         _isLoading = false;
       });
     } catch (e) {
@@ -102,12 +94,6 @@ class _HistoryPageState extends State<HistoryPage> {
       final result = await _apiService.getHistory(
         page: _currentPage,
         perPage: 20,
-        dateFrom: _dateFrom != null
-            ? DateFormat('yyyy-MM-dd').format(_dateFrom!)
-            : null,
-        dateTo: _dateTo != null
-            ? DateFormat('yyyy-MM-dd').format(_dateTo!)
-            : null,
       );
 
       setState(() {
@@ -127,191 +113,9 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
-  void _showDateFilter() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Filter Tanggal',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Date From
-              const Text(
-                'Dari Tanggal',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _dateFrom ?? DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (date != null) {
-                    setModalState(() => _dateFrom = date);
-                  }
-                },
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Text(
-                    _dateFrom != null
-                        ? DateFormat('dd MMM yyyy', 'id_ID').format(_dateFrom!)
-                        : 'Pilih tanggal',
-                    style: TextStyle(
-                      color: _dateFrom != null ? Colors.black : Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Date To
-              const Text(
-                'Sampai Tanggal',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: _dateTo ?? DateTime.now(),
-                    firstDate: _dateFrom ?? DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (date != null) {
-                    setModalState(() => _dateTo = date);
-                  }
-                },
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                  ),
-                  child: Text(
-                    _dateTo != null
-                        ? DateFormat('dd MMM yyyy', 'id_ID').format(_dateTo!)
-                        : 'Pilih tanggal',
-                    style: TextStyle(
-                      color: _dateTo != null ? Colors.black : Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        setModalState(() {
-                          _dateFrom = null;
-                          _dateTo = null;
-                        });
-                      },
-                      child: const Text('Reset'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          // Dates already updated in modal state
-                        });
-                        Navigator.pop(context);
-                        _loadHistory(reset: true);
-                      },
-                      child: const Text('Terapkan'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Filter and refresh buttons
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.white,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _dateFrom != null || _dateTo != null
-                      ? 'Filter aktif'
-                      : 'Riwayat pengambilan',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ),
-              IconButton(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.filter_list),
-                    if (_dateFrom != null || _dateTo != null)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                onPressed: _showDateFilter,
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => _loadHistory(reset: true),
-              ),
-            ],
-          ),
-        ),
-        Expanded(child: _buildBody()),
-      ],
-    );
+    return _buildBody();
   }
 
   Widget _buildBody() {
@@ -345,13 +149,13 @@ class _HistoryPageState extends State<HistoryPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: greyColor.withOpacity(0.1),
+                color: greyColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.history,
                 size: 64,
-                color: greyColor.withOpacity(0.6),
+                color: greyColor.withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 24),
@@ -420,10 +224,10 @@ class _HistoryCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shadowColor: greenColor.withOpacity(0.1),
+      shadowColor: greenColor.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: greenColor.withOpacity(0.1), width: 1),
+        side: BorderSide(color: greenColor.withValues(alpha: 0.1), width: 1),
       ),
       child: InkWell(
         onTap: () => _showDetailModal(context),
@@ -461,10 +265,10 @@ class _HistoryCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: schedule.statusColor.withOpacity(0.15),
+                        color: schedule.statusColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: schedule.statusColor.withOpacity(0.3),
+                          color: schedule.statusColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -489,7 +293,7 @@ class _HistoryCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Divider(height: 20, color: greyColor.withOpacity(0.3)),
+                Divider(height: 20, color: greyColor.withValues(alpha: 0.3)),
 
                 // User Info
                 Row(
@@ -497,14 +301,24 @@ class _HistoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: blueColor.withOpacity(0.1),
+                        color: blueColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: blueColor.withOpacity(0.3),
+                          color: blueColor.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
-                      child: Icon(Icons.person, color: blueColor, size: 20),
+                      child: Text(
+                        (schedule.userName.trim().isNotEmpty
+                                ? schedule.userName.trim()[0]
+                                : '?')
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -539,9 +353,9 @@ class _HistoryCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: blueColor.withOpacity(0.1),
+                    color: blueColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: blueColor.withOpacity(0.2)),
+                    border: Border.all(color: blueColor.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -560,7 +374,7 @@ class _HistoryCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              schedule.pickupTimeStart,
+                              '${schedule.pickupTimeStart} - ${schedule.pickupTimeEnd}',
                               style: greyTextStyle.copyWith(
                                 fontSize: 12,
                                 fontWeight: medium,
@@ -580,14 +394,16 @@ class _HistoryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        orangeColor.withOpacity(0.1),
-                        yellowColor.withOpacity(0.1),
+                        orangeColor.withValues(alpha: 0.1),
+                        yellowColor.withValues(alpha: 0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: orangeColor.withOpacity(0.2)),
+                    border: Border.all(
+                      color: orangeColor.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -597,7 +413,7 @@ class _HistoryCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: orangeColor.withOpacity(0.2),
+                                color: orangeColor.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -629,7 +445,7 @@ class _HistoryCard extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color: greyColor.withOpacity(0.3),
+                        color: greyColor.withValues(alpha: 0.3),
                       ),
                       Expanded(
                         child: Row(
@@ -638,7 +454,7 @@ class _HistoryCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: yellowColor.withOpacity(0.2),
+                                color: yellowColor.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -683,9 +499,11 @@ class _HistoryCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: blueColor.withOpacity(0.1),
+                        color: blueColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: blueColor.withOpacity(0.2)),
+                        border: Border.all(
+                          color: blueColor.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -718,22 +536,28 @@ class _HistoryDetailModal extends StatelessWidget {
 
   const _HistoryDetailModal({required this.schedule});
 
-  String _getTrashIcon(String trashType) {
+  IconData _getTrashIcon(String trashType) {
     final type = trashType.toLowerCase();
 
-    if (type.contains('organik')) {
-      return 'assets/ic_transaction_cat1.png';
-    } else if (type.contains('plastik')) {
-      return 'assets/ic_transaction_cat2.png';
-    } else if (type.contains('kertas')) {
-      return 'assets/ic_transaction_cat3.png';
-    } else if (type.contains('kaca') || type.contains('logam')) {
-      return 'assets/ic_transaction_cat4.png';
-    } else if (type.contains('elektronik') || type.contains('b3')) {
-      return 'assets/ic_transaction_cat5.png';
+    if (type.contains('plastik')) return Icons.shopping_bag_outlined;
+    if (type.contains('kertas') || type.contains('koran')) {
+      return Icons.article_outlined;
     }
+    if (type.contains('logam') ||
+        type.contains('besi') ||
+        type.contains('aluminium')) {
+      return Icons.hardware_outlined;
+    }
+    if (type.contains('kaca') || type.contains('botol')) {
+      return Icons.local_bar_outlined;
+    }
+    if (type.contains('b3') || type.contains('kimia')) {
+      return Icons.warning_amber_rounded;
+    }
+    if (type.contains('elektro')) return Icons.devices_outlined;
+    if (type.contains('organik')) return Icons.eco_outlined;
 
-    return 'assets/ic_trash.png';
+    return Icons.recycling_outlined;
   }
 
   void _showFullScreenImage(BuildContext context, String imagePath) {
@@ -769,8 +593,6 @@ class _HistoryDetailModal extends StatelessWidget {
                     );
                   },
                   errorBuilder: (context, error, stackTrace) {
-                    print('❌ Error loading fullscreen image: $imagePath');
-                    print('❌ Error: $error');
                     return Container(
                       color: Colors.grey[900],
                       child: const Center(
@@ -838,47 +660,114 @@ class _HistoryDetailModal extends StatelessWidget {
       });
     }
 
+    final List<Color> itemColors = [
+      orangeColor,
+      redcolor,
+      const Color(0xff8B5CF6),
+      const Color(0xff0D9488),
+      greenColor,
+      blueColor,
+    ];
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (context, scrollController) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: whiteColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
             // Handle Bar
             Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              margin: const EdgeInsets.only(top: 12, bottom: 16),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: greyColor.withAlpha(77),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
             // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: greenColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: greenColor.withAlpha(51),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
-                  const Text(
-                    'Detail Pengambilan',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: whiteColor.withAlpha(64),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: whiteColor,
+                      size: 32,
+                    ),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pengambilan Selesai',
+                          style: whiteTextStyle.copyWith(
+                            fontSize: 20,
+                            fontWeight: bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          schedule.completedAt != null
+                              ? DateFormat('EEEE, dd MMM yyyy • HH:mm', 'id_ID')
+                                  .format(schedule.completedAt!)
+                              : '-',
+                          style: whiteTextStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: regular,
+                            color: whiteColor.withAlpha(230),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: whiteColor,
+                          size: 24,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const Divider(height: 1),
+            const SizedBox(height: 16),
 
             // Content
             Expanded(
@@ -886,121 +775,193 @@ class _HistoryDetailModal extends StatelessWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.all(20),
                 children: [
-                  // Date and User Info
-                  Card(
-                    elevation: 0,
-                    color: Colors.grey[50],
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_today,
-                                size: 16,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                schedule.completedAt != null
-                                    ? DateFormat(
-                                        'EEEE, dd MMMM yyyy • HH:mm',
-                                        'id_ID',
-                                      ).format(schedule.completedAt!)
-                                    : '-',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
+                  // Date and User Info Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: whiteColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: greyColor.withAlpha(51)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: greyColor.withAlpha(26),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Date Section
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: blueColor.withAlpha(26),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const Divider(height: 24),
-                          Row(
+                          child: Row(
                             children: [
-                              CircleAvatar(
-                                backgroundColor: Colors.blue[100],
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.blue,
-                                ),
+                              Icon(
+                                Icons.event_rounded,
+                                size: 20,
+                                color: blueColor,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      schedule.userName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.location_on,
-                                          size: 14,
-                                          color: Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            schedule.pickupAddress,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                child: Text(
+                                  schedule.completedAt != null
+                                      ? DateFormat(
+                                          'EEEE, dd MMMM yyyy • HH:mm',
+                                          'id_ID',
+                                        ).format(schedule.completedAt!)
+                                      : '-',
+                                  style: blackTextStyle.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: medium,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                        
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Divider(
+                            height: 32,
+                            thickness: 1,
+                            color: greyColor.withAlpha(51),
+                          ),
+                        ),
+                        
+                        // User Info Section
+                        Row(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: blueColor,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: blueColor.withAlpha(51),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  (schedule.userName.trim().isNotEmpty
+                                          ? schedule.userName.trim()[0]
+                                          : '?')
+                                      .toUpperCase(),
+                                  style: whiteTextStyle.copyWith(
+                                    fontWeight: bold,
+                                    fontSize: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    schedule.userName,
+                                    style: blackTextStyle.copyWith(
+                                      fontWeight: bold,
+                                      fontSize: 17,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_rounded,
+                                        size: 16,
+                                        color: greyColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          schedule.pickupAddress,
+                                          style: greyTextStyle.copyWith(
+                                            fontSize: 13,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   // Summary Card
-                  Card(
-                    elevation: 0,
-                    color: Colors.orange[50],
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '📊 RINGKASAN',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildSummaryRow(
-                            'Total Berat',
-                            '${schedule.totalWeight?.toStringAsFixed(2) ?? 0} kg',
-                          ),
-                          _buildSummaryRow(
-                            'Total Jenis',
-                            '${trashDetails.length} jenis',
-                          ),
-                          _buildSummaryRow(
-                            'Total Poin',
-                            '$pointsEarned poin',
-                            isHighlighted: true,
-                          ),
-                        ],
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: orangeColor.withAlpha(26),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: orangeColor.withAlpha(51),
                       ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: orangeColor.withAlpha(77),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.summarize_rounded,
+                                color: orangeColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'RINGKASAN',
+                              style: blackTextStyle.copyWith(
+                                fontSize: 14,
+                                fontWeight: bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSummaryRow(
+                          'Total Berat',
+                          '${schedule.totalWeight?.toStringAsFixed(2) ?? '0.00'} kg',
+                        ),
+                        _buildSummaryRow(
+                          'Total Jenis',
+                          '${trashDetails.length} jenis',
+                        ),
+                        _buildSummaryRow(
+                          'Total Poin',
+                          '$pointsEarned poin',
+                          isHighlighted: true,
+                        ),
+                      ],
                     ),
                   ),
 
@@ -1008,106 +969,204 @@ class _HistoryDetailModal extends StatelessWidget {
 
                   // Trash Details
                   if (trashDetails.isNotEmpty) ...[
-                    const Text(
-                      '📦 DETAIL SAMPAH',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ...trashDetails.map(
-                      (detail) => Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.asset(
-                                detail['icon'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.delete,
-                                    color: Colors.grey,
-                                  );
-                                },
-                              ),
-                            ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: greenColor.withAlpha(26),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          title: Text(
-                            detail['type'],
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            '${detail['weight'].toStringAsFixed(2)} kg',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.amber[50],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '+${detail['points']} poin',
-                              style: const TextStyle(
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
+                          child: Icon(
+                            Icons.recycling_rounded,
+                            color: greenColor,
+                            size: 18,
                           ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'DETAIL SAMPAH',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 14),
+                    ...List.generate(trashDetails.length, (index) {
+                      final detail = trashDetails[index];
+                      final color = itemColors[index % itemColors.length];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: whiteColor,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: color.withAlpha(77),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withAlpha(26),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: color.withAlpha(26),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                detail['icon'] as IconData,
+                                color: color,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    detail['type'],
+                                    style: blackTextStyle.copyWith(
+                                      fontWeight: bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.scale_rounded,
+                                        size: 14,
+                                        color: greyColor,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${detail['weight'].toStringAsFixed(2)} kg',
+                                        style: greyTextStyle.copyWith(
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF59E0B),
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFF59E0B).withAlpha(51),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.stars_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${detail['points']}',
+                                    style: whiteTextStyle.copyWith(
+                                      fontWeight: bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 20),
                   ],
 
                   // Photos
                   if (schedule.pickupPhotos != null &&
                       schedule.pickupPhotos!.isNotEmpty) ...[
-                    const Text(
-                      '📸 BUKTI FOTO',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: blueColor.withAlpha(26),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            Icons.photo_camera_rounded,
+                            color: blueColor,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'BUKTI FOTO',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
                             childAspectRatio: 1.2,
                           ),
                       itemCount: schedule.pickupPhotos!.length,
                       itemBuilder: (context, index) {
                         final photoPath = schedule.pickupPhotos![index];
+                        print(photoPath);
                         return GestureDetector(
                           onTap: () => _showFullScreenImage(context, photoPath),
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[300]!),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: greyColor.withAlpha(77),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: greyColor.withAlpha(26),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(13),
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
@@ -1134,10 +1193,6 @@ class _HistoryDetailModal extends StatelessWidget {
                                       );
                                     },
                                     errorBuilder: (context, error, stackTrace) {
-                                      print(
-                                        '❌ Error loading image: $photoPath',
-                                      );
-                                      print('❌ Error: $error');
                                       return Container(
                                         color: Colors.grey[200],
                                         child: Column(
@@ -1169,18 +1224,25 @@ class _HistoryDetailModal extends StatelessWidget {
                                         end: Alignment.bottomCenter,
                                         colors: [
                                           Colors.transparent,
-                                          Colors.black.withOpacity(0.3),
+                                          Colors.black.withValues(alpha: 0.4),
                                         ],
                                       ),
                                     ),
                                   ),
-                                  const Positioned(
-                                    bottom: 8,
-                                    right: 8,
-                                    child: Icon(
-                                      Icons.zoom_in,
-                                      color: Colors.white,
-                                      size: 20,
+                                  Positioned(
+                                    bottom: 10,
+                                    right: 10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withAlpha(204),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(
+                                        Icons.zoom_in_rounded,
+                                        color: Colors.black87,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -1195,26 +1257,48 @@ class _HistoryDetailModal extends StatelessWidget {
 
                   // Notes
                   if (schedule.notes != null && schedule.notes!.isNotEmpty) ...[
-                    const Text(
-                      '📝 CATATAN',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff8B5CF6).withAlpha(26),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.note_alt_rounded,
+                            color: Color(0xff8B5CF6),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'CATATAN',
+                          style: blackTextStyle.copyWith(
+                            fontSize: 14,
+                            fontWeight: bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
+                        color: const Color(0xffF5F3FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xff8B5CF6).withAlpha(51),
+                        ),
                       ),
                       child: Text(
                         schedule.notes!,
-                        style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                        style: blackTextStyle.copyWith(
+                          fontSize: 14,
+                          height: 1.5,
+                        ),
                       ),
                     ),
                   ],
@@ -1232,29 +1316,66 @@ class _HistoryDetailModal extends StatelessWidget {
     String value, {
     bool isHighlighted = false,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: whiteColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isHighlighted
+              ? greenColor.withAlpha(77)
+              : greyColor.withAlpha(51),
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[700], fontSize: 14)),
+          Text(
+            label,
+            style: greyTextStyle.copyWith(
+              fontSize: 14,
+              fontWeight: medium,
+            ),
+          ),
           Container(
             padding: isHighlighted
-                ? const EdgeInsets.symmetric(horizontal: 12, vertical: 4)
+                ? const EdgeInsets.symmetric(horizontal: 14, vertical: 6)
                 : null,
             decoration: isHighlighted
                 ? BoxDecoration(
-                    color: Colors.green[100],
-                    borderRadius: BorderRadius.circular(12),
+                    color: greenColor,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: greenColor.withAlpha(51),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   )
                 : null,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: isHighlighted ? Colors.green[700] : Colors.black,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isHighlighted)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 6),
+                    child: Icon(
+                      Icons.emoji_events_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                Text(
+                  value,
+                  style: blackTextStyle.copyWith(
+                    fontWeight: bold,
+                    fontSize: 15,
+                    color: isHighlighted ? whiteColor : blackColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
