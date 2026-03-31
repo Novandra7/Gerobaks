@@ -53,12 +53,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
   // Dynamic waste schedule info
   String _todayWasteType = 'Campuran';
   String _todayWasteDescription = 'Hari ini pengambilan sampah campuran!';
+  bool _hasTodayWasteSchedule = false;
 
   // Additional waste toggle - requires subscription
   bool _hasAdditionalWaste = false;
 
   // Scheduled waste toggle - default ON
-  bool _hasScheduledWaste = true;
+  final bool _hasScheduledWaste = true;
 
   final List<String> _selectedWasteTypes =
       []; // Changed to list for multi-select
@@ -147,12 +148,19 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
     final todaySchedule = WasteScheduleService.getTodaySchedule();
     if (todaySchedule != null) {
       setState(() {
+        _hasTodayWasteSchedule = true;
         _todayWasteType = todaySchedule['type'] ?? 'Campuran';
         _todayWasteDescription =
             'Hari ini pengambilan sampah ${_todayWasteType.toLowerCase()}!';
+
+        _selectedWasteTypes.removeWhere(
+          (type) => type.toLowerCase() == _todayWasteType.toLowerCase(),
+        );
+        _weightControllers.remove(_todayWasteType)?.dispose();
       });
     } else {
       setState(() {
+        _hasTodayWasteSchedule = false;
         _todayWasteType = 'Campuran';
         _todayWasteDescription = 'Tidak ada jadwal pengambilan hari ini';
       });
@@ -272,7 +280,13 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
               ),
             ),
             const Divider(height: 1),
-            ..._wasteTypes.map((type) {
+            ..._wasteTypes
+                .where(
+                  (type) =>
+                      !_hasTodayWasteSchedule ||
+                      type.toLowerCase() != _todayWasteType.toLowerCase(),
+                )
+                .map((type) {
               final isSelected = _selectedWasteTypes.contains(type);
               return ListTile(
                 contentPadding: const EdgeInsets.symmetric(
@@ -394,7 +408,7 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
               try {
                 final weight = double.parse(controller.text);
                 additionalWastes.add({
-                  'type': type.toLowerCase(),
+                  'type': type,
                   'estimated_weight': weight,
                 });
               } catch (e) {
@@ -997,14 +1011,17 @@ class _AddSchedulePageState extends State<AddSchedulePage> {
                                   value: _hasAdditionalWaste,
                                   onChanged: (value) async {
                                     if (value) {
-                                      // Check subscription when trying to enable additional waste
+                                      // Fetch fresh subscription from API to avoid stale local data
                                       final subscriptionService =
                                           SubscriptionService();
-                                      final hasActiveSubscription =
-                                          subscriptionService
-                                              .hasActiveSubscription();
+                                      final latestSubscription =
+                                          await subscriptionService
+                                              .getCurrentSubscriptionFromAPI();
+                                      final hasActiveSub =
+                                          latestSubscription?.isActive ?? false;
 
-                                      if (!hasActiveSubscription) {
+                                      if (!mounted) return;
+                                      if (!hasActiveSub) {
                                         // Show subscription dialog
                                         _showSubscriptionDialog();
                                         return;
