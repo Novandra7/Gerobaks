@@ -89,7 +89,6 @@ class _GpsTrackingViewState extends State<GpsTrackingView> {
       final trackingInfo = await RealTimeTrackingService().getUserTrackingInfo(
         scheduleIdInt,
       );
-      print('[GPS data] Tracking info received: ${trackingInfo?.toJson().toString()}');
 
       if (trackingInfo == null) {
         throw Exception('Data tracking tidak tersedia');
