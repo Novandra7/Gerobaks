@@ -94,8 +94,8 @@ class LocationPoint {
 
   factory LocationPoint.fromJson(Map<String, dynamic> json) {
     return LocationPoint(
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
+      latitude: (double.parse(json['latitude'].toString())).toDouble(),
+      longitude: (double.parse(json['longitude'].toString())).toDouble(),
     );
   }
 
