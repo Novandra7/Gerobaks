@@ -223,9 +223,8 @@ class MitraApiService {
       _logger.i('🚗 Starting journey: $url');
 
       final body = <String, dynamic>{};
-      if (currentLatitude != null) body['current_latitude'] = currentLatitude;
-      if (currentLongitude != null)
-        body['current_longitude'] = currentLongitude;
+      if (currentLatitude != null) body['latitude'] = currentLatitude;
+      if (currentLongitude != null) body['longitude'] = currentLongitude;
 
       final response = await http.post(
         Uri.parse(url),
@@ -386,7 +385,7 @@ class MitraApiService {
   }
 
   /// Get mitra's active schedules
-  Future<List<MitraPickupSchedule>> getMyActiveSchedules() async {  
+  Future<List<MitraPickupSchedule>> getMyActiveSchedules() async {
     try {
       final token = await _getToken();
 
