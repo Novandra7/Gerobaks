@@ -122,8 +122,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
 
           // Create static DateTime
           scheduledDate = DateTime(year, month, day, hour, minute);
-
-          print('✅ Using schedule_date + pickup_time_start: $scheduledDate');
         }
         // Priority 2: Gunakan scheduled_at (alternative)
         else if (schedule['scheduled_at'] != null) {
@@ -156,7 +154,10 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         int parseWeightToInt(dynamic value) {
           if (value is num) return value.toInt();
           if (value is String) {
-            return double.tryParse(value.trim().replaceAll(',', '.'))?.toInt() ?? 0;
+            return double.tryParse(
+                  value.trim().replaceAll(',', '.'),
+                )?.toInt() ??
+                0;
           }
           return 0;
         }
@@ -209,7 +210,9 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         if (schedule['total_points'] is num) {
           totalPoints = (schedule['total_points'] as num).toInt();
         } else {
-          final pointsFromApi = int.tryParse(schedule['total_points']?.toString() ?? '');
+          final pointsFromApi = int.tryParse(
+            schedule['total_points']?.toString() ?? '',
+          );
           totalPoints = pointsFromApi ?? (totalWeight * 10);
         }
       }
@@ -231,15 +234,17 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
       }
 
       final wasteSummary = schedule['waste_summary']?.toString().trim();
-      final wasteTypeScheduled = schedule['waste_type_scheduled']?.toString().trim();
+      final wasteTypeScheduled = schedule['waste_type_scheduled']
+          ?.toString()
+          .trim();
 
       return ActivityModel(
         id: schedule['id']?.toString() ?? '',
         title: (wasteSummary != null && wasteSummary.isNotEmpty)
             ? 'Pickup $wasteSummary'
             : (wasteTypeScheduled != null && wasteTypeScheduled.isNotEmpty)
-                ? 'Pickup $wasteTypeScheduled'
-                : 'Layanan Sampah',
+            ? 'Pickup $wasteTypeScheduled'
+            : 'Layanan Sampah',
         address: schedule['pickup_address'] ?? '',
         dateTime: _formatDateTime(scheduledDate),
         status: _mapStatusToReadableStatus(schedule['status']),
