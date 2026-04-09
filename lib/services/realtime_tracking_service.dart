@@ -241,11 +241,34 @@ class RealTimeTrackingService with WidgetsBindingObserver {
         return null;
       }
 
-      // Get current position
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 5),
-      );
+      // Get current position (background mode biasanya butuh waktu lebih lama).
+      final isForeground = _currentLifecycleState == AppLifecycleState.resumed;
+      final desiredAccuracy = isForeground
+          ? LocationAccuracy.high
+          : LocationAccuracy.medium;
+      final positionTimeout = isForeground
+          ? const Duration(seconds: 8)
+          : const Duration(seconds: 20);
+
+      Position position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: desiredAccuracy,
+          timeLimit: positionTimeout,
+        );
+      } on TimeoutException {
+        _logger.w(
+          '⏱️ GetCurrentPosition timeout in ${isForeground ? 'foreground' : 'background'} mode, trying last known position',
+        );
+
+        final lastKnownPosition = await Geolocator.getLastKnownPosition();
+        if (lastKnownPosition == null) {
+          _logger.e('❌ Last known position not available after timeout');
+          return null;
+        }
+
+        position = lastKnownPosition;
+      }
 
       // Convert speed from m/s to km/h
       final speedKmh = position.speed > 0 ? position.speed * 3.6 : null;
@@ -324,7 +347,7 @@ class RealTimeTrackingService with WidgetsBindingObserver {
             headers: headers,
             body: jsonEncode({'pickup_schedule_id': pickupScheduleId}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         _logger.i('✅ Tracking stopped successfully');
