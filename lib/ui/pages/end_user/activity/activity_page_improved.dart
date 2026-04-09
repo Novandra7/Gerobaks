@@ -1,6 +1,9 @@
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar_improved.dart';
-import 'package:bank_sha/ui/pages/end_user/activity/activity_content_improved.dart';
+import 'package:bank_sha/ui/pages/end_user/activity/tabs/scheduled_tab.dart';
+import 'package:bank_sha/ui/pages/end_user/activity/tabs/ongoing_tab.dart';
+import 'package:bank_sha/ui/pages/end_user/activity/tabs/completed_tab.dart';
+import 'package:bank_sha/ui/pages/end_user/activity/tabs/cancelled_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -34,7 +37,7 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
   void initState() {
     super.initState();
     initializeDateFormatting('id_ID', null);
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
     // Listen to tab changes
     _tabController.addListener(() {
@@ -69,9 +72,7 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
               surface: Colors.white,
               onSurface: Colors.black,
             ),
-            dialogTheme: DialogThemeData(
-              backgroundColor: Colors.white,
-            ),
+            dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -220,8 +221,10 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           indicatorColor: greenColor,
           tabs: const [
-            Tab(text: 'Aktif'),
-            Tab(text: 'Riwayat'),
+            Tab(text: 'Dijadwalkan'),
+            Tab(text: 'Berlangsung'),
+            Tab(text: 'Selesai'),
+            Tab(text: 'Dibatalkan'),
           ],
         ),
       ),
@@ -306,22 +309,25 @@ class _ActivityPageImprovedState extends State<ActivityPageImproved>
               controller: _tabController,
               physics: const BouncingScrollPhysics(),
               children: [
-                // Active Tab
-                ActivityContentImproved(
-                  key: const ValueKey('active-tab'),
-                  showActive: true,
+                // Dijadwalkan Tab (Pending)
+                ScheduledTab(
+                  key: const ValueKey('scheduled-tab'),
                   selectedDate: selectedDate,
-                  filterCategory: currentFilter,
-                  searchQuery: null,
                 ),
 
-                // History Tab
-                ActivityContentImproved(
-                  key: const ValueKey('history-tab'),
-                  showActive: false,
+                // Berlangsung Tab (Assigned/On The Way/Arrived)
+                OngoingTab(key: const ValueKey('ongoing-tab')),
+
+                // Selesai Tab (Completed)
+                CompletedTab(
+                  key: const ValueKey('completed-tab'),
                   selectedDate: selectedDate,
-                  filterCategory: currentFilter,
-                  searchQuery: null,
+                ),
+
+                // Dibatalkan Tab (Cancelled)
+                CancelledTab(
+                  key: const ValueKey('cancelled-tab'),
+                  selectedDate: selectedDate,
                 ),
               ],
             ),
