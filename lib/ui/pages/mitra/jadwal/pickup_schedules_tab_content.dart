@@ -9,8 +9,13 @@ import '../../../../services/location_service.dart';
 class PickupSchedulesTabContent extends StatefulWidget {
   /// Listened to by this widget. When the value changes, data is reloaded.
   final ValueNotifier<int>? refreshNotifier;
+  final VoidCallback? onJourneyStarted;
 
-  const PickupSchedulesTabContent({super.key, this.refreshNotifier});
+  const PickupSchedulesTabContent({
+    super.key,
+    this.refreshNotifier,
+    this.onJourneyStarted,
+  });
 
   @override
   State<PickupSchedulesTabContent> createState() =>
@@ -155,6 +160,7 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
             backgroundColor: greenColor,
           ),
         );
+        widget.onJourneyStarted?.call();
         _loadSchedules();
       }
     } catch (e) {
