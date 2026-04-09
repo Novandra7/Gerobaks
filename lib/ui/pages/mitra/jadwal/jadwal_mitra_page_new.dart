@@ -46,6 +46,12 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
     });
   }
 
+  void _onJourneyStarted() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _tabController.animateTo(2);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -134,6 +140,7 @@ class _JadwalMitraPageNewState extends State<JadwalMitraPageNew>
                 ),
                 PickupSchedulesTabContent(
                   refreshNotifier: _pickupRefreshNotifier,
+                  onJourneyStarted: _onJourneyStarted,
                 ),
                 const OngoingSchedulesTabContent(),
                 const HistoryPage(),
