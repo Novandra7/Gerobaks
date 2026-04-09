@@ -182,7 +182,7 @@ class ApiClient {
 
       final resp = await http
           .post(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 60));
 
       print('📡 Response status: ${resp.statusCode}');
       print('📡 Response body: ${resp.body}');

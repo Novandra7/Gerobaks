@@ -5,26 +5,24 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:bank_sha/services/end_user_api_service.dart';
 
-class ActivityContentImproved extends StatefulWidget {
+/// Tab untuk schedule dengan status: completed
+/// Menampilkan jadwal yang sudah selesai
+/// Fitur: Points breakdown, Photo proofs, Rating mitra
+class CompletedTab extends StatefulWidget {
   final DateTime? selectedDate;
-  final bool showActive;
-  final String? filterCategory;
   final String? searchQuery;
 
-  const ActivityContentImproved({
+  const CompletedTab({
     super.key,
     this.selectedDate,
-    required this.showActive,
-    this.filterCategory,
     this.searchQuery,
   });
 
   @override
-  State<ActivityContentImproved> createState() =>
-      _ActivityContentImprovedState();
+  State<CompletedTab> createState() => _CompletedTabState();
 }
 
-class _ActivityContentImprovedState extends State<ActivityContentImproved>
+class _CompletedTabState extends State<CompletedTab>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -80,73 +78,47 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
     }
   }
 
-  // Build skeleton loading for activity items
-  Widget _buildSkeletonLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      itemCount: 6, // Show 6 skeleton items
-      itemBuilder: (context, index) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: SkeletonItems.card(height: 110),
-        );
-      },
-    );
-  }
+  List<ActivityModel> _getFilteredActivities() {
+    // Filter hanya status 'completed'
+    final completedSchedules = _schedules.where((schedule) {
+      return schedule['status'] == 'completed';
+    }).toList();
 
-  List<ActivityModel> getFilteredActivities() {
-    // Convert API schedules to ActivityModel objects
-    List<ActivityModel> activities = _schedules.map((schedule) {
-      // ✅ Parse waktu jadwal dari backend (HANYA gunakan field dari backend)
-      // Backend WAJIB mengirim: schedule_date + pickup_time_start ATAU scheduled_at
+    // Convert ke ActivityModel
+    List<ActivityModel> activities = completedSchedules.map((schedule) {
       DateTime scheduledDate;
 
       try {
-        // Priority 1: Gunakan schedule_date + pickup_time_start (paling akurat)
         if (schedule['schedule_date'] != null &&
             schedule['pickup_time_start'] != null) {
-          final dateStr = schedule['schedule_date'].toString(); // "2025-12-15"
-          final timeStr = schedule['pickup_time_start']
-              .toString(); // "10:00:00"
+          final dateStr = schedule['schedule_date'].toString();
+          final timeStr = schedule['pickup_time_start'].toString();
 
-          // Parse date components
           final dateParts = dateStr.split('-');
           final year = int.parse(dateParts[0]);
           final month = int.parse(dateParts[1]);
           final day = int.parse(dateParts[2]);
 
-          // Parse time components
           final timeParts = timeStr.split(':');
           final hour = int.parse(timeParts[0]);
           final minute = int.parse(timeParts[1]);
 
-          // Create static DateTime
           scheduledDate = DateTime(year, month, day, hour, minute);
-        }
-        // Priority 2: Gunakan scheduled_at (alternative)
-        else if (schedule['scheduled_at'] != null) {
+        } else if (schedule['scheduled_at'] != null) {
           scheduledDate = DateTime.parse(schedule['scheduled_at']);
-        }
-        // ❌ TIDAK ADA FALLBACK - Field harus ada dari backend!
-        else {
-          // Throw exception agar kita tahu ada masalah
-          throw Exception(
-            'Backend error: Missing required fields (schedule_date, pickup_time_start, scheduled_at). '
-            'Backend harus deploy dengan field yang benar!',
-          );
+        } else {
+          throw Exception('Missing schedule date fields');
         }
       } catch (e) {
-        // Re-throw exception agar developer tahu ada masalah
         rethrow;
       }
 
-      // Parse actual_weights jika ada (untuk schedule yang completed)
+      // Parse actual_weights
       List<TrashDetail>? trashDetails;
       int? totalWeight;
       int? totalPoints;
 
-      if (schedule['actual_weights'] != null &&
-          schedule['status'] == 'completed') {
+      if (schedule['actual_weights'] != null) {
         final weights = schedule['actual_weights'];
         trashDetails = [];
         int calculatedWeight = 0;
@@ -154,9 +126,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         int parseWeightToInt(dynamic value) {
           if (value is num) return value.toInt();
           if (value is String) {
-            return double.tryParse(
-                  value.trim().replaceAll(',', '.'),
-                )?.toInt() ??
+            return double.tryParse(value.trim().replaceAll(',', '.'))?.toInt() ??
                 0;
           }
           return 0;
@@ -210,14 +180,13 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         if (schedule['total_points'] is num) {
           totalPoints = (schedule['total_points'] as num).toInt();
         } else {
-          final pointsFromApi = int.tryParse(
-            schedule['total_points']?.toString() ?? '',
-          );
+          final pointsFromApi =
+              int.tryParse(schedule['total_points']?.toString() ?? '');
           totalPoints = pointsFromApi ?? (totalWeight * 10);
         }
       }
 
-      // Parse pickup_photos jika ada
+      // Parse pickup_photos
       List<String>? photoProofs;
       if (schedule['pickup_photos'] != null) {
         if (schedule['pickup_photos'] is List) {
@@ -227,28 +196,27 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
         }
       }
 
-      // Get mitra name jika ada
+      // Get mitra name
       String? completedBy;
       if (schedule['mitra_name'] != null) {
         completedBy = schedule['mitra_name'].toString();
       }
 
       final wasteSummary = schedule['waste_summary']?.toString().trim();
-      final wasteTypeScheduled = schedule['waste_type_scheduled']
-          ?.toString()
-          .trim();
+      final wasteTypeScheduled =
+          schedule['waste_type_scheduled']?.toString().trim();
 
       return ActivityModel(
         id: schedule['id']?.toString() ?? '',
         title: (wasteSummary != null && wasteSummary.isNotEmpty)
             ? 'Pickup $wasteSummary'
             : (wasteTypeScheduled != null && wasteTypeScheduled.isNotEmpty)
-            ? 'Pickup $wasteTypeScheduled'
-            : 'Layanan Sampah',
+                ? 'Pickup $wasteTypeScheduled'
+                : 'Layanan Sampah',
         address: schedule['pickup_address'] ?? '',
         dateTime: _formatDateTime(scheduledDate),
-        status: _mapStatusToReadableStatus(schedule['status']),
-        isActive: _isScheduleActive(schedule['status']),
+        status: 'Selesai',
+        isActive: false,
         date: scheduledDate,
         notes: schedule['notes'],
         trashDetails: trashDetails,
@@ -259,11 +227,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
       );
     }).toList();
 
-    // Filter berdasarkan tab aktif/riwayat
-    activities = activities
-        .where((activity) => activity.isActive == widget.showActive)
-        .toList();
-
     // Filter berdasarkan tanggal jika ada
     if (widget.selectedDate != null) {
       activities = activities.where((activity) {
@@ -271,30 +234,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
             activity.date.month == widget.selectedDate!.month &&
             activity.date.day == widget.selectedDate!.day;
       }).toList();
-    }
-
-    // Filter berdasarkan kategori
-    if (widget.filterCategory != null && widget.filterCategory != 'Semua') {
-      if (widget.filterCategory == 'Lainnya') {
-        // Untuk filter "Lainnya", tampilkan yang tidak masuk kategori utama
-        final mainCategories = [
-          'Dijadwalkan',
-          'Menuju Lokasi',
-          'Selesai',
-          'Dibatalkan',
-        ];
-        activities = activities
-            .where(
-              (activity) => !mainCategories.contains(activity.getCategory()),
-            )
-            .toList();
-      } else {
-        activities = activities
-            .where(
-              (activity) => activity.getCategory() == widget.filterCategory,
-            )
-            .toList();
-      }
     }
 
     // Filter berdasarkan pencarian
@@ -311,39 +250,6 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
     activities.sort((a, b) => b.date.compareTo(a.date));
 
     return activities;
-  }
-
-  String _mapStatusToReadableStatus(String? status) {
-    switch (status) {
-      case 'pending':
-        return 'Dijadwalkan';
-      case 'accepted':
-      case 'assigned':
-      case 'on_progress':
-        return 'Sedang Diproses'; // ✅ Match dengan activity_item_improved.dart & activity_model_improved.dart
-      case 'in_progress':
-      case 'on_the_way':
-        return 'Mitra Menuju Lokasi';
-      case 'arrived':
-        return 'Mitra Sudah Tiba';
-      case 'completed':
-        return 'Selesai';
-      case 'cancelled':
-        return 'Dibatalkan';
-      default:
-        return status?.replaceAll('_', ' ').toUpperCase() ?? 'Unknown';
-    }
-  }
-
-  bool _isScheduleActive(String? status) {
-    // Active schedules are those that are pending, accepted, on_progress, in_progress, or arrived
-    return status == 'pending' ||
-        status == 'accepted' ||
-        status == 'assigned' ||
-        status == 'on_progress' || // ✅ Keep on_progress in active tab
-        status == 'in_progress' ||
-        status == 'on_the_way' ||
-        status == 'arrived';
   }
 
   String _formatDateTime(DateTime dateTime) {
@@ -384,47 +290,25 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
       return 'assets/ic_transaction_cat5.png';
     }
 
-    return 'assets/ic_trash.png'; // Default icon
+    return 'assets/ic_trash.png';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
-    if (_isLoading) {
-      return _buildSkeletonLoading();
-    }
-
-    final filteredActivities = getFilteredActivities();
-
-    if (filteredActivities.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadSchedules,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        itemCount: filteredActivities.length,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ActivityItemImproved(
-              activity: filteredActivities[index],
-              onCancelled: _loadSchedules,
-            ),
-          );
-        },
-      ),
+  Widget _buildSkeletonLoading() {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: SkeletonItems.card(height: 110),
+        );
+      },
     );
   }
 
   Widget _buildEmptyState() {
-    String title = widget.showActive
-        ? 'Tidak ada aktivitas aktif'
-        : 'Tidak ada riwayat aktivitas';
-    String subtitle = widget.showActive
-        ? 'Buat jadwal pengambilan sampah baru'
-        : 'Belum ada aktivitas yang diselesaikan';
+    String title = 'Belum ada pickup selesai';
+    String subtitle = 'Riwayat pickup yang selesai akan muncul di sini';
 
     if (widget.searchQuery != null && widget.searchQuery!.isNotEmpty) {
       title = 'Tidak ditemukan';
@@ -438,7 +322,7 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              widget.showActive ? Icons.schedule : Icons.history,
+              Icons.check_circle_outline,
               size: 80,
               color: Colors.grey[400],
             ),
@@ -460,6 +344,38 @@ class _ActivityContentImprovedState extends State<ActivityContentImproved>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    if (_isLoading) {
+      return _buildSkeletonLoading();
+    }
+
+    final filteredActivities = _getFilteredActivities();
+
+    if (filteredActivities.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadSchedules,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+        itemCount: filteredActivities.length,
+        itemBuilder: (context, index) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: ActivityItemImproved(
+              activity: filteredActivities[index],
+              onCancelled: _loadSchedules,
+            ),
+          );
+        },
       ),
     );
   }
