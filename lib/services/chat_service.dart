@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
+import 'package:http/http.dart' as http;
 import '../models/chat_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/gemini_ai_service.dart';
 import '../services/end_user_api_service.dart';
+import '../utils/api_routes.dart';
 
 class ChatService {
   static final ChatService _instance = ChatService._internal();
@@ -22,14 +25,491 @@ class ChatService {
 
   List<ChatConversation> _conversations = [];
   List<ChatMessage> _currentMessages = [];
+  final Map<int, int> _pickupRoomIds = {};
   late LocalStorageService _localStorage;
   late EndUserApiService _apiService;
+  bool _isInitialized = false;
 
   // Initialize with local storage and API service
   Future<void> initializeData() async {
+    if (_isInitialized) return;
     _localStorage = await LocalStorageService.getInstance();
     _apiService = EndUserApiService();
     await _loadConversationsFromAPI();
+    _isInitialized = true;
+  }
+
+  Future<void> _ensureInitialized() async {
+    if (_isInitialized) return;
+    await initializeData();
+  }
+
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await _localStorage.getToken();
+    return {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  int? _extractPickupScheduleId(String conversationId) {
+    if (!conversationId.startsWith('pickup_')) return null;
+    return int.tryParse(conversationId.substring('pickup_'.length));
+  }
+
+  int? _extractPickupScheduleIdFromConversationTitle(String title) {
+    final match = RegExp(
+      r'pickup\s*#\s*(\d+)',
+      caseSensitive: false,
+    ).firstMatch(title);
+    if (match == null) return null;
+    return int.tryParse(match.group(1) ?? '');
+  }
+
+  String _resolvePickupConversationId(String conversationId) {
+    if (conversationId.startsWith('pickup_')) return conversationId;
+
+    final conversation = getConversationById(conversationId);
+    if (conversation == null) return conversationId;
+
+    final scheduleId = _extractPickupScheduleIdFromConversationTitle(
+      conversation.title,
+    );
+    if (scheduleId == null) return conversationId;
+    return 'pickup_$scheduleId';
+  }
+
+  dynamic _extractData(dynamic decoded) {
+    if (decoded is Map<String, dynamic> && decoded.containsKey('data')) {
+      return decoded['data'];
+    }
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>?> _fetchPickupRoomByScheduleId(
+    int pickupScheduleId,
+  ) async {
+    final headers = await _getAuthHeaders();
+    final response = await http.get(
+      Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$pickupScheduleId'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) return null;
+
+    final decoded = jsonDecode(response.body);
+    final data = _extractData(decoded);
+
+    Map<String, dynamic>? asMap;
+    if (data is Map<String, dynamic>) {
+      asMap = data;
+    } else if (data is Map) {
+      asMap = Map<String, dynamic>.from(data);
+    }
+
+    if (asMap == null) return null;
+
+    // API pickup room bisa mengembalikan payload berbentuk:
+    // { room: {...}, participant_type: "mitra" }.
+    // Normalisasi agar caller selalu bisa akses room['id'] / room['status'].
+    final nestedRoom = asMap['room'];
+    if (nestedRoom is Map<String, dynamic>) {
+      final normalized = Map<String, dynamic>.from(nestedRoom);
+      normalized['participant_type'] =
+          asMap['participant_type'] ?? normalized['participant_type'];
+      return normalized;
+    }
+    if (nestedRoom is Map) {
+      final normalized = Map<String, dynamic>.from(nestedRoom);
+      normalized['participant_type'] =
+          asMap['participant_type'] ?? normalized['participant_type'];
+      return normalized;
+    }
+
+    return asMap;
+  }
+
+  Future<List<dynamic>> _fetchPickupRoomMessagesRaw(int roomId) async {
+    final headers = await _getAuthHeaders();
+    final response = await http.get(
+      Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/messages'),
+      headers: headers,
+    );
+
+    if (response.statusCode != 200) return [];
+
+    final decoded = jsonDecode(response.body);
+    final data = _extractData(decoded);
+
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      final candidate =
+          data['messages'] ?? data['items'] ?? data['rows'] ?? data['data'];
+      if (candidate is List) return candidate;
+    }
+    if (data is Map) {
+      final map = Map<String, dynamic>.from(data);
+      final candidate =
+          map['messages'] ?? map['items'] ?? map['rows'] ?? map['data'];
+      if (candidate is List) return candidate;
+    }
+    return [];
+  }
+
+  Future<int?> _ensurePickupRoomId(String conversationId) async {
+    final scheduleId = _extractPickupScheduleId(conversationId);
+    if (scheduleId == null) return null;
+
+    final cachedRoomId = _pickupRoomIds[scheduleId];
+    if (cachedRoomId != null) return cachedRoomId;
+
+    final room = await _fetchPickupRoomByScheduleId(scheduleId);
+    if (room == null) return null;
+
+    final roomId = int.tryParse(room['id']?.toString() ?? '');
+    if (roomId != null) {
+      _pickupRoomIds[scheduleId] = roomId;
+    }
+    return roomId;
+  }
+
+  Future<void> _refreshPickupConversation(String conversationId) async {
+    final roomId = await _ensurePickupRoomId(conversationId);
+    if (roomId == null) return;
+
+    final messagesRaw = await _fetchPickupRoomMessagesRaw(roomId);
+    final messages = await _mapPickupMessages(messagesRaw);
+
+    final index = _conversations.indexWhere((c) => c.id == conversationId);
+    if (index == -1) return;
+
+    final existing = _conversations[index];
+    final lastMessage = messages.isNotEmpty ? messages.last.message : '';
+    final lastTime = messages.isNotEmpty
+        ? messages.last.timestamp
+        : existing.lastMessageTime;
+
+    _conversations[index] = ChatConversation(
+      id: existing.id,
+      title: existing.title,
+      lastMessage: lastMessage,
+      lastMessageTime: lastTime,
+      isUnread: existing.isUnread,
+      unreadCount: existing.unreadCount,
+      adminName: existing.adminName,
+      adminAvatar: existing.adminAvatar,
+      messages: messages,
+    );
+
+    _currentMessages = messages;
+    _messagesController.add(_currentMessages);
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
+  }
+
+  Future<List<ChatMessage>> _mapPickupMessages(
+    List<dynamic> rawMessages,
+  ) async {
+    final userRole = await _localStorage.getUserRole() ?? 'end_user';
+    final currentSenderType = userRole == 'mitra' ? 'mitra' : 'user';
+
+    final mapped = <ChatMessage>[];
+    for (final item in rawMessages) {
+      if (item is! Map) continue;
+      final map = Map<String, dynamic>.from(item);
+
+      final senderType = map['sender_type']?.toString() ?? '';
+      final isFromUser = senderType == 'user';
+      final isMine = senderType == currentSenderType;
+
+      final rawType = map['message_type']?.toString().toLowerCase() ?? 'text';
+      final messageType = rawType == 'image'
+          ? MessageType.image
+          : rawType == 'voice'
+          ? MessageType.voice
+          : rawType == 'system_event'
+          ? MessageType.system
+          : MessageType.text;
+
+      final sentAtRaw =
+          map['sent_at'] ?? map['created_at'] ?? map['timestamp'] ?? '';
+      final parsedTime =
+          DateTime.tryParse(sentAtRaw.toString())?.toLocal() ?? DateTime.now();
+
+      final messageText =
+          map['message_text']?.toString() ??
+          map['message']?.toString() ??
+          map['text']?.toString() ??
+          '';
+
+      final attachment = map['attachment_url']?.toString();
+      final fallbackAttachment = messageText.isNotEmpty ? messageText : null;
+
+      mapped.add(
+        ChatMessage(
+          id: map['id']?.toString() ?? _generateId(),
+          message:
+              (messageType == MessageType.image ||
+                  messageType == MessageType.voice)
+              ? ''
+              : messageText,
+          timestamp: parsedTime,
+          isFromUser: isFromUser,
+          imageUrl: messageType == MessageType.image
+              ? (attachment ?? fallbackAttachment)
+              : null,
+          voiceUrl: messageType == MessageType.voice
+              ? (attachment ?? fallbackAttachment)
+              : null,
+          type: messageType,
+        ),
+      );
+
+      // Update message status to delivered/read for incoming messages.
+      if (!isMine &&
+          map['id'] != null &&
+          (map['status']?.toString() == 'sent' ||
+              map['status']?.toString() == 'delivered')) {
+        unawaited(_updatePickupMessageStatus(map['id'].toString(), 'read'));
+      }
+    }
+    return mapped;
+  }
+
+  Future<void> _sendPickupMessage({
+    required String conversationId,
+    String messageText = '',
+    String messageType = 'text',
+    String? attachmentUrl,
+  }) async {
+    final optimisticMessageId = await _appendOptimisticPickupMessage(
+      conversationId: conversationId,
+      messageText: messageText,
+      messageType: messageType,
+      attachmentUrl: attachmentUrl,
+    );
+
+    final roomId = await _ensurePickupRoomId(conversationId);
+    if (roomId == null) {
+      if (optimisticMessageId != null) {
+        await _removeOptimisticPickupMessage(
+          conversationId,
+          optimisticMessageId,
+        );
+      }
+      throw Exception('Pickup room tidak ditemukan');
+    }
+
+    final headers = await _getAuthHeaders();
+    final attachmentValue = attachmentUrl?.trim() ?? '';
+    final hasAttachment = attachmentValue.isNotEmpty;
+    final isLocalAttachment =
+        hasAttachment && !_isRemoteAttachmentUrl(attachmentValue);
+
+    http.Response response;
+    if (isLocalAttachment) {
+      response = await _sendPickupMultipartMessageWithFallback(
+        roomId: roomId,
+        headers: headers,
+        messageText: messageText,
+        messageType: messageType,
+        localAttachmentPath: attachmentValue,
+      );
+    } else {
+      final body = <String, dynamic>{
+        'message_text': messageText,
+        'message_type': messageType,
+      };
+      if (hasAttachment) {
+        body['attachment_url'] = attachmentValue;
+      }
+
+      response = await http.post(
+        Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/messages'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+    }
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      if (optimisticMessageId != null) {
+        await _removeOptimisticPickupMessage(
+          conversationId,
+          optimisticMessageId,
+        );
+      }
+      throw Exception(
+        'Gagal kirim pesan pickup (${response.statusCode} - ${response.body})',
+      );
+    }
+
+    await _refreshPickupConversation(conversationId);
+  }
+
+  bool _isRemoteAttachmentUrl(String value) {
+    final uri = Uri.tryParse(value);
+    if (uri == null) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https' || uri.scheme == 'data';
+  }
+
+  Future<http.Response> _sendPickupMultipartMessageWithFallback({
+    required int roomId,
+    required Map<String, String> headers,
+    required String messageText,
+    required String messageType,
+    required String localAttachmentPath,
+  }) async {
+    final uri = Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/messages');
+    final fileFieldCandidates = <String>['attachment', 'file', 'image', 'media'];
+    http.Response? lastResponse;
+
+    for (final fieldName in fileFieldCandidates) {
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(headers);
+      request.fields['message_text'] = messageText;
+      request.fields['message_type'] = messageType;
+      request.files.add(
+        await http.MultipartFile.fromPath(fieldName, localAttachmentPath),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response;
+      }
+      lastResponse = response;
+
+      if (response.statusCode != 400 && response.statusCode != 422) {
+        break;
+      }
+    }
+
+    return lastResponse ?? http.Response('Upload attachment gagal', 500);
+  }
+
+  Future<String?> _appendOptimisticPickupMessage({
+    required String conversationId,
+    required String messageText,
+    required String messageType,
+    String? attachmentUrl,
+  }) async {
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+    if (conversationIndex == -1) return null;
+
+    final userRole = await _localStorage.getUserRole() ?? 'end_user';
+    final optimisticMessageId = 'local_${_generateId()}';
+    final now = DateTime.now();
+    final parsedMessageType = messageType == 'image'
+        ? MessageType.image
+        : messageType == 'voice'
+        ? MessageType.voice
+        : MessageType.text;
+
+    final optimisticMessage = ChatMessage(
+      id: optimisticMessageId,
+      message: messageText,
+      timestamp: now,
+      isFromUser: userRole != 'mitra',
+      imageUrl: parsedMessageType == MessageType.image
+          ? (attachmentUrl ?? messageText)
+          : null,
+      voiceUrl: parsedMessageType == MessageType.voice
+          ? (attachmentUrl ?? messageText)
+          : null,
+      type: parsedMessageType,
+    );
+
+    final conversation = _conversations[conversationIndex];
+    final updatedMessages = List<ChatMessage>.from(conversation.messages)
+      ..add(optimisticMessage);
+
+    _conversations[conversationIndex] = ChatConversation(
+      id: conversation.id,
+      title: conversation.title,
+      lastMessage: parsedMessageType == MessageType.text
+          ? messageText
+          : parsedMessageType == MessageType.image
+          ? 'Mengirim gambar...'
+          : 'Mengirim voice note...',
+      lastMessageTime: now,
+      isUnread: conversation.isUnread,
+      unreadCount: conversation.unreadCount,
+      adminName: conversation.adminName,
+      adminAvatar: conversation.adminAvatar,
+      messages: updatedMessages,
+    );
+
+    _currentMessages = updatedMessages;
+    _messagesController.add(_currentMessages);
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
+
+    return optimisticMessageId;
+  }
+
+  Future<void> _removeOptimisticPickupMessage(
+    String conversationId,
+    String messageId,
+  ) async {
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+    if (conversationIndex == -1) return;
+
+    final conversation = _conversations[conversationIndex];
+    final updatedMessages = List<ChatMessage>.from(conversation.messages)
+      ..removeWhere((message) => message.id == messageId);
+
+    final lastMessage = updatedMessages.isNotEmpty
+        ? updatedMessages.last
+        : null;
+
+    _conversations[conversationIndex] = ChatConversation(
+      id: conversation.id,
+      title: conversation.title,
+      lastMessage: lastMessage?.message ?? '',
+      lastMessageTime: lastMessage?.timestamp ?? conversation.lastMessageTime,
+      isUnread: conversation.isUnread,
+      unreadCount: conversation.unreadCount,
+      adminName: conversation.adminName,
+      adminAvatar: conversation.adminAvatar,
+      messages: updatedMessages,
+    );
+
+    _currentMessages = updatedMessages;
+    _messagesController.add(_currentMessages);
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
+  }
+
+  Future<void> _markPickupRoomAsRead(String conversationId) async {
+    final roomId = await _ensurePickupRoomId(conversationId);
+    if (roomId == null) return;
+
+    final headers = await _getAuthHeaders();
+    final response = await http.patch(
+      Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/read'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      await _refreshPickupConversation(conversationId);
+    }
+  }
+
+  Future<void> _updatePickupMessageStatus(
+    String messageId,
+    String status,
+  ) async {
+    final headers = await _getAuthHeaders();
+    await http.patch(
+      Uri.parse('${ApiRoutes.baseUrl}/api/chat/messages/$messageId/status'),
+      headers: headers,
+      body: jsonEncode({'status': status}),
+    );
   }
 
   // Load conversations from API first, fallback to local storage
@@ -63,7 +543,7 @@ class ChatService {
       title: data['title'] ?? 'Chat Support',
       lastMessage: data['last_message'] ?? '',
       lastMessageTime: data['last_message_time'] != null
-          ? DateTime.parse(data['last_message_time'])
+          ? DateTime.parse(data['last_message_time']).toLocal()
           : DateTime.now(),
       isUnread: data['is_unread'] ?? false,
       unreadCount: data['unread_count'] ?? 0,
@@ -147,6 +627,9 @@ class ChatService {
 
   // Get messages for specific conversation
   List<ChatMessage> getMessages(String conversationId) {
+    if (conversationId.startsWith('pickup_')) {
+      unawaited(_refreshPickupConversation(conversationId));
+    }
     final conversation = _conversations.firstWhere(
       (c) => c.id == conversationId,
       orElse: () => throw Exception('Conversation not found'),
@@ -161,8 +644,18 @@ class ChatService {
     // Get current user role
     final localStorage = await LocalStorageService.getInstance();
     final userRole = await localStorage.getUserRole() ?? 'end_user';
+    final resolvedConversationId = _resolvePickupConversationId(conversationId);
+    final isPickupConversation = resolvedConversationId.startsWith('pickup_');
 
     final bool isMitraUser = userRole == 'mitra';
+
+    if (isPickupConversation) {
+      await _sendPickupMessage(
+        conversationId: resolvedConversationId,
+        messageText: message,
+      );
+      return;
+    }
 
     final newMessage = ChatMessage(
       id: _generateId(),
@@ -172,16 +665,8 @@ class ChatService {
           !isMitraUser, // For mitra, they are representing the system/admin side
     );
 
-    // Send message to API first
-    try {
-      await _apiService.sendMessage(
-        1, // Default receiver ID for customer service
-        message,
-      );
-    } catch (e) {
-      print('Error sending message to API: $e');
-      // Continue with local storage even if API fails
-    }
+    // Generic conversation tidak lagi pakai default receiver hardcoded.
+    // Endpoint pickup chat sudah ditangani di cabang isPickupConversation di atas.
 
     // Add to conversation
     final conversationIndex = _conversations.indexWhere(
@@ -226,8 +711,8 @@ class ChatService {
       _conversationsController.add(_conversations);
       await _saveConversationsToStorage();
 
-      // Generate AI response only if user is end_user (not mitra)
-      if (!isMitraUser) {
+      // Generate AI response only for generic CS conversation.
+      if (!isMitraUser && !isPickupConversation) {
         Timer(const Duration(seconds: 1), () {
           _generateAIResponse(conversationId, message);
         });
@@ -446,6 +931,11 @@ class ChatService {
 
   // Mark conversation as read
   Future<void> markConversationAsRead(String conversationId) async {
+    if (conversationId.startsWith('pickup_')) {
+      await _markPickupRoomAsRead(conversationId);
+      return;
+    }
+
     final conversationIndex = _conversations.indexWhere(
       (c) => c.id == conversationId,
     );
@@ -643,6 +1133,118 @@ class ChatService {
     return conversationId;
   }
 
+  /// Get or create dedicated pickup conversation (one room per pickup schedule).
+  Future<String> getOrCreatePickupConversation({
+    required int pickupScheduleId,
+    required String counterpartName,
+  }) async {
+    await _ensureInitialized();
+
+    final conversationId = 'pickup_$pickupScheduleId';
+    final title = 'Pickup #$pickupScheduleId';
+    final sanitizedCounterpartName = counterpartName.trim().isNotEmpty
+        ? counterpartName.trim()
+        : 'Mitra/User';
+
+    final room = await _fetchPickupRoomByScheduleId(pickupScheduleId);
+    final roomId = int.tryParse(room?['id']?.toString() ?? '');
+    if (roomId != null) {
+      _pickupRoomIds[pickupScheduleId] = roomId;
+    }
+
+    final messagesRaw = roomId != null
+        ? await _fetchPickupRoomMessagesRaw(roomId)
+        : <dynamic>[];
+    final messages = await _mapPickupMessages(messagesRaw);
+
+    final existingIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+    final conversation = ChatConversation(
+      id: conversationId,
+      title: title,
+      lastMessage: messages.isNotEmpty ? messages.last.message : '',
+      lastMessageTime: messages.isNotEmpty
+          ? messages.last.timestamp
+          : DateTime.now(),
+      isUnread: false,
+      unreadCount: 0,
+      adminName: sanitizedCounterpartName,
+      messages: messages,
+    );
+
+    if (existingIndex == -1) {
+      _conversations.add(conversation);
+    } else {
+      _conversations[existingIndex] = conversation;
+    }
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
+
+    return conversationId;
+  }
+
+  /// Cache-first: langsung kembalikan conversation id agar page bisa dibuka
+  /// tanpa menunggu fetch riwayat dari API. Sinkronisasi backend berjalan
+  /// asynchronous di background.
+  Future<String> getOrCreatePickupConversationFast({
+    required int pickupScheduleId,
+    required String counterpartName,
+  }) async {
+    await _ensureInitialized();
+
+    final conversationId = 'pickup_$pickupScheduleId';
+    final title = 'Pickup #$pickupScheduleId';
+    final sanitizedCounterpartName = counterpartName.trim().isNotEmpty
+        ? counterpartName.trim()
+        : 'Mitra/User';
+
+    final existingIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+
+    if (existingIndex == -1) {
+      _conversations.add(
+        ChatConversation(
+          id: conversationId,
+          title: title,
+          lastMessage: '',
+          lastMessageTime: DateTime.now(),
+          isUnread: false,
+          unreadCount: 0,
+          adminName: sanitizedCounterpartName,
+          messages: const [],
+        ),
+      );
+      _conversationsController.add(_conversations);
+      await _saveConversationsToStorage();
+    } else if (_conversations[existingIndex].adminName.isEmpty) {
+      final existing = _conversations[existingIndex];
+      _conversations[existingIndex] = ChatConversation(
+        id: existing.id,
+        title: existing.title,
+        lastMessage: existing.lastMessage,
+        lastMessageTime: existing.lastMessageTime,
+        isUnread: existing.isUnread,
+        unreadCount: existing.unreadCount,
+        adminName: sanitizedCounterpartName,
+        adminAvatar: existing.adminAvatar,
+        messages: existing.messages,
+      );
+      _conversationsController.add(_conversations);
+      await _saveConversationsToStorage();
+    }
+
+    unawaited(
+      getOrCreatePickupConversation(
+        pickupScheduleId: pickupScheduleId,
+        counterpartName: counterpartName,
+      ),
+    );
+
+    return conversationId;
+  }
+
   // Get total unread count
   int getTotalUnreadCount() {
     return _conversations.fold(
@@ -653,11 +1255,25 @@ class ChatService {
 
   // Send image message
   Future<void> sendImageMessage(String conversationId, String imageUrl) async {
+    if (conversationId.startsWith('pickup_')) {
+      await _sendPickupMessage(
+        conversationId: conversationId,
+        messageText: '',
+        attachmentUrl: imageUrl,
+        messageType: 'image',
+      );
+      return;
+    }
+
+    final localStorage = await LocalStorageService.getInstance();
+    final userRole = await localStorage.getUserRole() ?? 'end_user';
+    final isMitraUser = userRole == 'mitra';
+
     final newMessage = ChatMessage(
       id: _generateId(),
       message: 'Image sent',
       timestamp: DateTime.now(),
-      isFromUser: true,
+      isFromUser: !isMitraUser,
       imageUrl: imageUrl,
       type: MessageType.image,
     );
@@ -696,11 +1312,25 @@ class ChatService {
     String voiceUrl,
     int durationInSeconds,
   ) async {
+    if (conversationId.startsWith('pickup_')) {
+      await _sendPickupMessage(
+        conversationId: conversationId,
+        messageText: '',
+        attachmentUrl: voiceUrl,
+        messageType: 'voice',
+      );
+      return;
+    }
+
+    final localStorage = await LocalStorageService.getInstance();
+    final userRole = await localStorage.getUserRole() ?? 'end_user';
+    final isMitraUser = userRole == 'mitra';
+
     final newMessage = ChatMessage(
       id: _generateId(),
       message: 'Voice message',
       timestamp: DateTime.now(),
-      isFromUser: true,
+      isFromUser: !isMitraUser,
       voiceUrl: voiceUrl,
       voiceDuration: durationInSeconds,
       type: MessageType.voice,
