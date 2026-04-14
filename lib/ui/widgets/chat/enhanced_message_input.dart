@@ -16,18 +16,18 @@ import 'dart:io';
 /// - Error handling
 class EnhancedMessageInput extends StatefulWidget {
   final Function(String) onTextMessage;
-  final Function(String, int) onVoiceMessage;
   final Function(File) onImageMessage;
   final bool isLoading;
   final String? hint;
+  final bool enableVoiceMessage;
 
   const EnhancedMessageInput({
     super.key,
     required this.onTextMessage,
-    required this.onVoiceMessage,
     required this.onImageMessage,
     this.isLoading = false,
     this.hint = 'Ketik pesan...',
+    this.enableVoiceMessage = true,
   });
 
   @override
@@ -43,6 +43,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
 
   bool _showVoiceRecorder = false;
   bool _hasText = false;
+  File? _pendingImage;
   bool _isRecordingPermissionGranted = false;
   bool _isImagePermissionGranted = false;
   late AnimationController _animationController;
@@ -76,7 +77,9 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
   }
 
   Future<void> _checkPermissions() async {
-    final audioPermission = await _audioService.requestVoicePermissions();
+    final audioPermission = widget.enableVoiceMessage
+        ? await _audioService.requestVoicePermissions()
+        : false;
     final imagePermission = await _imageService.checkAndRequestPermissions();
 
     setState(() {
@@ -85,20 +88,31 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
     });
   }
 
-  void _sendTextMessage() {
+  void _sendComposedMessage() {
     final message = _messageController.text.trim();
-    if (message.isEmpty || widget.isLoading) return;
+    final hasPendingImage = _pendingImage != null;
+    if ((message.isEmpty && !hasPendingImage) || widget.isLoading) return;
 
-    widget.onTextMessage(message);
+    if (hasPendingImage) {
+      widget.onImageMessage(_pendingImage!);
+    }
+    if (message.isNotEmpty) {
+      widget.onTextMessage(message);
+    }
+
+    setState(() {
+      _pendingImage = null;
+    });
     _messageController.clear();
-    _focusNode.unfocus();
+    if (message.isEmpty) {
+      _focusNode.unfocus();
+    }
   }
 
   void _handleVoiceRecordingComplete(String filePath, int duration) {
     setState(() {
       _showVoiceRecorder = false;
     });
-    widget.onVoiceMessage(filePath, duration);
   }
 
   void _handleVoiceRecordingCancel() {
@@ -118,7 +132,9 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
 
     final image = await _imageService.showImagePickerDialog(context);
     if (image != null) {
-      widget.onImageMessage(image);
+      setState(() {
+        _pendingImage = image;
+      });
     }
   }
 
@@ -181,6 +197,10 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
 
   @override
   Widget build(BuildContext context) {
+    final hasPendingImage = _pendingImage != null;
+    final canShowVoiceButton =
+        widget.enableVoiceMessage && !_hasText && !hasPendingImage;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -198,7 +218,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
           duration: const Duration(milliseconds: 300),
           child: Column(
             children: [
-              if (_showVoiceRecorder) ...[
+              if (widget.enableVoiceMessage && _showVoiceRecorder) ...[
                 ChatVoiceRecorder(
                   onRecordingComplete: _handleVoiceRecordingComplete,
                   onCancel: _handleVoiceRecordingCancel,
@@ -218,6 +238,66 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                   ],
                 ),
               ] else ...[
+                if (hasPendingImage) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _pendingImage!.path
+                              .split(Platform.pathSeparator)
+                              .last,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: blackTextStyle.copyWith(
+                            fontSize: 12,
+                            fontWeight: semiBold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.file(
+                                _pendingImage!,
+                                width: 56,
+                                height: 56,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.broken_image),
+                                    ),
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: widget.isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _pendingImage = null;
+                                      });
+                                    },
+                              icon: const Icon(Icons.close),
+                              color: Colors.redAccent,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 Row(
                   children: [
                     // Attachment button (Image)
@@ -281,7 +361,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                                 ),
                                 style: blackTextStyle.copyWith(fontSize: 14),
                                 textInputAction: TextInputAction.newline,
-                                onSubmitted: (_) => _sendTextMessage(),
+                                onSubmitted: (_) => _sendComposedMessage(),
                               ),
                             ),
                           ],
@@ -293,7 +373,10 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                     // Send button or Voice button
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 200),
-                      child: _hasText
+                      child:
+                          _hasText ||
+                              hasPendingImage ||
+                              !widget.enableVoiceMessage
                           ? Material(
                               key: const ValueKey('send'),
                               color: Colors.transparent,
@@ -301,7 +384,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                                 borderRadius: BorderRadius.circular(24),
                                 onTap: widget.isLoading
                                     ? null
-                                    : _sendTextMessage,
+                                    : _sendComposedMessage,
                                 child: Container(
                                   width: 48,
                                   height: 48,
@@ -316,20 +399,11 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                                       ),
                                     ],
                                   ),
-                                  child: widget.isLoading
-                                      ? SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            color: whiteColor,
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.send,
-                                          color: whiteColor,
-                                          size: 24,
-                                        ),
+                                  child: Icon(
+                                    Icons.send,
+                                    color: whiteColor,
+                                    size: 24,
+                                  ),
                                 ),
                               ),
                             )
@@ -338,7 +412,7 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
                               color: Colors.transparent,
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(24),
-                                onTap: widget.isLoading
+                                onTap: widget.isLoading || !canShowVoiceButton
                                     ? null
                                     : _toggleVoiceRecorder,
                                 child: Container(
@@ -375,14 +449,12 @@ class _EnhancedMessageInputState extends State<EnhancedMessageInput>
 /// Enhanced message input for mitra dengan additional options
 class MitraEnhancedMessageInput extends StatelessWidget {
   final Function(String) onTextMessage;
-  final Function(String, int) onVoiceMessage;
   final Function(File) onImageMessage;
   final bool isLoading;
 
   const MitraEnhancedMessageInput({
     super.key,
     required this.onTextMessage,
-    required this.onVoiceMessage,
     required this.onImageMessage,
     this.isLoading = false,
   });
@@ -391,10 +463,10 @@ class MitraEnhancedMessageInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return EnhancedMessageInput(
       onTextMessage: onTextMessage,
-      onVoiceMessage: onVoiceMessage,
       onImageMessage: onImageMessage,
       isLoading: isLoading,
       hint: 'Balas pelanggan...',
+      enableVoiceMessage: false,
     );
   }
 }
@@ -402,14 +474,12 @@ class MitraEnhancedMessageInput extends StatelessWidget {
 /// Enhanced message input for user dengan additional options
 class UserEnhancedMessageInput extends StatelessWidget {
   final Function(String) onTextMessage;
-  final Function(String, int) onVoiceMessage;
   final Function(File) onImageMessage;
   final bool isLoading;
 
   const UserEnhancedMessageInput({
     super.key,
     required this.onTextMessage,
-    required this.onVoiceMessage,
     required this.onImageMessage,
     this.isLoading = false,
   });
@@ -418,10 +488,10 @@ class UserEnhancedMessageInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return EnhancedMessageInput(
       onTextMessage: onTextMessage,
-      onVoiceMessage: onVoiceMessage,
       onImageMessage: onImageMessage,
       isLoading: isLoading,
       hint: 'Ketik pesan ke admin...',
+      enableVoiceMessage: false,
     );
   }
 }

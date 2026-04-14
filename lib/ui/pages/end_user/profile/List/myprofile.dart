@@ -48,6 +48,10 @@ class _MyprofileState extends State<Myprofile> {
       // Get user directly from UserService
       final user = await _userService.getCurrentUser();
 
+      print(
+        'user: ${user?.name}, email: ${user?.email}, phone: ${user?.phone}, address: ${user?.address}, profilePicUrl: ${user?.profilePicUrl}',
+      );
+
       // Convert UserModel to Map for backward compatibility
       final Map<String, dynamic> userMap = {
         'name': user?.name ?? 'Pengguna',

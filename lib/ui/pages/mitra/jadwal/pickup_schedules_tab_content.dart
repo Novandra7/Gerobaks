@@ -2,8 +2,10 @@ import 'package:bank_sha/shared/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/mitra_pickup_schedule.dart';
+import '../../../../services/chat_service.dart';
 import '../../../../services/mitra_api_service.dart';
 import '../../../../services/location_service.dart';
+import '../chat/mitra_chat_detail_page.dart';
 
 /// Tab content for "Pickup" tab — shows only `assigned` schedules
 class PickupSchedulesTabContent extends StatefulWidget {
@@ -24,8 +26,21 @@ class PickupSchedulesTabContent extends StatefulWidget {
 
 class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
     with AutomaticKeepAliveClientMixin {
+  static const Set<String> _chatActiveStatuses = {
+    'assigned',
+    'accepted',
+    'on_the_way',
+    'arrived',
+  };
+  static const Set<String> _chatReadOnlyStatuses = {
+    'completed',
+    'cancelled',
+    'canceled',
+  };
+
   final MitraApiService _apiService = MitraApiService();
   final LocationService _locationService = LocationService();
+  final ChatService _chatService = ChatService();
   List<MitraPickupSchedule> _schedules = [];
   bool _isLoading = false;
   bool _initialized = false;
@@ -116,6 +131,49 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
     }
   }
 
+  bool _isChatAvailableForStatus(String status) {
+    final normalized = status.toLowerCase();
+    return _chatActiveStatuses.contains(normalized) ||
+        _chatReadOnlyStatuses.contains(normalized);
+  }
+
+  bool _isChatReadOnlyStatus(String status) {
+    return _chatReadOnlyStatuses.contains(status.toLowerCase());
+  }
+
+  Future<void> _openScheduleChat(MitraPickupSchedule schedule) async {
+    if (!_isChatAvailableForStatus(schedule.status)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat belum tersedia untuk status jadwal ini'),
+        ),
+      );
+      return;
+    }
+
+    final isReadOnly = _isChatReadOnlyStatus(schedule.status);
+    final conversationId = await _chatService.getOrCreatePickupConversationFast(
+      pickupScheduleId: schedule.id,
+      counterpartName: schedule.userName,
+    );
+
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MitraChatDetailPage(
+          conversationId: conversationId,
+          customTitle: schedule.userName,
+          isReadOnly: isReadOnly,
+          readOnlyMessage: isReadOnly
+              ? 'Pickup sudah ${schedule.statusDisplay.toLowerCase()}, chat hanya dapat dibaca.'
+              : null,
+        ),
+      ),
+    );
+  }
+
   Future<void> _startJourney(MitraPickupSchedule schedule) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -184,9 +242,9 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: redcolor, size: 28),
+            Icon(Icons.warning_amber_rounded, color: orangeColor, size: 28),
             const SizedBox(width: 8),
-            const Text('Lepaskan Jadwal?')
+            const Text('Lepaskan Jadwal?'),
           ],
         ),
         content: Column(
@@ -209,7 +267,7 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: redcolor),
+                  borderSide: BorderSide(color: orangeColor),
                 ),
               ),
             ),
@@ -224,8 +282,9 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
             onPressed: () {
               if (reasonController.text.trim().isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Alasan pelepasan wajib diisi'),
+                  SnackBar(
+                    content: const Text('Alasan pelepasan wajib diisi'),
+                    backgroundColor: orangeColor,
                   ),
                 );
                 return;
@@ -233,13 +292,13 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: redcolor,
+              backgroundColor: orangeColor,
               foregroundColor: whiteColor,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Batalkan'),
+            child: const Text('Lepaskan'),
           ),
         ],
       ),
@@ -346,6 +405,7 @@ class _PickupSchedulesTabContentState extends State<PickupSchedulesTabContent>
             onTap: () => _viewDetail(schedule),
             onNavigate: () => _openGoogleMaps(schedule),
             onCall: () => _callUser(schedule),
+            onChat: () => _openScheduleChat(schedule),
             onAccept: () => _startJourney(schedule),
             onCancel: () => _releaseSchedule(schedule),
           );
@@ -360,6 +420,7 @@ class _PickupScheduleCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onNavigate;
   final VoidCallback onCall;
+  final VoidCallback onChat;
   final VoidCallback onAccept;
   final VoidCallback onCancel;
 
@@ -368,6 +429,7 @@ class _PickupScheduleCard extends StatelessWidget {
     required this.onTap,
     required this.onNavigate,
     required this.onCall,
+    required this.onChat,
     required this.onAccept,
     required this.onCancel,
   });
@@ -643,23 +705,53 @@ class _PickupScheduleCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Secondary actions: Batalkan & Navigasi
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: onChat,
+                        icon: Icon(
+                          Icons.chat_outlined,
+                          size: 18,
+                          color: greenColor,
+                        ),
+                        label: Text(
+                          'Chat User',
+                          style: TextStyle(
+                            color: greenColor,
+                            fontSize: 13,
+                            fontWeight: semiBold,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: greenColor),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Secondary actions: Lepaskan & Navigasi
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: onCancel,
-                            icon: Icon(Icons.close, size: 18, color: redcolor),
+                            icon: Icon(
+                              Icons.undo_rounded,
+                              size: 18,
+                              color: orangeColor,
+                            ),
                             label: Text(
-                              'Batalkan',
+                              'Lepaskan',
                               style: TextStyle(
-                                color: redcolor,
+                                color: orangeColor,
                                 fontSize: 13,
                                 fontWeight: semiBold,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: redcolor),
+                              side: BorderSide(color: orangeColor),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),

@@ -182,9 +182,17 @@ class _SignInPageState extends State<SignInPage> {
           children: [
             const Text('Gunakan kredensial berikut untuk login:'),
             const SizedBox(height: 16),
-            _buildCredentialCard('User Biasa', 'user@example.com', 'password'),
+            _buildCredentialCard(
+              'User Biasa',
+              'sansan@gmail.com',
+              'password456',
+            ),
             const SizedBox(height: 12),
-            _buildCredentialCard('Mitra', 'mitra@example.com', 'password'),
+            _buildCredentialCard(
+              'Mitra',
+              'driver.jakarta@gerobaks.com',
+              'mitra123',
+            ),
           ],
         ),
         actions: [
@@ -221,7 +229,14 @@ class _SignInPageState extends State<SignInPage> {
                   'Email: ',
                   style: blackTextStyle.copyWith(fontWeight: semiBold),
                 ),
-                Text(email, style: blackTextStyle),
+                Expanded(
+                  child: Text(
+                    email,
+                    style: blackTextStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 IconButton(
                   icon: Icon(Icons.copy, size: 18, color: greyColor),
                   onPressed: () {
@@ -239,7 +254,14 @@ class _SignInPageState extends State<SignInPage> {
                   'Password: ',
                   style: blackTextStyle.copyWith(fontWeight: semiBold),
                 ),
-                Text(password, style: blackTextStyle),
+                Expanded(
+                  child: Text(
+                    password,
+                    style: blackTextStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
                 IconButton(
                   icon: Icon(Icons.copy, size: 18, color: greyColor),
                   onPressed: () {

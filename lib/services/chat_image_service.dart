@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
+import 'dart:async';
 
 /// Service untuk mengelola image sharing dalam chat
 ///
@@ -31,43 +32,24 @@ class ChatImageService {
   /// Check dan request permissions untuk camera dan gallery
   Future<bool> checkAndRequestPermissions() async {
     try {
-      // Check camera permission
-      final cameraStatus = await Permission.camera.status;
-      final storageStatus = await Permission.storage.status;
-      final photosStatus = await Permission.photos.status;
-
-      debugPrint('Camera permission: $cameraStatus');
-      debugPrint('Storage permission: $storageStatus');
-      debugPrint('Photos permission: $photosStatus');
-
-      bool hasAllPermissions = true;
-
-      // Request camera permission jika belum ada
-      if (cameraStatus.isDenied || cameraStatus.isRestricted) {
-        final newCameraStatus = await Permission.camera.request();
-        if (!newCameraStatus.isGranted) {
-          hasAllPermissions = false;
-        }
+      // Di Android modern (Photo Picker), gallery tidak wajib storage permission.
+      // Jadi jangan blokir attachment hanya karena Permission.storage denied.
+      if (Platform.isAndroid) {
+        return true;
       }
 
-      // Request storage/photos permission jika belum ada (untuk gallery)
-      if (Platform.isAndroid) {
-        if (storageStatus.isDenied || storageStatus.isRestricted) {
-          final newStorageStatus = await Permission.storage.request();
-          if (!newStorageStatus.isGranted) {
-            hasAllPermissions = false;
-          }
-        }
-      } else if (Platform.isIOS) {
+      // iOS tetap perlu photos permission untuk gallery.
+      if (Platform.isIOS) {
+        final photosStatus = await Permission.photos.status;
+        if (photosStatus.isPermanentlyDenied) return false;
         if (photosStatus.isDenied || photosStatus.isRestricted) {
           final newPhotosStatus = await Permission.photos.request();
-          if (!newPhotosStatus.isGranted) {
-            hasAllPermissions = false;
-          }
+          return newPhotosStatus.isGranted || newPhotosStatus.isLimited;
         }
+        return photosStatus.isGranted || photosStatus.isLimited;
       }
 
-      return hasAllPermissions;
+      return true;
     } catch (e) {
       debugPrint('Error checking image permissions: $e');
       return false;
@@ -77,8 +59,12 @@ class ChatImageService {
   /// Pick image dari camera
   Future<File?> pickImageFromCamera() async {
     try {
-      final hasPermission = await checkAndRequestPermissions();
-      if (!hasPermission) {
+      final cameraStatus = await Permission.camera.status;
+      PermissionStatus resolvedCameraStatus = cameraStatus;
+      if (cameraStatus.isDenied || cameraStatus.isRestricted) {
+        resolvedCameraStatus = await Permission.camera.request();
+      }
+      if (!resolvedCameraStatus.isGranted) {
         debugPrint('Camera permission tidak tersedia');
         return null;
       }
@@ -106,10 +92,17 @@ class ChatImageService {
   /// Pick image dari gallery
   Future<File?> pickImageFromGallery() async {
     try {
-      final hasPermission = await checkAndRequestPermissions();
-      if (!hasPermission) {
-        debugPrint('Gallery permission tidak tersedia');
-        return null;
+      if (Platform.isIOS) {
+        final photosStatus = await Permission.photos.status;
+        PermissionStatus resolvedPhotosStatus = photosStatus;
+        if (photosStatus.isDenied || photosStatus.isRestricted) {
+          resolvedPhotosStatus = await Permission.photos.request();
+        }
+        if (!(resolvedPhotosStatus.isGranted ||
+            resolvedPhotosStatus.isLimited)) {
+          debugPrint('Gallery permission tidak tersedia');
+          return null;
+        }
       }
 
       final XFile? image = await _imagePicker.pickImage(
@@ -375,10 +368,13 @@ class ChatImageService {
 
   /// Show image picker options dialog
   Future<File?> showImagePickerDialog(context) async {
-    return await showModalBottomSheet<File?>(
+    final completer = Completer<File?>();
+    var pickerActionStarted = false;
+
+    await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -409,23 +405,29 @@ class ChatImageService {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildImagePickerOption(
-                  context,
+                  sheetContext,
                   icon: Icons.camera_alt,
                   label: 'Kamera',
                   onTap: () async {
-                    Navigator.pop(context);
+                    pickerActionStarted = true;
+                    Navigator.pop(sheetContext);
                     final image = await pickImageFromCamera();
-                    Navigator.pop(context, image);
+                    if (!completer.isCompleted) {
+                      completer.complete(image);
+                    }
                   },
                 ),
                 _buildImagePickerOption(
-                  context,
+                  sheetContext,
                   icon: Icons.photo_library,
                   label: 'Galeri',
                   onTap: () async {
-                    Navigator.pop(context);
+                    pickerActionStarted = true;
+                    Navigator.pop(sheetContext);
                     final image = await pickImageFromGallery();
-                    Navigator.pop(context, image);
+                    if (!completer.isCompleted) {
+                      completer.complete(image);
+                    }
                   },
                 ),
               ],
@@ -434,7 +436,13 @@ class ChatImageService {
           ],
         ),
       ),
-    );
+    ).whenComplete(() {
+      if (!pickerActionStarted && !completer.isCompleted) {
+        completer.complete(null);
+      }
+    });
+
+    return completer.future;
   }
 
   Widget _buildImagePickerOption(

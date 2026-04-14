@@ -1207,10 +1207,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
                         ),
                       ),
                       // Divider with improved appearance
-                      Container(
-                        height: 1,
-                        color: Colors.white.withAlpha(20),
-                      ),
+                      Container(height: 1, color: Colors.white.withAlpha(20)),
                       // Bottom part with info text - softer appearance
                       Container(
                         padding: const EdgeInsets.symmetric(

@@ -10,15 +10,22 @@ class EndUserApiService {
   EndUserApiService._internal();
 
   final Logger _logger = Logger();
-  late LocalStorageService _localStorage;
+  LocalStorageService? _localStorage;
 
   Future<void> initialize() async {
-    _localStorage = await LocalStorageService.getInstance();
+    _localStorage ??= await LocalStorageService.getInstance();
+  }
+
+  Future<void> _ensureInitialized() async {
+    if (_localStorage == null) {
+      await initialize();
+    }
   }
 
   // Get authorization headers
   Future<Map<String, String>> _getHeaders() async {
-    final token = await _localStorage.getToken();
+    await _ensureInitialized();
+    final token = await _localStorage!.getToken();
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -689,8 +696,7 @@ class EndUserApiService {
         if (activeSub == null) return null;
 
         // Check for embedded address data first
-        final embedded =
-            activeSub['address'] ?? activeSub['user_address'];
+        final embedded = activeSub['address'] ?? activeSub['user_address'];
         if (embedded is Map) {
           return Map<String, dynamic>.from(embedded);
         }

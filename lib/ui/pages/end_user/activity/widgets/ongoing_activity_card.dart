@@ -8,11 +8,13 @@ import 'package:url_launcher/url_launcher.dart';
 class OngoingActivityCard extends StatelessWidget {
   final Map<String, dynamic> schedule;
   final VoidCallback onRefresh;
+  final VoidCallback onChat;
 
   const OngoingActivityCard({
     super.key,
     required this.schedule,
     required this.onRefresh,
+    required this.onChat,
   });
 
   String _mapStatusToReadable(String? status) {
@@ -233,6 +235,17 @@ class OngoingActivityCard extends StatelessWidget {
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                             ),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            icon: Icon(
+                              Icons.chat_bubble_outline,
+                              color: blueColor,
+                              size: 20,
+                            ),
+                            onPressed: onChat,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
                         ],
                       ),
                     ),
