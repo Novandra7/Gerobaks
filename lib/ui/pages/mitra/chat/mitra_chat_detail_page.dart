@@ -5,76 +5,107 @@ import 'package:bank_sha/models/chat_model.dart';
 import 'package:bank_sha/services/chat_service.dart';
 import 'package:bank_sha/services/audio_service_manager.dart';
 import 'package:bank_sha/services/audio_player_service.dart';
-import 'package:bank_sha/services/audio_recorder_service.dart';
-import 'package:bank_sha/services/chat_audio_service.dart';
 import 'package:bank_sha/services/chat_image_service.dart';
 import 'package:bank_sha/ui/widgets/chat/voice_message_bubble.dart';
 import 'package:bank_sha/ui/widgets/chat/enhanced_message_input.dart';
+import 'package:bank_sha/utils/api_routes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:intl/intl.dart';
 
 class MitraChatDetailPage extends StatefulWidget {
   final String conversationId;
+  final bool isReadOnly;
+  final String? customTitle;
+  final String? readOnlyMessage;
 
-  const MitraChatDetailPage({super.key, required this.conversationId});
+  const MitraChatDetailPage({
+    super.key,
+    required this.conversationId,
+    this.isReadOnly = false,
+    this.customTitle,
+    this.readOnlyMessage,
+  });
 
   @override
   State<MitraChatDetailPage> createState() => _MitraChatDetailPageState();
 }
 
-class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
+class _MitraChatDetailPageState extends State<MitraChatDetailPage>
+    with WidgetsBindingObserver {
   final ChatService _chatService = ChatService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   final ImagePicker _imagePicker = ImagePicker();
   final AudioServiceManager _audioServiceManager = AudioServiceManager();
-  late final AudioRecorderService _audioRecorderService;
   late final AudioPlayerService _audioPlayerService;
-  late final ChatAudioService _chatAudioService;
   late final ChatImageService _chatImageService;
 
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _isFirstFrameReady = false;
+  final Map<String, String> _cachedImageFiles = {};
   ChatConversation? _conversation;
+  StreamSubscription<List<ChatMessage>>? _messagesSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Inisialisasi audio services
-    _audioRecorderService = _audioServiceManager.getAudioRecorderService();
     _audioPlayerService = _audioServiceManager.getAudioPlayerService();
-    _chatAudioService = ChatAudioService.getInstance();
     _chatImageService = ChatImageService.getInstance();
-
-    // Initialize chat services
-    _initializeChatServices();
 
     _loadMessages();
     _markAsRead();
 
     // Listen to message updates
-    _chatService.messagesStream.listen((messages) {
+    _messagesSubscription = _chatService.messagesStream.listen((messages) {
       if (mounted) {
         setState(() {
           _messages = messages;
         });
+        unawaited(_resolveCachedImageFiles(messages));
+        _primeImageCache(messages);
         _scrollToBottom();
       }
+    });
+
+    _focusNode.addListener(_handleInputFocusChange);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _isFirstFrameReady = true;
+      unawaited(_resolveCachedImageFiles(_messages));
+      _primeImageCache(_messages);
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _focusNode.removeListener(_handleInputFocusChange);
+    _messagesSubscription?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
-    _audioRecorderService.dispose();
-    _audioPlayerService.dispose();
+    unawaited(_audioPlayerService.stop());
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 120), _scrollToBottom);
+    });
   }
 
   void _loadMessages() {
@@ -82,6 +113,8 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
       _messages = _chatService.getMessages(widget.conversationId);
       _conversation = _chatService.getConversationById(widget.conversationId);
     });
+    unawaited(_resolveCachedImageFiles(_messages));
+    _primeImageCache(_messages);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -90,15 +123,6 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
 
   void _markAsRead() {
     _chatService.markAsRead(widget.conversationId);
-  }
-
-  Future<void> _initializeChatServices() async {
-    try {
-      await _chatAudioService.initialize();
-      debugPrint('Chat services initialized successfully');
-    } catch (e) {
-      debugPrint('Error initializing chat services: $e');
-    }
   }
 
   void _scrollToBottom() {
@@ -111,10 +135,240 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     }
   }
 
+  void _handleInputFocusChange() {
+    if (!_focusNode.hasFocus || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 120), _scrollToBottom);
+    });
+  }
+
+  bool _isRemoteImage(String imagePath) {
+    final uri = Uri.tryParse(imagePath);
+    if (uri == null) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  bool _isLikelyLocalDevicePath(String imagePath) {
+    final normalized = imagePath.trim();
+    if (normalized.isEmpty) return false;
+    if (normalized.startsWith('file://') ||
+        normalized.startsWith('content://')) {
+      return true;
+    }
+    if (RegExp(r'^[a-zA-Z]:\\').hasMatch(normalized)) {
+      return true;
+    }
+    return normalized.startsWith('/data/') ||
+        normalized.startsWith('/storage/') ||
+        normalized.startsWith('/var/') ||
+        normalized.startsWith('/private/');
+  }
+
+  List<String> _resolveImageCandidates(String imagePath) {
+    final normalized = imagePath.trim();
+    if (normalized.isEmpty) return const <String>[];
+    if (_isRemoteImage(normalized) || _isLikelyLocalDevicePath(normalized)) {
+      return <String>[normalized];
+    }
+
+    final apiUri = Uri.tryParse(ApiRoutes.baseUrl);
+    final origin =
+        (apiUri != null &&
+            apiUri.hasScheme &&
+            apiUri.host.isNotEmpty &&
+            apiUri.authority.isNotEmpty)
+        ? '${apiUri.scheme}://${apiUri.authority}'
+        : ApiRoutes.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final relative = normalized.replaceAll(RegExp(r'^/+'), '');
+
+    final candidates = <String>['$origin/$relative'];
+
+    if (relative.startsWith('uploads/')) {
+      candidates.add('$origin/storage/$relative');
+    } else if (!relative.startsWith('storage/')) {
+      candidates.add('$origin/storage/$relative');
+    }
+
+    return candidates.toSet().toList();
+  }
+
+  String _resolveImageUrl(String imagePath) {
+    final candidates = _resolveImageCandidates(imagePath);
+    if (candidates.isEmpty) return imagePath.trim();
+    return candidates.first;
+  }
+
+  Future<void> _resolveCachedImageFiles(List<ChatMessage> messages) async {
+    final remoteUrls = <String>{};
+    for (final message in messages) {
+      if (message.type != MessageType.image) continue;
+      final imageUrl = message.imageUrl?.trim() ?? '';
+      if (imageUrl.isEmpty) continue;
+
+      final candidates = _resolveImageCandidates(imageUrl);
+      for (final candidate in candidates) {
+        if (_isRemoteImage(candidate)) {
+          remoteUrls.add(candidate);
+        }
+      }
+    }
+
+    if (remoteUrls.isEmpty) return;
+
+    final resolved = Map<String, String>.from(_cachedImageFiles);
+    var hasChange = false;
+
+    for (final url in remoteUrls) {
+      final cached = await DefaultCacheManager().getFileFromCache(url);
+      final file = cached?.file;
+      if (file == null) continue;
+      if (!await file.exists()) continue;
+      if (resolved[url] != file.path) {
+        resolved[url] = file.path;
+        hasChange = true;
+      }
+    }
+
+    if (hasChange && mounted) {
+      setState(() {
+        _cachedImageFiles
+          ..clear()
+          ..addAll(resolved);
+      });
+    }
+  }
+
+  void _primeImageCache(List<ChatMessage> messages) {
+    if (!mounted || !_isFirstFrameReady || messages.isEmpty) return;
+
+    final remoteUrls = <String>{};
+    for (final message in messages) {
+      if (message.type != MessageType.image) continue;
+      final imageUrl = message.imageUrl?.trim() ?? '';
+      if (imageUrl.isEmpty) continue;
+
+      final candidates = _resolveImageCandidates(imageUrl);
+      for (final candidate in candidates) {
+        if (_isRemoteImage(candidate)) {
+          remoteUrls.add(candidate);
+        }
+      }
+    }
+
+    for (final url in remoteUrls) {
+      unawaited(
+        precacheImage(CachedNetworkImageProvider(url), context).catchError((_) {
+          return null;
+        }),
+      );
+    }
+  }
+
+  Widget _buildBrokenImagePlaceholder({
+    required double width,
+    required double height,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildLoadingImagePlaceholder({
+    required double width,
+    required double height,
+  }) {
+    return Container(width: width, height: height, color: Colors.grey[200]);
+  }
+
+  Widget _buildNetworkImageWithFallback(
+    List<String> urls, {
+    required int index,
+    required BoxFit fit,
+    required double width,
+    required double height,
+  }) {
+    if (index >= urls.length) {
+      return _buildBrokenImagePlaceholder(width: width, height: height);
+    }
+
+    final cachedFilePath = _cachedImageFiles[urls[index]];
+    if (cachedFilePath != null && File(cachedFilePath).existsSync()) {
+      return Image.file(
+        File(cachedFilePath),
+        fit: fit,
+        width: width,
+        height: height,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildNetworkImageWithFallback(
+            urls,
+            index: index + 1,
+            fit: fit,
+            width: width,
+            height: height,
+          );
+        },
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: urls[index],
+      fit: fit,
+      width: width,
+      height: height,
+      fadeInDuration: Duration.zero,
+      placeholderFadeInDuration: Duration.zero,
+      placeholder: (context, url) =>
+          _buildLoadingImagePlaceholder(width: width, height: height),
+      errorWidget: (context, url, error) {
+        return _buildNetworkImageWithFallback(
+          urls,
+          index: index + 1,
+          fit: fit,
+          width: width,
+          height: height,
+        );
+      },
+    );
+  }
+
+  Widget _buildChatImage(
+    String imagePath, {
+    required BoxFit fit,
+    required double width,
+    required double height,
+  }) {
+    final candidates = _resolveImageCandidates(imagePath);
+    if (candidates.isNotEmpty && _isRemoteImage(candidates.first)) {
+      return _buildNetworkImageWithFallback(
+        candidates,
+        index: 0,
+        fit: fit,
+        width: width,
+        height: height,
+      );
+    }
+
+    final resolvedPath = _resolveImageUrl(imagePath);
+    return Image.file(
+      File(resolvedPath),
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (context, error, stackTrace) {
+        return _buildBrokenImagePlaceholder(width: width, height: height);
+      },
+    );
+  }
+
   Future<void> _requestPermissions() async {
     Map<Permission, PermissionStatus> statuses = await [
       Permission.camera,
-      Permission.microphone,
       Permission.storage,
     ].request();
 
@@ -185,33 +439,6 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to send image: $e')));
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // ignore: unused_element
-  void _handleVoiceRecordingComplete(String path, int durationInSeconds) {
-    _sendVoiceMessage(path, durationInSeconds);
-  }
-
-  Future<void> _sendVoiceMessage(String path, int durationInSeconds) async {
-    setState(() => _isLoading = true);
-
-    try {
-      await _chatService.sendVoiceMessage(
-        widget.conversationId,
-        path,
-        durationInSeconds,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send voice message: $e')),
-        );
       }
     } finally {
       setState(() {
@@ -302,7 +529,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   }
 
   String _formatMessageTime(DateTime dateTime) {
-    return DateFormat('HH:mm').format(dateTime);
+    return DateFormat('HH:mm').format(dateTime.toLocal());
   }
 
   String _formatDateHeader(DateTime dateTime) {
@@ -331,7 +558,8 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = _conversation?.adminName ?? 'Pengguna';
+    final userName =
+        widget.customTitle ?? _conversation?.adminName ?? 'Pengguna';
 
     return Scaffold(
       appBar: CustomAppNotif(title: userName, showBackButton: true),
@@ -359,7 +587,20 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                     },
                   ),
           ),
-          _buildMessageInput(),
+          if (widget.isReadOnly)
+            Container(
+              width: double.infinity,
+              color: Colors.grey[100],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                widget.readOnlyMessage ??
+                    'Chat ini read-only karena pickup sudah selesai/dibatalkan.',
+                textAlign: TextAlign.center,
+                style: greyTextStyle.copyWith(fontSize: 12, fontWeight: medium),
+              ),
+            )
+          else
+            _buildMessageInput(),
         ],
       ),
     );
@@ -415,6 +656,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
     final isFromMe =
         message.isFromUser ==
         false; // Messages from admin (isFromUser=false) are from "me" as mitra
+    final isPendingMessage = isFromMe && message.id.startsWith('local_');
     final isSystem = message.type == MessageType.system;
     final isTyping = message.type == MessageType.typing;
 
@@ -583,11 +825,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
           ),
           if (isFromMe) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(Icons.support_agent, color: greenColor, size: 16),
-            ),
+            _buildSupportAgentAvatar(isPending: isPendingMessage),
           ],
         ],
       ),
@@ -595,6 +833,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
   }
 
   Widget _buildImageBubble(ChatMessage message, bool isFromMe) {
+    final isPendingMessage = isFromMe && message.id.startsWith('local_');
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -673,7 +912,7 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                                           Navigator.of(context).pop(),
                                     ),
                                     title: Text(
-                                      'Image Preview',
+                                      message.imageUrl!.split('/').last,
                                       style: whiteTextStyle,
                                     ),
                                   ),
@@ -681,9 +920,15 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                                     child: InteractiveViewer(
                                       minScale: 0.5,
                                       maxScale: 3.0,
-                                      child: Image.file(
-                                        File(message.imageUrl!),
+                                      child: _buildChatImage(
+                                        message.imageUrl!,
                                         fit: BoxFit.contain,
+                                        width: MediaQuery.of(
+                                          context,
+                                        ).size.width,
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                            0.8,
                                       ),
                                     ),
                                   ),
@@ -691,25 +936,11 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
                               ),
                             );
                           },
-                          child: Image.file(
-                            File(message.imageUrl!),
+                          child: _buildChatImage(
+                            message.imageUrl!,
                             fit: BoxFit.cover,
                             width: MediaQuery.of(context).size.width * 0.6,
                             height: 200,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: MediaQuery.of(context).size.width * 0.6,
-                                height: 200,
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              );
-                            },
                           ),
                         ),
                       ],
@@ -726,21 +957,39 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
           ),
           if (isFromMe) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(Icons.support_agent, color: greenColor, size: 16),
-            ),
+            _buildSupportAgentAvatar(isPending: isPendingMessage),
           ],
         ],
       ),
     );
   }
 
+  Widget _buildSupportAgentAvatar({required bool isPending}) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: greenColor.withOpacity(0.1),
+          child: Icon(Icons.support_agent, color: greenColor, size: 16),
+        ),
+        if (isPending)
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildMessageInput() {
     return MitraEnhancedMessageInput(
       onTextMessage: (message) async {
-        setState(() => _isLoading = true);
+        if (widget.isReadOnly) return;
         try {
           await _chatService.sendMessage(widget.conversationId, message);
         } catch (e) {
@@ -752,32 +1001,10 @@ class _MitraChatDetailPageState extends State<MitraChatDetailPage> {
               ),
             );
           }
-        } finally {
-          setState(() => _isLoading = false);
-        }
-      },
-      onVoiceMessage: (filePath, duration) async {
-        setState(() => _isLoading = true);
-        try {
-          await _chatService.sendVoiceMessage(
-            widget.conversationId,
-            filePath,
-            duration,
-          );
-        } catch (e) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Gagal mengirim voice message: $e'),
-                backgroundColor: redcolor,
-              ),
-            );
-          }
-        } finally {
-          setState(() => _isLoading = false);
         }
       },
       onImageMessage: (imageFile) async {
+        if (widget.isReadOnly) return;
         setState(() => _isLoading = true);
         try {
           // Validate image first
