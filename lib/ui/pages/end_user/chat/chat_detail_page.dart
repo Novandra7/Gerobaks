@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
 import 'package:bank_sha/models/chat_model.dart';
 import 'package:bank_sha/services/chat_service.dart';
 import 'package:bank_sha/services/audio_service_manager.dart';
 import 'package:bank_sha/services/audio_player_service.dart';
-import 'package:bank_sha/services/audio_recorder_service.dart';
 import 'package:bank_sha/ui/widgets/chat/voice_message_bubble.dart';
 import 'package:bank_sha/ui/widgets/chat/enhanced_message_input.dart';
+import 'package:bank_sha/utils/api_routes.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final String conversationId;
+  final bool isReadOnly;
+  final String? customTitle;
+  final String? readOnlyMessage;
 
-  const ChatDetailPage({super.key, required this.conversationId});
+  const ChatDetailPage({
+    super.key,
+    required this.conversationId,
+    this.isReadOnly = false,
+    this.customTitle,
+    this.readOnlyMessage,
+  });
 
   @override
   State<ChatDetailPage> createState() => _ChatDetailPageState();
@@ -24,11 +36,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final ChatService _chatService = ChatService();
   final ScrollController _scrollController = ScrollController();
   final AudioServiceManager _audioServiceManager = AudioServiceManager();
-  late final AudioRecorderService _audioRecorderService;
   late final AudioPlayerService _audioPlayerService;
+  StreamSubscription<List<ChatMessage>>? _messagesSubscription;
 
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _isFirstFrameReady = false;
+  final Map<String, String> _cachedImageFiles = {};
   ChatConversation? _conversation;
 
   @override
@@ -36,28 +50,36 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     super.initState();
 
     // Initialize audio services
-    _audioRecorderService = _audioServiceManager.getAudioRecorderService();
     _audioPlayerService = _audioServiceManager.getAudioPlayerService();
 
     _loadMessages();
     _markAsRead();
 
     // Listen to message updates
-    _chatService.messagesStream.listen((messages) {
+    _messagesSubscription = _chatService.messagesStream.listen((messages) {
       if (mounted) {
         setState(() {
           _messages = messages;
         });
+        unawaited(_resolveCachedImageFiles(messages));
+        _primeImageCache(messages);
         _scrollToBottom();
       }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _isFirstFrameReady = true;
+      unawaited(_resolveCachedImageFiles(_messages));
+      _primeImageCache(_messages);
     });
   }
 
   @override
   void dispose() {
+    _messagesSubscription?.cancel();
     _scrollController.dispose();
-    _audioRecorderService.dispose();
-    _audioPlayerService.dispose();
+    unawaited(_audioPlayerService.stop());
     super.dispose();
   }
 
@@ -66,6 +88,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       _messages = _chatService.getMessages(widget.conversationId);
       _conversation = _chatService.getConversationById(widget.conversationId);
     });
+    unawaited(_resolveCachedImageFiles(_messages));
+    _primeImageCache(_messages);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
@@ -83,6 +107,230 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  bool _isRemoteImage(String imagePath) {
+    final uri = Uri.tryParse(imagePath);
+    if (uri == null) return false;
+    return uri.scheme == 'http' || uri.scheme == 'https';
+  }
+
+  bool _isLikelyLocalDevicePath(String imagePath) {
+    final normalized = imagePath.trim();
+    if (normalized.isEmpty) return false;
+    if (normalized.startsWith('file://') ||
+        normalized.startsWith('content://')) {
+      return true;
+    }
+    if (RegExp(r'^[a-zA-Z]:\\').hasMatch(normalized)) {
+      return true;
+    }
+    return normalized.startsWith('/data/') ||
+        normalized.startsWith('/storage/') ||
+        normalized.startsWith('/var/') ||
+        normalized.startsWith('/private/');
+  }
+
+  List<String> _resolveImageCandidates(String imagePath) {
+    final normalized = imagePath.trim();
+    if (normalized.isEmpty) return const <String>[];
+    if (_isRemoteImage(normalized) || _isLikelyLocalDevicePath(normalized)) {
+      return <String>[normalized];
+    }
+
+    final apiUri = Uri.tryParse(ApiRoutes.baseUrl);
+    final origin =
+        (apiUri != null &&
+            apiUri.hasScheme &&
+            apiUri.host.isNotEmpty &&
+            apiUri.authority.isNotEmpty)
+        ? '${apiUri.scheme}://${apiUri.authority}'
+        : ApiRoutes.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final relative = normalized.replaceAll(RegExp(r'^/+'), '');
+
+    final candidates = <String>['$origin/$relative'];
+
+    if (relative.startsWith('uploads/')) {
+      candidates.add('$origin/storage/$relative');
+    } else if (!relative.startsWith('storage/')) {
+      candidates.add('$origin/storage/$relative');
+    }
+
+    return candidates.toSet().toList();
+  }
+
+  String _resolveImageUrl(String imagePath) {
+    final candidates = _resolveImageCandidates(imagePath);
+    if (candidates.isEmpty) return imagePath.trim();
+    return candidates.first;
+  }
+
+  Future<void> _resolveCachedImageFiles(List<ChatMessage> messages) async {
+    final remoteUrls = <String>{};
+    for (final message in messages) {
+      if (message.type != MessageType.image) continue;
+      final imageUrl = message.imageUrl?.trim() ?? '';
+      if (imageUrl.isEmpty) continue;
+
+      final candidates = _resolveImageCandidates(imageUrl);
+      for (final candidate in candidates) {
+        if (_isRemoteImage(candidate)) {
+          remoteUrls.add(candidate);
+        }
+      }
+    }
+
+    if (remoteUrls.isEmpty) return;
+
+    final resolved = Map<String, String>.from(_cachedImageFiles);
+    var hasChange = false;
+
+    for (final url in remoteUrls) {
+      final cached = await DefaultCacheManager().getFileFromCache(url);
+      final file = cached?.file;
+      if (file == null) continue;
+      if (!await file.exists()) continue;
+      if (resolved[url] != file.path) {
+        resolved[url] = file.path;
+        hasChange = true;
+      }
+    }
+
+    if (hasChange && mounted) {
+      setState(() {
+        _cachedImageFiles
+          ..clear()
+          ..addAll(resolved);
+      });
+    }
+  }
+
+  void _primeImageCache(List<ChatMessage> messages) {
+    if (!mounted || !_isFirstFrameReady || messages.isEmpty) return;
+
+    final remoteUrls = <String>{};
+    for (final message in messages) {
+      if (message.type != MessageType.image) continue;
+      final imageUrl = message.imageUrl?.trim() ?? '';
+      if (imageUrl.isEmpty) continue;
+
+      final candidates = _resolveImageCandidates(imageUrl);
+      for (final candidate in candidates) {
+        if (_isRemoteImage(candidate)) {
+          remoteUrls.add(candidate);
+        }
+      }
+    }
+
+    for (final url in remoteUrls) {
+      unawaited(
+        precacheImage(CachedNetworkImageProvider(url), context).catchError((_) {
+          return null;
+        }),
+      );
+    }
+  }
+
+  Widget _buildBrokenImagePlaceholder({
+    required double width,
+    required double height,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.grey[300],
+      child: const Center(
+        child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+      ),
+    );
+  }
+
+  Widget _buildLoadingImagePlaceholder({
+    required double width,
+    required double height,
+  }) {
+    return Container(width: width, height: height, color: Colors.grey[200]);
+  }
+
+  Widget _buildNetworkImageWithFallback(
+    List<String> urls, {
+    required int index,
+    required BoxFit fit,
+    required double width,
+    required double height,
+  }) {
+    if (index >= urls.length) {
+      return _buildBrokenImagePlaceholder(width: width, height: height);
+    }
+
+    final cachedFilePath = _cachedImageFiles[urls[index]];
+    if (cachedFilePath != null && File(cachedFilePath).existsSync()) {
+      return Image.file(
+        File(cachedFilePath),
+        fit: fit,
+        width: width,
+        height: height,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildNetworkImageWithFallback(
+            urls,
+            index: index + 1,
+            fit: fit,
+            width: width,
+            height: height,
+          );
+        },
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: urls[index],
+      fit: fit,
+      width: width,
+      height: height,
+      fadeInDuration: Duration.zero,
+      placeholderFadeInDuration: Duration.zero,
+      placeholder: (context, url) =>
+          _buildLoadingImagePlaceholder(width: width, height: height),
+      errorWidget: (context, url, error) {
+        return _buildNetworkImageWithFallback(
+          urls,
+          index: index + 1,
+          fit: fit,
+          width: width,
+          height: height,
+        );
+      },
+    );
+  }
+
+  Widget _buildChatImage(
+    String imagePath, {
+    required BoxFit fit,
+    required double width,
+    required double height,
+  }) {
+    final candidates = _resolveImageCandidates(imagePath);
+    if (candidates.isNotEmpty && _isRemoteImage(candidates.first)) {
+      return _buildNetworkImageWithFallback(
+        candidates,
+        index: 0,
+        fit: fit,
+        width: width,
+        height: height,
+      );
+    }
+
+    final resolvedPath = _resolveImageUrl(imagePath);
+    return Image.file(
+      File(resolvedPath),
+      fit: fit,
+      width: width,
+      height: height,
+      errorBuilder: (context, error, stackTrace) {
+        return _buildBrokenImagePlaceholder(width: width, height: height);
+      },
+    );
   }
 
   String _formatMessageTime(DateTime dateTime) {
@@ -115,7 +363,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final adminName = _conversation?.adminName ?? 'Customer Service';
+    final adminName =
+        widget.customTitle ?? _conversation?.adminName ?? 'Customer Service';
 
     return Scaffold(
       appBar: CustomAppNotif(title: adminName, showBackButton: true),
@@ -143,12 +392,24 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     },
                   ),
           ),
-          UserEnhancedMessageInput(
-            onTextMessage: _handleTextMessage,
-            onVoiceMessage: _handleVoiceMessage,
-            onImageMessage: _handleImageMessage,
-            isLoading: _isLoading,
-          ),
+          if (widget.isReadOnly)
+            Container(
+              width: double.infinity,
+              color: Colors.grey[100],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                widget.readOnlyMessage ??
+                    'Chat ini read-only karena pickup sudah selesai/dibatalkan.',
+                textAlign: TextAlign.center,
+                style: greyTextStyle.copyWith(fontSize: 12, fontWeight: medium),
+              ),
+            )
+          else
+            UserEnhancedMessageInput(
+              onTextMessage: _handleTextMessage,
+              onImageMessage: _handleImageMessage,
+              isLoading: _isLoading,
+            ),
         ],
       ),
     );
@@ -200,6 +461,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.isFromUser;
+    final isPendingMessage = isUser && message.id.startsWith('local_');
     final isSystem = message.type == MessageType.system;
     final isTyping = message.type == MessageType.typing;
 
@@ -364,11 +626,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(Icons.person, color: greenColor, size: 16),
-            ),
+            _buildUserAvatar(isPending: isPendingMessage),
           ],
         ],
       ),
@@ -377,6 +635,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   Widget _buildImageBubble(ChatMessage message) {
     final isUser = message.isFromUser;
+    final isPendingMessage = isUser && message.id.startsWith('local_');
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -456,7 +715,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                                           Navigator.of(context).pop(),
                                     ),
                                     title: Text(
-                                      'Image Preview',
+                                      message.imageUrl!.split('/').last,
                                       style: whiteTextStyle,
                                     ),
                                   ),
@@ -464,9 +723,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                                     child: InteractiveViewer(
                                       minScale: 0.5,
                                       maxScale: 3.0,
-                                      child: Image.file(
-                                        File(message.imageUrl!),
+                                      child: _buildChatImage(
+                                        message.imageUrl!,
                                         fit: BoxFit.contain,
+                                        width: MediaQuery.of(
+                                          context,
+                                        ).size.width,
+                                        height:
+                                            MediaQuery.of(context).size.height *
+                                            0.8,
                                       ),
                                     ),
                                   ),
@@ -474,25 +739,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                               ),
                             );
                           },
-                          child: Image.file(
-                            File(message.imageUrl!),
+                          child: _buildChatImage(
+                            message.imageUrl!,
                             fit: BoxFit.cover,
                             width: MediaQuery.of(context).size.width * 0.6,
                             height: 200,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: MediaQuery.of(context).size.width * 0.6,
-                                height: 200,
-                                color: Colors.grey[300],
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              );
-                            },
                           ),
                         ),
                       ],
@@ -509,19 +760,38 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           ),
           if (isUser) ...[
             const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
-              child: Icon(Icons.person, color: greenColor, size: 16),
-            ),
+            _buildUserAvatar(isPending: isPendingMessage),
           ],
         ],
       ),
     );
   }
 
+  Widget _buildUserAvatar({required bool isPending}) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: greenColor.withOpacity(0.1),
+          child: Icon(Icons.person, color: greenColor, size: 16),
+        ),
+        if (isPending)
+          SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(greenColor),
+            ),
+          ),
+      ],
+    );
+  }
+
   // Handler methods for EnhancedMessageInput
   Future<void> _handleTextMessage(String message) async {
+    if (widget.isReadOnly) return;
     if (message.isEmpty || _isLoading) return;
 
     setState(() {
@@ -540,42 +810,16 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _handleVoiceMessage(String filePath, int duration) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _chatService.sendVoiceMessage(
-        widget.conversationId,
-        filePath,
-        duration,
-      );
-    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengirim pesan suara: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+        });
       }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
   Future<void> _handleImageMessage(File imageFile) async {
+    if (widget.isReadOnly) return;
     if (_isLoading) return;
 
     setState(() {
@@ -597,9 +841,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 }
