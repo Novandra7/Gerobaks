@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/services/chat_service.dart';
 import 'package:bank_sha/ui/widgets/skeleton/skeleton_items.dart';
 import 'package:bank_sha/services/end_user_api_service.dart';
+import 'package:bank_sha/ui/pages/end_user/chat/chat_detail_page.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/widgets/ongoing_activity_card.dart';
 
 /// Tab untuk schedule dengan status: assigned, on_the_way, arrived
@@ -19,12 +21,25 @@ class OngoingTab extends StatefulWidget {
 
 class _OngoingTabState extends State<OngoingTab>
     with AutomaticKeepAliveClientMixin {
+  static const Set<String> _chatActiveStatuses = {
+    'assigned',
+    'accepted',
+    'on_the_way',
+    'arrived',
+  };
+  static const Set<String> _chatReadOnlyStatuses = {
+    'completed',
+    'cancelled',
+    'canceled',
+  };
+
   @override
   bool get wantKeepAlive => true;
 
   bool _isLoading = true;
   bool _isFirstLoad = true;
   List<Map<String, dynamic>> _schedules = [];
+  final ChatService _chatService = ChatService();
   late EndUserApiService _apiService;
 
   @override
@@ -135,6 +150,70 @@ class _OngoingTabState extends State<OngoingTab>
     return ongoingSchedules;
   }
 
+  bool _isChatAvailableForStatus(String status) {
+    final normalized = status.toLowerCase();
+    return _chatActiveStatuses.contains(normalized) ||
+        _chatReadOnlyStatuses.contains(normalized);
+  }
+
+  bool _isChatReadOnlyStatus(String status) {
+    return _chatReadOnlyStatuses.contains(status.toLowerCase());
+  }
+
+  Future<void> _openScheduleChat(Map<String, dynamic> schedule) async {
+    final status = schedule['status']?.toString() ?? '';
+    if (!_isChatAvailableForStatus(status)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat belum tersedia untuk status jadwal ini'),
+        ),
+      );
+      return;
+    }
+
+    final pickupScheduleIdRaw = schedule['id'];
+    final pickupScheduleId = pickupScheduleIdRaw is int
+        ? pickupScheduleIdRaw
+        : int.tryParse(pickupScheduleIdRaw?.toString() ?? '');
+    if (pickupScheduleId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pickup tidak valid, chat tidak dapat dibuka'),
+        ),
+      );
+      return;
+    }
+
+    final mitraName =
+        schedule['assigned_mitra']?['name']?.toString().trim().isNotEmpty ==
+            true
+        ? schedule['assigned_mitra']['name'].toString().trim()
+        : 'Mitra Pickup';
+    final isReadOnly = _isChatReadOnlyStatus(status);
+
+    final conversationId = await _chatService.getOrCreatePickupConversationFast(
+      pickupScheduleId: pickupScheduleId,
+      counterpartName: mitraName,
+    );
+
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatDetailPage(
+          conversationId: conversationId,
+          customTitle: mitraName,
+          isReadOnly: isReadOnly,
+          readOnlyMessage: isReadOnly
+              ? 'Pickup sudah ${status.replaceAll('_', ' ')}, chat hanya dapat dibaca.'
+              : null,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSkeletonLoading() {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -211,6 +290,7 @@ class _OngoingTabState extends State<OngoingTab>
             child: OngoingActivityCard(
               schedule: filteredSchedules[index],
               onRefresh: _loadSchedules,
+              onChat: () => _openScheduleChat(filteredSchedules[index]),
             ),
           );
         },
