@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/services/chat_service.dart';
+import 'package:bank_sha/ui/pages/end_user/chat/chat_detail_page.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/widgets/gps_tracking_view.dart';
 import 'package:bank_sha/ui/pages/end_user/activity/widgets/mitra_info_card.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,11 +10,32 @@ import 'package:url_launcher/url_launcher.dart';
 /// Menampilkan: GPS Tracking Map, Mitra Info, Detail lengkap
 class OngoingDetailPage extends StatelessWidget {
   final Map<String, dynamic> schedule;
+  static const Set<String> _chatActiveStatuses = {
+    'assigned',
+    'accepted',
+    'on_the_way',
+    'arrived',
+  };
+  static const Set<String> _chatReadOnlyStatuses = {
+    'completed',
+    'cancelled',
+    'canceled',
+  };
 
-  const OngoingDetailPage({
-    super.key,
-    required this.schedule,
-  });
+  const OngoingDetailPage({super.key, required this.schedule});
+
+  bool _canOpenChat(String? status) {
+    final normalized = status?.toLowerCase();
+    if (normalized == null) return false;
+    return _chatActiveStatuses.contains(normalized) ||
+        _chatReadOnlyStatuses.contains(normalized);
+  }
+
+  bool _isReadOnlyChat(String? status) {
+    final normalized = status?.toLowerCase();
+    if (normalized == null) return false;
+    return _chatReadOnlyStatuses.contains(normalized);
+  }
 
   String _mapStatusToReadable(String? status) {
     switch (status?.toLowerCase()) {
@@ -98,15 +121,46 @@ class OngoingDetailPage extends StatelessWidget {
     }
   }
 
+  Future<void> _openPickupChat(
+    BuildContext context, {
+    required int pickupScheduleId,
+    required String? status,
+    required String mitraName,
+  }) async {
+    final chatService = ChatService();
+    final isReadOnly = _isReadOnlyChat(status);
+    final conversationId = await chatService.getOrCreatePickupConversationFast(
+      pickupScheduleId: pickupScheduleId,
+      counterpartName: mitraName,
+    );
+
+    if (!context.mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatDetailPage(
+          conversationId: conversationId,
+          customTitle: mitraName,
+          isReadOnly: isReadOnly,
+          readOnlyMessage: isReadOnly
+              ? 'Pickup sudah ${_mapStatusToReadable(status).toLowerCase()}, chat hanya dapat dibaca.'
+              : null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = schedule['status']?.toString();
+    final scheduleId = int.tryParse(schedule['id']?.toString() ?? '');
     final mitraName = schedule['assigned_mitra']?['name']?.toString();
     final mitraPhone = schedule['assigned_mitra']?['phone']?.toString();
     final mitraPhoto = schedule['assigned_mitra']?['photo']?.toString();
     final wasteSummary = schedule['waste_summary']?.toString();
     final wasteType = schedule['waste_type_scheduled']?.toString();
-    final address = schedule['pickup_address']?.toString() ?? 'Alamat tidak tersedia';
+    final address =
+        schedule['pickup_address']?.toString() ?? 'Alamat tidak tersedia';
     final notes = schedule['notes']?.toString();
     final scheduleDate = schedule['schedule_date']?.toString();
     final pickupTimeStart = schedule['pickup_time_start']?.toString();
@@ -209,8 +263,8 @@ class OngoingDetailPage extends StatelessWidget {
                         value: wasteSummary?.isNotEmpty == true
                             ? wasteSummary!
                             : wasteType?.isNotEmpty == true
-                                ? wasteType!
-                                : 'Layanan Sampah',
+                            ? wasteType!
+                            : 'Layanan Sampah',
                       ),
 
                       const SizedBox(height: 12),
@@ -283,6 +337,40 @@ class OngoingDetailPage extends StatelessWidget {
                 ),
               ),
 
+            if (scheduleId != null &&
+                mitraName != null &&
+                _canOpenChat(status)) ...[
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openPickupChat(
+                      context,
+                      pickupScheduleId: scheduleId,
+                      status: status,
+                      mitraName: mitraName,
+                    ),
+                    icon: Icon(Icons.chat_outlined, color: greenColor),
+                    label: Text(
+                      _isReadOnlyChat(status)
+                          ? 'Lihat Chat Pickup'
+                          : 'Chat Mitra',
+                      style: greenTextStyle.copyWith(fontWeight: semiBold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: greenColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 24),
           ],
         ),
@@ -307,17 +395,12 @@ class OngoingDetailPage extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: greyTextStyle.copyWith(
-                  fontSize: 12,
-                  fontWeight: medium,
-                ),
+                style: greyTextStyle.copyWith(fontSize: 12, fontWeight: medium),
               ),
               const SizedBox(height: 4),
               Text(
                 value,
-                style: blackTextStyle.copyWith(
-                  fontSize: 14,
-                ),
+                style: blackTextStyle.copyWith(fontSize: 14),
                 maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
               ),
