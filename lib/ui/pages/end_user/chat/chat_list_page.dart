@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/ui/widgets/shared/appbar.dart';
@@ -16,6 +18,7 @@ class ChatListPage extends StatefulWidget {
 class _ChatListPageState extends State<ChatListPage> {
   final ChatService _chatService = ChatService();
   List<ChatConversation> _conversations = [];
+  StreamSubscription<List<ChatConversation>>? _conversationsSubscription;
 
   @override
   void initState() {
@@ -25,10 +28,14 @@ class _ChatListPageState extends State<ChatListPage> {
 
   Future<void> _initializeChat() async {
     await _chatService.initializeData();
+    if (!mounted) return;
     _loadConversations();
-    
+
     // Listen to conversation updates
-    _chatService.conversationsStream.listen((conversations) {
+    await _conversationsSubscription?.cancel();
+    _conversationsSubscription = _chatService.conversationsStream.listen((
+      conversations,
+    ) {
       if (mounted) {
         setState(() {
           _conversations = conversations;
@@ -38,9 +45,16 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   void _loadConversations() {
+    if (!mounted) return;
     setState(() {
       _conversations = _chatService.getConversations();
     });
+  }
+
+  @override
+  void dispose() {
+    _conversationsSubscription?.cancel();
+    super.dispose();
   }
 
   void _startNewChat() async {
