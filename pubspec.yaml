@@ -80,6 +80,8 @@ dependencies:
   flutter_map_cache: ^2.0.0+1
   http_cache_file_store: ^2.0.1
   dio_cache_interceptor: ^4.0.3
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
 
 dev_dependencies:
   flutter_test:
