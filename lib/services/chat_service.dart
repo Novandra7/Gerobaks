@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:pusher_reverb_flutter/pusher_reverb_flutter.dart';
 import '../models/chat_model.dart';
 import '../services/local_storage_service.dart';
 import '../services/gemini_ai_service.dart';
@@ -26,6 +28,16 @@ class ChatService {
   List<ChatConversation> _conversations = [];
   List<ChatMessage> _currentMessages = [];
   final Map<int, int> _pickupRoomIds = {};
+  final Map<int, String> _conversationIdByRoomId = {};
+  ReverbClient? _realtimeClient;
+  PrivateChannel? _realtimeChannel;
+  final List<StreamSubscription<ChannelEvent>> _realtimeMessageSubscriptions =
+      [];
+  StreamSubscription<ChannelEvent>? _realtimeChannelStreamSubscription;
+  bool _realtimeInitialized = false;
+  String? _lastLoggedSocketId;
+  String? _activeRealtimeConversationId;
+  String? _activeRealtimeChannelName;
   late LocalStorageService _localStorage;
   late EndUserApiService _apiService;
   bool _isInitialized = false;
@@ -78,6 +90,45 @@ class ChatService {
     );
     if (scheduleId == null) return conversationId;
     return 'pickup_$scheduleId';
+  }
+
+  int? _extractRoomIdFromConversationId(String conversationId) {
+    final normalized = conversationId.trim();
+    if (normalized.isEmpty) return null;
+
+    if (RegExp(r'^\d+$').hasMatch(normalized)) {
+      return int.tryParse(normalized);
+    }
+
+    final roomMatch = RegExp(
+      r'(?:^|[_-])(?:room|chat[_-]?room)[_-]?(\d+)$',
+      caseSensitive: false,
+    ).firstMatch(normalized);
+    if (roomMatch != null) {
+      return int.tryParse(roomMatch.group(1) ?? '');
+    }
+
+    return null;
+  }
+
+  String _normalizeSenderType(String rawSenderType) {
+    final value = rawSenderType.trim().toLowerCase();
+    if (value.isEmpty) return '';
+    if (value == 'user' || value == 'end_user' || value == 'customer') {
+      return 'user';
+    }
+    if (value == 'mitra' || value == 'admin' || value == 'cs') {
+      return 'mitra';
+    }
+    return value;
+  }
+
+  String _senderTypeForRole(String rawRole) {
+    final role = rawRole.trim().toLowerCase();
+    if (role == 'mitra' || role == 'admin' || role == 'cs') {
+      return 'mitra';
+    }
+    return 'user';
   }
 
   dynamic _extractData(dynamic decoded) {
@@ -158,7 +209,8 @@ class ChatService {
   }
 
   Future<int?> _ensurePickupRoomId(String conversationId) async {
-    final scheduleId = _extractPickupScheduleId(conversationId);
+    int? scheduleId = _extractPickupScheduleId(conversationId);
+    scheduleId ??= int.tryParse(conversationId.trim());
     if (scheduleId == null) return null;
 
     final cachedRoomId = _pickupRoomIds[scheduleId];
@@ -170,6 +222,7 @@ class ChatService {
     final roomId = int.tryParse(room['id']?.toString() ?? '');
     if (roomId != null) {
       _pickupRoomIds[scheduleId] = roomId;
+      _conversationIdByRoomId[roomId] = conversationId;
     }
     return roomId;
   }
@@ -212,14 +265,16 @@ class ChatService {
     List<dynamic> rawMessages,
   ) async {
     final userRole = await _localStorage.getUserRole() ?? 'end_user';
-    final currentSenderType = userRole == 'mitra' ? 'mitra' : 'user';
+    final currentSenderType = _senderTypeForRole(userRole);
 
     final mapped = <ChatMessage>[];
     for (final item in rawMessages) {
       if (item is! Map) continue;
       final map = Map<String, dynamic>.from(item);
 
-      final senderType = map['sender_type']?.toString() ?? '';
+      final senderType = _normalizeSenderType(
+        map['sender_type']?.toString() ?? '',
+      );
       final isFromUser = senderType == 'user';
       final isMine = senderType == currentSenderType;
 
@@ -350,7 +405,9 @@ class ChatService {
   bool _isRemoteAttachmentUrl(String value) {
     final uri = Uri.tryParse(value);
     if (uri == null) return false;
-    return uri.scheme == 'http' || uri.scheme == 'https' || uri.scheme == 'data';
+    return uri.scheme == 'http' ||
+        uri.scheme == 'https' ||
+        uri.scheme == 'data';
   }
 
   Future<http.Response> _sendPickupMultipartMessageWithFallback({
@@ -360,8 +417,15 @@ class ChatService {
     required String messageType,
     required String localAttachmentPath,
   }) async {
-    final uri = Uri.parse('${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/messages');
-    final fileFieldCandidates = <String>['attachment', 'file', 'image', 'media'];
+    final uri = Uri.parse(
+      '${ApiRoutes.baseUrl}/api/chat/rooms/$roomId/messages',
+    );
+    final fileFieldCandidates = <String>[
+      'attachment',
+      'file',
+      'image',
+      'media',
+    ];
     http.Response? lastResponse;
 
     for (final fieldName in fileFieldCandidates) {
@@ -510,6 +574,463 @@ class ChatService {
       headers: headers,
       body: jsonEncode({'status': status}),
     );
+  }
+
+  String _getRealtimeAppKey() {
+    final configured =
+        dotenv.env['REVERB_APP_KEY'] ?? dotenv.env['PUSHER_APP_KEY'];
+    return (configured ?? '').trim();
+  }
+
+  String _getRealtimeScheme() {
+    final configured = (dotenv.env['REVERB_SCHEME'] ?? '').trim().toLowerCase();
+    if (configured == 'https') return 'https';
+    return 'http';
+  }
+
+  int _getRealtimePort() {
+    final configuredPort = int.tryParse(
+      (dotenv.env['REVERB_PORT'] ?? '').trim(),
+    );
+    if (configuredPort != null && configuredPort > 0) return configuredPort;
+    return _getRealtimeScheme() == 'https' ? 443 : 8080;
+  }
+
+  String _getRealtimeHost() {
+    final configuredHost = (dotenv.env['REVERB_HOST'] ?? '').trim();
+    if (configuredHost.isNotEmpty && configuredHost != '0.0.0.0') {
+      return configuredHost;
+    }
+
+    final apiUri = Uri.tryParse(ApiRoutes.baseUrl);
+    if (apiUri != null && apiUri.host.isNotEmpty) {
+      return apiUri.host;
+    }
+
+    return '127.0.0.1';
+  }
+
+  Future<void> _initializeRealtimeClient() async {
+    if (_realtimeInitialized) return;
+
+    final appKey = _getRealtimeAppKey();
+    if (appKey.isEmpty) {
+      print(
+        'Realtime chat disabled: REVERB_APP_KEY/PUSHER_APP_KEY is not configured.',
+      );
+      return;
+    }
+
+    final scheme = _getRealtimeScheme();
+    final apiBase = ApiRoutes.baseUrl.replaceAll(RegExp(r'/$'), '');
+    final authEndpoint = '$apiBase/broadcasting/auth';
+    _realtimeClient = ReverbClient.instance(
+      host: _getRealtimeHost(),
+      port: _getRealtimePort(),
+      appKey: appKey,
+      useTLS: scheme == 'https',
+      authEndpoint: authEndpoint,
+      authorizer: (channelName, socketId) async {
+        final token = await _localStorage.getToken();
+        return {
+          'Accept': 'application/json',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
+        };
+      },
+      onError: (error) {
+        print('Realtime chat connection error: $error');
+      },
+    );
+
+    unawaited(_realtimeClient!.connect());
+    _realtimeInitialized = true;
+  }
+
+  Future<bool> _waitForRealtimeConnection({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final client = _realtimeClient;
+    if (client == null) return false;
+
+    if (client.connectionState == ConnectionState.connected &&
+        client.socketId != null) {
+      return true;
+    }
+
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      if (client.connectionState == ConnectionState.connected &&
+          client.socketId != null) {
+        _logRealtimeSocketId();
+        return true;
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    return false;
+  }
+
+  void _logRealtimeSocketId() {
+    final socketId = _realtimeClient?.socketId;
+    if (socketId == null || socketId.isEmpty) return;
+    if (_lastLoggedSocketId == socketId) return;
+    _lastLoggedSocketId = socketId;
+    print(
+      'Realtime socket_id (use this for /broadcasting/auth test): $socketId',
+    );
+  }
+
+  Future<void> startRealtimeForConversation(String conversationId) async {
+    await _ensureInitialized();
+
+    final resolvedConversationId = _resolvePickupConversationId(conversationId);
+    final directRoomId = _extractRoomIdFromConversationId(conversationId);
+    final roomId =
+        directRoomId ??
+        await _ensurePickupRoomId(resolvedConversationId) ??
+        _extractRoomIdFromConversationId(resolvedConversationId);
+    if (roomId == null) return;
+
+    await _initializeRealtimeClient();
+    if (!_realtimeInitialized || _realtimeClient == null) return;
+    if (_realtimeClient!.connectionState != ConnectionState.connected ||
+        _realtimeClient!.socketId == null) {
+      await _realtimeClient!.connect();
+      final connected = await _waitForRealtimeConnection();
+      if (!connected) {
+        print(
+          'Skipping realtime subscribe: connection was not established in time.',
+        );
+        return;
+      }
+    }
+
+    final channelName = 'chat.room.$roomId';
+    final privateChannelName = 'private-$channelName';
+    if (_activeRealtimeChannelName == privateChannelName &&
+        (_activeRealtimeConversationId == conversationId ||
+            _activeRealtimeConversationId == resolvedConversationId)) {
+      return;
+    }
+
+    await _unsubscribeActiveRealtimeChannel();
+    print(
+      'Subscribing to realtime channel: $privateChannelName for conversation: $resolvedConversationId',
+    );
+
+    PrivateChannel channel;
+    try {
+      channel = _realtimeClient!.subscribeToPrivateChannel(privateChannelName);
+      await channel.subscribe();
+    } on ConnectionException {
+      await _realtimeClient!.connect();
+      final connected = await _waitForRealtimeConnection();
+      if (!connected) {
+        print(
+          'Skipping realtime subscribe retry: connection still unavailable.',
+        );
+        return;
+      }
+      try {
+        channel = _realtimeClient!.subscribeToPrivateChannel(
+          privateChannelName,
+        );
+        await channel.subscribe();
+      } on ConnectionException {
+        print('Skipping realtime subscribe: connection exception persists.');
+        return;
+      }
+    }
+    Future<void> handleRealtimeEvent(ChannelEvent event) async {
+      print('Realtime event received on $channelName: $event');
+      try {
+        final payload = _normalizeRealtimePayload(event.data);
+        if (payload == null) return;
+
+        final payloadRoomId = _extractRealtimeRoomId(
+          payload,
+          channelName: channelName,
+        );
+        if (payloadRoomId == null) return;
+
+        final mappedConversationId =
+            _conversationIdByRoomId[payloadRoomId] ?? resolvedConversationId;
+        final messageRaw = _extractRealtimeMessage(payload);
+        if (messageRaw != null) {
+          await _applyRealtimePickupMessage(
+            mappedConversationId,
+            payloadRoomId,
+            messageRaw,
+          );
+          print(
+            'Realtime message applied: room=$payloadRoomId conversation=$mappedConversationId',
+          );
+          return;
+        }
+
+        print(
+          'Realtime payload without message map, refreshing conversation=$mappedConversationId',
+        );
+        await _refreshPickupConversation(mappedConversationId);
+      } catch (e) {
+        print('Realtime event handling failed: $e');
+      }
+    }
+
+    _realtimeChannelStreamSubscription = channel.stream.listen(
+      (event) async {
+        try {
+          await handleRealtimeEvent(event);
+        } catch (e) {
+          print('Realtime channel stream listener failed: $e');
+        }
+      },
+      onError: (error) {
+        print('Realtime channel stream error: $error');
+      },
+    );
+
+    for (final eventName in const <String>[
+      'chat.message.sent',
+      'App\\Events\\ChatMessageSent',
+    ]) {
+      final subscription = channel
+          .on(eventName)
+          .listen(
+            (event) async {
+              try {
+                await handleRealtimeEvent(event);
+              } catch (e) {
+                print('Realtime event listener failed [$eventName]: $e');
+              }
+            },
+            onError: (error) {
+              print('Realtime event stream error [$eventName]: $error');
+            },
+          );
+      _realtimeMessageSubscriptions.add(subscription);
+    }
+
+    _realtimeChannel = channel;
+    _activeRealtimeConversationId = resolvedConversationId;
+    _activeRealtimeChannelName = privateChannelName;
+    _conversationIdByRoomId[roomId] = resolvedConversationId;
+  }
+
+  Future<void> stopRealtimeForConversation(String conversationId) async {
+    final resolvedConversationId = _resolvePickupConversationId(conversationId);
+    if (_activeRealtimeConversationId != conversationId &&
+        _activeRealtimeConversationId != resolvedConversationId) {
+      return;
+    }
+    await _unsubscribeActiveRealtimeChannel();
+  }
+
+  Future<void> _unsubscribeActiveRealtimeChannel() async {
+    final channelName = _activeRealtimeChannelName;
+    if (channelName != null && _realtimeChannel != null) {
+      await _realtimeChannelStreamSubscription?.cancel();
+      _realtimeChannelStreamSubscription = null;
+      for (final subscription in _realtimeMessageSubscriptions) {
+        await subscription.cancel();
+      }
+      _realtimeMessageSubscriptions.clear();
+      try {
+        _realtimeClient?.unsubscribeFromChannel(channelName);
+      } catch (_) {}
+    }
+
+    _realtimeChannelStreamSubscription = null;
+    _realtimeMessageSubscriptions.clear();
+    _realtimeChannel = null;
+    _activeRealtimeConversationId = null;
+    _activeRealtimeChannelName = null;
+  }
+
+  Map<String, dynamic>? _normalizeRealtimePayload(dynamic raw) {
+    dynamic decoded = raw;
+
+    if (decoded is String) {
+      final rawText = decoded.trim();
+      if (rawText.isEmpty) return null;
+      try {
+        decoded = jsonDecode(rawText);
+      } catch (_) {
+        return {'message': rawText};
+      }
+    }
+
+    if (decoded is! Map) return null;
+
+    final payload = Map<String, dynamic>.from(decoded);
+    final nestedData = payload['data'];
+    if (nestedData is String && nestedData.isNotEmpty) {
+      try {
+        final parsedNested = jsonDecode(nestedData);
+        if (parsedNested is Map) {
+          return Map<String, dynamic>.from(parsedNested);
+        }
+      } catch (_) {
+        return payload;
+      }
+    }
+    if (nestedData is Map) {
+      return Map<String, dynamic>.from(nestedData);
+    }
+
+    return payload;
+  }
+
+  int? _extractRealtimeRoomId(
+    Map<String, dynamic> payload, {
+    String? channelName,
+  }) {
+    int? parse(dynamic value) => int.tryParse(value?.toString() ?? '');
+
+    final directRoomId =
+        parse(payload['room_id']) ??
+        parse(payload['roomId']) ??
+        parse(payload['chat_room_id']) ??
+        parse(payload['chatRoomId']);
+    if (directRoomId != null) return directRoomId;
+
+    final roomNode = payload['room'];
+    if (roomNode is Map<String, dynamic>) {
+      final roomId = parse(roomNode['id']);
+      if (roomId != null) return roomId;
+    } else if (roomNode is Map) {
+      final roomId = parse(roomNode['id']);
+      if (roomId != null) return roomId;
+    }
+
+    final messageNode = payload['message'];
+    if (messageNode is Map<String, dynamic>) {
+      final messageRoomId =
+          parse(messageNode['room_id']) ??
+          parse(messageNode['chat_room_id']) ??
+          parse(messageNode['roomId']) ??
+          parse(messageNode['chatRoomId']);
+      if (messageRoomId != null) return messageRoomId;
+    } else if (messageNode is Map) {
+      final map = Map<String, dynamic>.from(messageNode);
+      final messageRoomId =
+          parse(map['room_id']) ??
+          parse(map['chat_room_id']) ??
+          parse(map['roomId']) ??
+          parse(map['chatRoomId']);
+      if (messageRoomId != null) return messageRoomId;
+    }
+
+    if (channelName != null) {
+      final match = RegExp(
+        r'(?:private-)?chat\.room\.(\d+)$',
+      ).firstMatch(channelName);
+      if (match != null) return int.tryParse(match.group(1) ?? '');
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? _extractRealtimeMessage(Map<String, dynamic> payload) {
+    final message = payload['message'];
+    if (message is Map<String, dynamic>) return message;
+    if (message is Map) return Map<String, dynamic>.from(message);
+    if (message is String && message.isNotEmpty) {
+      try {
+        final parsed = jsonDecode(message);
+        if (parsed is Map<String, dynamic>) return parsed;
+        if (parsed is Map) return Map<String, dynamic>.from(parsed);
+      } catch (_) {
+        // Some backends send plain text in "message"; ignore and use payload shape.
+      }
+    }
+
+    if (payload.containsKey('message_text') ||
+        payload.containsKey('message_type') ||
+        payload.containsKey('sender_type') ||
+        payload.containsKey('attachment_url')) {
+      return payload;
+    }
+    return null;
+  }
+
+  Future<void> _applyRealtimePickupMessage(
+    String conversationId,
+    int roomId,
+    Map<String, dynamic> rawMessage,
+  ) async {
+    final conversationIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+    if (conversationIndex == -1) return;
+
+    _conversationIdByRoomId[roomId] = conversationId;
+
+    final mappedList = await _mapPickupMessages([rawMessage]);
+    if (mappedList.isEmpty) return;
+    final incoming = mappedList.first;
+    final userRole = await _localStorage.getUserRole() ?? 'end_user';
+    final currentSenderType = _senderTypeForRole(userRole);
+    final senderType = _normalizeSenderType(
+      rawMessage['sender_type']?.toString() ?? '',
+    );
+    final isIncoming = senderType != currentSenderType;
+
+    final conversation = _conversations[conversationIndex];
+    final updatedMessages = List<ChatMessage>.from(conversation.messages);
+    final existingIndex = updatedMessages.indexWhere(
+      (m) => m.id == incoming.id,
+    );
+    if (existingIndex != -1) {
+      updatedMessages[existingIndex] = incoming;
+    } else {
+      final optimisticIndex = updatedMessages.indexWhere(
+        (message) =>
+            message.id.startsWith('local_') &&
+            message.type == incoming.type &&
+            message.isFromUser == incoming.isFromUser &&
+            ((incoming.type == MessageType.text &&
+                    message.message == incoming.message) ||
+                (incoming.type == MessageType.image &&
+                    message.imageUrl == incoming.imageUrl) ||
+                (incoming.type == MessageType.voice &&
+                    message.voiceUrl == incoming.voiceUrl)),
+      );
+
+      if (optimisticIndex != -1) {
+        updatedMessages[optimisticIndex] = incoming;
+      } else {
+        updatedMessages.add(incoming);
+      }
+    }
+
+    final nextUnreadCount = isIncoming
+        ? conversation.unreadCount + 1
+        : conversation.unreadCount;
+    final lastMessagePreview = incoming.type == MessageType.image
+        ? 'Mengirim gambar...'
+        : incoming.type == MessageType.voice
+        ? 'Mengirim voice note...'
+        : incoming.message;
+
+    _conversations[conversationIndex] = ChatConversation(
+      id: conversation.id,
+      title: conversation.title,
+      lastMessage: lastMessagePreview,
+      lastMessageTime: incoming.timestamp,
+      isUnread: isIncoming ? true : conversation.isUnread,
+      unreadCount: nextUnreadCount,
+      adminName: conversation.adminName,
+      adminAvatar: conversation.adminAvatar,
+      messages: updatedMessages,
+    );
+
+    if (_activeRealtimeConversationId == conversationId) {
+      _currentMessages = updatedMessages;
+      _messagesController.add(_currentMessages);
+    }
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
   }
 
   // Load conversations from API first, fallback to local storage
@@ -1150,6 +1671,7 @@ class ChatService {
     final roomId = int.tryParse(room?['id']?.toString() ?? '');
     if (roomId != null) {
       _pickupRoomIds[pickupScheduleId] = roomId;
+      _conversationIdByRoomId[roomId] = conversationId;
     }
 
     final messagesRaw = roomId != null
