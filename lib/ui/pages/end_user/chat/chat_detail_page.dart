@@ -33,17 +33,41 @@ class ChatDetailPage extends StatefulWidget {
 }
 
 class _ChatDetailPageState extends State<ChatDetailPage> {
+  static const bool _useRealtimeChannel = true;
+  static const int _maxImagesToResolveFromCache = 24;
+  static const int _messagePageSize = 40;
+  static const Duration _pollingInterval = Duration(seconds: 3);
+  static const Duration _realtimeStopDelay = Duration(milliseconds: 350);
   final ChatService _chatService = ChatService();
   final ScrollController _scrollController = ScrollController();
   final AudioServiceManager _audioServiceManager = AudioServiceManager();
   late final AudioPlayerService _audioPlayerService;
   StreamSubscription<List<ChatMessage>>? _messagesSubscription;
+  Timer? _realtimeStartDebounce;
+  Timer? _realtimeRetryTimer;
+  Timer? _pollingRefreshTimer;
+  Timer? _messagesApplyDebounce;
+  Timer? _imageWorkDebounce;
 
   List<ChatMessage> _messages = [];
+  int _visibleMessageCount = _messagePageSize;
+  List<ChatMessage>? _pendingMessagesForUi;
+  String _lastUiMessageSignature = '';
   bool _isLoading = false;
+  bool _isStartingRealtime = false;
   bool _isFirstFrameReady = false;
+  bool _isResolvingCachedImages = false;
+  bool _hasPendingCacheResolve = false;
   final Map<String, String> _cachedImageFiles = {};
   ChatConversation? _conversation;
+
+  List<ChatMessage> get _visibleMessages {
+    if (_messages.length <= _visibleMessageCount) {
+      return _messages;
+    }
+    final start = _messages.length - _visibleMessageCount;
+    return _messages.sublist(start);
+  }
 
   @override
   void initState() {
@@ -54,30 +78,75 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
     _loadMessages();
     _markAsRead();
+    _scrollController.addListener(_onScroll);
 
     // Listen to message updates
     _messagesSubscription = _chatService.messagesStream.listen((messages) {
-      if (mounted) {
+      if (!mounted) return;
+      final snapshot = List<ChatMessage>.from(messages);
+      final signature = _buildMessageSignature(snapshot);
+      if (signature == _lastUiMessageSignature) return;
+
+      _pendingMessagesForUi = snapshot;
+      _messagesApplyDebounce?.cancel();
+      _messagesApplyDebounce = Timer(const Duration(milliseconds: 80), () {
+        final pending = _pendingMessagesForUi;
+        if (!mounted || pending == null) return;
+        _pendingMessagesForUi = null;
+
+        final shouldAutoScroll = pending.length > _messages.length;
         setState(() {
-          _messages = messages;
+          _messages = pending;
+          _visibleMessageCount = _messagePageSize;
+          _lastUiMessageSignature = _buildMessageSignature(pending);
         });
-        unawaited(_resolveCachedImageFiles(messages));
-        _primeImageCache(messages);
-        _scrollToBottom();
-      }
+        _scheduleImageWork(pending);
+        if (shouldAutoScroll) {
+          _scrollToBottomOnNextFrame();
+        }
+      });
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _isFirstFrameReady = true;
-      unawaited(_resolveCachedImageFiles(_messages));
-      _primeImageCache(_messages);
+      _scheduleImageWork(_messages);
+      if (_useRealtimeChannel) {
+        _realtimeStartDebounce = Timer(const Duration(milliseconds: 400), () {
+          if (!mounted) return;
+          unawaited(_startRealtimeSafely());
+        });
+        _realtimeRetryTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+          if (!mounted) return;
+          unawaited(_startRealtimeSafely());
+        });
+      } else {
+        _pollingRefreshTimer = Timer.periodic(_pollingInterval, (_) {
+          if (!mounted) return;
+          _chatService.getMessages(widget.conversationId);
+        });
+      }
     });
   }
 
   @override
   void dispose() {
+    if (_useRealtimeChannel) {
+      unawaited(
+        Future<void>.delayed(_realtimeStopDelay, () {
+          return _chatService.stopRealtimeForConversation(
+            widget.conversationId,
+          );
+        }),
+      );
+    }
     _messagesSubscription?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _realtimeStartDebounce?.cancel();
+    _realtimeRetryTimer?.cancel();
+    _pollingRefreshTimer?.cancel();
+    _messagesApplyDebounce?.cancel();
+    _imageWorkDebounce?.cancel();
     _scrollController.dispose();
     unawaited(_audioPlayerService.stop());
     super.dispose();
@@ -86,12 +155,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   void _loadMessages() {
     setState(() {
       _messages = _chatService.getMessages(widget.conversationId);
+      _visibleMessageCount = _messagePageSize;
+      _lastUiMessageSignature = _buildMessageSignature(_messages);
       _conversation = _chatService.getConversationById(widget.conversationId);
     });
-    unawaited(_resolveCachedImageFiles(_messages));
-    _primeImageCache(_messages);
+    _scheduleImageWork(_messages);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+      _scrollToBottom(animated: false);
     });
   }
 
@@ -99,13 +169,81 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     _chatService.markAsRead(widget.conversationId);
   }
 
-  void _scrollToBottom() {
+  Future<void> _startRealtimeSafely() async {
+    if (!_useRealtimeChannel) return;
+    if (_isStartingRealtime) return;
+    _isStartingRealtime = true;
+    try {
+      await _chatService.startRealtimeForConversation(widget.conversationId);
+    } catch (e) {
+      print('End-user realtime start failed: $e');
+    } finally {
+      _isStartingRealtime = false;
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels > 50) return;
+    if (_visibleMessageCount >= _messages.length) return;
+    setState(() {
+      final next = _visibleMessageCount + _messagePageSize;
+      _visibleMessageCount = next > _messages.length ? _messages.length : next;
+    });
+  }
+
+  String _buildMessageSignature(List<ChatMessage> messages) {
+    if (messages.isEmpty) return '0';
+    final last = messages.last;
+    return '${messages.length}|${last.id}|${last.timestamp.microsecondsSinceEpoch}|${last.type.name}';
+  }
+
+  void _scrollToBottom({bool animated = true}) {
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      final offset = _scrollController.position.maxScrollExtent;
+      if (animated) {
+        _scrollController.animateTo(
+          offset,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(offset);
+      }
+    }
+  }
+
+  void _scrollToBottomOnNextFrame({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollToBottom(animated: animated);
+    });
+  }
+
+  void _scheduleImageWork(List<ChatMessage> messages) {
+    if (!_isFirstFrameReady || !mounted) return;
+    _imageWorkDebounce?.cancel();
+    final snapshot = List<ChatMessage>.from(messages);
+    _imageWorkDebounce = Timer(const Duration(milliseconds: 150), () {
+      unawaited(_runImageWork(snapshot));
+    });
+  }
+
+  Future<void> _runImageWork(List<ChatMessage> messages) async {
+    if (_isResolvingCachedImages || !mounted) {
+      _hasPendingCacheResolve = true;
+      return;
+    }
+
+    _isResolvingCachedImages = true;
+    try {
+      await _resolveCachedImageFiles(messages);
+    } finally {
+      _isResolvingCachedImages = false;
+      if (_hasPendingCacheResolve && mounted) {
+        _hasPendingCacheResolve = false;
+        _scheduleImageWork(_messages);
+      }
     }
   }
 
@@ -134,7 +272,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   List<String> _resolveImageCandidates(String imagePath) {
     final normalized = imagePath.trim();
     if (normalized.isEmpty) return const <String>[];
-    if (_isRemoteImage(normalized) || _isLikelyLocalDevicePath(normalized)) {
+    if (_isLikelyLocalDevicePath(normalized)) {
+      return <String>[normalized];
+    }
+    if (_isRemoteImage(normalized)) {
+      final uri = Uri.tryParse(normalized);
+      if (uri != null) {
+        final path = uri.path;
+        if (path.startsWith('/uploads/')) {
+          final storageUri = uri.replace(path: '/storage$path').toString();
+          return <String>{storageUri, normalized}.toList();
+        }
+      }
       return <String>[normalized];
     }
 
@@ -148,12 +297,15 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         : ApiRoutes.baseUrl.replaceAll(RegExp(r'/+$'), '');
     final relative = normalized.replaceAll(RegExp(r'^/+'), '');
 
-    final candidates = <String>['$origin/$relative'];
-
+    final candidates = <String>[];
     if (relative.startsWith('uploads/')) {
       candidates.add('$origin/storage/$relative');
+      candidates.add('$origin/$relative');
     } else if (!relative.startsWith('storage/')) {
       candidates.add('$origin/storage/$relative');
+      candidates.add('$origin/$relative');
+    } else {
+      candidates.add('$origin/$relative');
     }
 
     return candidates.toSet().toList();
@@ -167,7 +319,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   Future<void> _resolveCachedImageFiles(List<ChatMessage> messages) async {
     final remoteUrls = <String>{};
-    for (final message in messages) {
+    var processedImages = 0;
+    for (final message in messages.reversed) {
       if (message.type != MessageType.image) continue;
       final imageUrl = message.imageUrl?.trim() ?? '';
       if (imageUrl.isEmpty) continue;
@@ -178,6 +331,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           remoteUrls.add(candidate);
         }
       }
+      processedImages++;
+      if (processedImages >= _maxImagesToResolveFromCache) break;
     }
 
     if (remoteUrls.isEmpty) return;
@@ -202,32 +357,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           ..clear()
           ..addAll(resolved);
       });
-    }
-  }
-
-  void _primeImageCache(List<ChatMessage> messages) {
-    if (!mounted || !_isFirstFrameReady || messages.isEmpty) return;
-
-    final remoteUrls = <String>{};
-    for (final message in messages) {
-      if (message.type != MessageType.image) continue;
-      final imageUrl = message.imageUrl?.trim() ?? '';
-      if (imageUrl.isEmpty) continue;
-
-      final candidates = _resolveImageCandidates(imageUrl);
-      for (final candidate in candidates) {
-        if (_isRemoteImage(candidate)) {
-          remoteUrls.add(candidate);
-        }
-      }
-    }
-
-    for (final url in remoteUrls) {
-      unawaited(
-        precacheImage(CachedNetworkImageProvider(url), context).catchError((_) {
-          return null;
-        }),
-      );
     }
   }
 
@@ -264,7 +393,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
 
     final cachedFilePath = _cachedImageFiles[urls[index]];
-    if (cachedFilePath != null && File(cachedFilePath).existsSync()) {
+    if (cachedFilePath != null) {
       return Image.file(
         File(cachedFilePath),
         fit: fit,
@@ -339,7 +468,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   String _formatDateHeader(DateTime dateTime) {
     final now = DateTime.now();
-    final difference = now.difference(dateTime).inDays;
+    final currentDate = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+    final difference = currentDate.difference(messageDate).inDays;
 
     if (difference == 0) {
       return 'Hari ini';
@@ -350,11 +481,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 
-  bool _shouldShowDateHeader(int index) {
+  bool _shouldShowDateHeader(List<ChatMessage> messages, int index) {
     if (index == 0) return true;
 
-    final currentMessage = _messages[index];
-    final previousMessage = _messages[index - 1];
+    final currentMessage = messages[index];
+    final previousMessage = messages[index - 1];
 
     return currentMessage.timestamp.day != previousMessage.timestamp.day ||
         currentMessage.timestamp.month != previousMessage.timestamp.month ||
@@ -365,6 +496,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   Widget build(BuildContext context) {
     final adminName =
         widget.customTitle ?? _conversation?.adminName ?? 'Customer Service';
+    final visibleMessages = _visibleMessages;
 
     return Scaffold(
       appBar: CustomAppNotif(title: adminName, showBackButton: true),
@@ -372,17 +504,17 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       body: Column(
         children: [
           Expanded(
-            child: _messages.isEmpty
+            child: visibleMessages.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    itemCount: visibleMessages.length,
                     itemBuilder: (context, index) {
-                      final message = _messages[index];
+                      final message = visibleMessages[index];
                       return Column(
                         children: [
-                          if (_shouldShowDateHeader(index))
+                          if (_shouldShowDateHeader(visibleMessages, index))
                             _buildDateHeader(
                               _formatDateHeader(message.timestamp),
                             ),
@@ -496,7 +628,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
+              backgroundColor: greenColor.withValues(alpha: 0.1),
               child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
@@ -521,7 +653,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: greenColor.withOpacity(0.7),
+                      color: greenColor.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -530,7 +662,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: greenColor.withOpacity(0.4),
+                      color: greenColor.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -569,7 +701,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           if (!isUser) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
+              backgroundColor: greenColor.withValues(alpha: 0.1),
               child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
@@ -603,7 +735,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: blackColor.withOpacity(0.1),
+                          color: blackColor.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -648,7 +780,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           if (!isUser) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withOpacity(0.1),
+              backgroundColor: greenColor.withValues(alpha: 0.1),
               child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
@@ -677,7 +809,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: blackColor.withOpacity(0.1),
+                        color: blackColor.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -773,7 +905,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       children: [
         CircleAvatar(
           radius: 16,
-          backgroundColor: greenColor.withOpacity(0.1),
+          backgroundColor: greenColor.withValues(alpha: 0.1),
           child: Icon(Icons.person, color: greenColor, size: 16),
         ),
         if (isPending)
@@ -827,8 +959,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     });
 
     try {
-      // In a real app, upload the image to a server and get a URL
-      // Here we'll simulate it with a local path
       final String imageUrl = imageFile.path;
       await _chatService.sendImageMessage(widget.conversationId, imageUrl);
     } catch (e) {
