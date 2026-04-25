@@ -220,7 +220,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                           child: Container(
                             height: 4,
                             decoration: BoxDecoration(
-                              color: greyColor.withValues(alpha: 0.3),
+                              color: greyColor.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -255,14 +255,14 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                         border: Border.all(
                           color: _selectedLocation != null
                               ? greenColor
-                              : greyColor.withValues(alpha: 0.5),
+                              : greyColor.withOpacity(0.5),
                           width: _selectedLocation != null ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: _selectedLocation != null
                             ? [
                                 BoxShadow(
-                                  color: greenColor.withValues(alpha: 0.1),
+                                  color: greenColor.withOpacity(0.1),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -285,8 +285,8 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: _selectedLocation != null
-                                          ? greenColor.withValues(alpha: 0.1)
-                                          : greyColor.withValues(alpha: 0.1),
+                                          ? greenColor.withOpacity(0.1)
+                                          : greyColor.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
@@ -331,7 +331,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: _selectedLocation != null
-                                          ? greenColor.withValues(alpha: 0.1)
+                                          ? greenColor.withOpacity(0.1)
                                           : Colors.transparent,
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -353,10 +353,10 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: greenColor.withValues(alpha: 0.1),
+                                    color: greenColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: greenColor.withValues(alpha: 0.3),
+                                      color: greenColor.withOpacity(0.3),
                                       width: 1,
                                     ),
                                   ),
@@ -404,7 +404,7 @@ class _SignUpBatch4PageState extends State<SignUpBatch4Page>
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.1),
+                                    color: Colors.orange.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
                                       color: Colors.orange.withValues(
