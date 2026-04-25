@@ -58,5 +58,11 @@
 		<string>location</string>
 		<string>fetch</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Kami memerlukan akses kamera untuk mengambil foto dan mengirimkannya di chat.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kami memerlukan akses galeri untuk memilih foto dan mengirimkannya di chat.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kami memerlukan izin untuk menyimpan lampiran gambar dari chat jika diperlukan.</string>
 </dict>
 </plist>
