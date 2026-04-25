@@ -5,9 +5,10 @@ class NotificationModel {
   final int id;
   final int userId;
   final String type;
-  final String category;
+  final String? category;
   final String title;
   final String message;
+  final String? body;
   final String icon;
   final String priority;
   final bool isRead;
@@ -20,9 +21,10 @@ class NotificationModel {
     required this.id,
     required this.userId,
     required this.type,
-    required this.category,
+    this.category,
     required this.title,
     required this.message,
+    this.body,
     required this.icon,
     required this.priority,
     required this.isRead,
@@ -33,7 +35,7 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
-    // Parse data field - backend returns JSON string, not object
+    // Parse data field - backend returns JSON string or Map
     Map<String, dynamic>? parsedData;
     if (json['data'] != null) {
       try {
@@ -49,20 +51,25 @@ class NotificationModel {
     }
 
     return NotificationModel(
-      id: json['id'],
-      userId: json['user_id'],
-      type: json['type'],
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      type: json['type'] ?? 'unknown',
       category: json['category'],
-      title: json['title'],
-      message: json['message'],
-      icon: json['icon'],
-      priority: json['priority'],
-      // Backend uses integer (0/1) for is_read, convert to boolean
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      body: json['body'],
+      icon: json['icon'] ?? 'notifications',
+      priority: json['priority'] ?? 'normal',
+      // Backend uses integer (0/1) or boolean for is_read
       isRead: json['is_read'] == 1 || json['is_read'] == true,
       data: parsedData,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
-      updatedAt: DateTime.parse(json['updated_at']),
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : DateTime.now(),
     );
   }
 
@@ -74,10 +81,11 @@ class NotificationModel {
       'category': category,
       'title': title,
       'message': message,
+      'body': body,
       'icon': icon,
       'priority': priority,
-      'is_read': isRead ? 1 : 0,
-      'data': data != null ? jsonEncode(data) : null,
+      'is_read': isRead,
+      'data': data,
       'created_at': createdAt.toIso8601String(),
       'read_at': readAt?.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -108,6 +116,8 @@ class NotificationModel {
   bool get isInfo => type == 'info';
   bool get isSystem => type == 'system';
   bool get isPromo => type == 'promo';
+  bool get isChatMessage => type == 'chat_message';
+  bool get isWelcome => type == 'welcome';
 }
 
 /// Model untuk pagination
@@ -116,16 +126,16 @@ class Pagination {
   final int perPage;
   final int total;
   final int lastPage;
-  final int? from; // Nullable
-  final int? to; // Nullable
+  final int? from;
+  final int? to;
 
   Pagination({
     required this.currentPage,
     required this.perPage,
     required this.total,
     required this.lastPage,
-    this.from, // Optional
-    this.to, // Optional
+    this.from,
+    this.to,
   });
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
@@ -134,8 +144,8 @@ class Pagination {
       perPage: json['per_page'] ?? 20,
       total: json['total'] ?? 0,
       lastPage: json['last_page'] ?? 1,
-      from: json['from'], // Can be null
-      to: json['to'], // Can be null
+      from: json['from'],
+      to: json['to'],
     );
   }
 
@@ -167,10 +177,12 @@ class Summary {
   });
 
   factory Summary.fromJson(Map<String, dynamic> json) {
-    // Handle by_priority - could be Map or empty List from backend
+    // Handle by_priority robustly
     Map<String, int> byPriorityMap = {};
     if (json['by_priority'] is Map) {
-      byPriorityMap = Map<String, int>.from(json['by_priority']);
+      (json['by_priority'] as Map).forEach((key, value) {
+        byPriorityMap[key.toString()] = int.tryParse(value.toString()) ?? 0;
+      });
     }
 
     return Summary(
@@ -240,6 +252,15 @@ class UnreadCountResponse {
     required this.byPriority,
     required this.hasUrgent,
   });
+
+  factory UnreadCountResponse.empty() {
+    return UnreadCountResponse(
+      unreadCount: 0,
+      byCategory: const {},
+      byPriority: const {},
+      hasUrgent: false,
+    );
+  }
 
   factory UnreadCountResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'];
