@@ -184,11 +184,11 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                             border: Border.all(
                               color: isSelected
                                   ? greenColor
-                                  : greyColor.withValues(alpha: 0.3),
+                                  : greyColor.withOpacity(0.3),
                               width: isSelected ? 2 : 1,
                             ),
                             color: isSelected
-                                ? greenColor.withValues(alpha: 0.05)
+                                ? greenColor.withOpacity(0.05)
                                 : whiteColor,
                           ),
                           child: Stack(
@@ -361,15 +361,15 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          greenColor.withValues(alpha: 0.1),
-                          greenColor.withValues(alpha: 0.05),
+                          greenColor.withOpacity(0.1),
+                          greenColor.withOpacity(0.05),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: greenColor.withValues(alpha: 0.3),
+                        color: greenColor.withOpacity(0.3),
                       ),
                     ),
                     child: Column(
@@ -454,7 +454,7 @@ class _SignUpBatch5PageState extends State<SignUpBatch5Page> {
                         backgroundColor: whiteColor,
                         foregroundColor: greyColor,
                         side: BorderSide(
-                          color: greyColor.withValues(alpha: 0.5),
+                          color: greyColor.withOpacity(0.5),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
