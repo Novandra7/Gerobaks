@@ -161,11 +161,11 @@ class CustomAppBarHome extends StatelessWidget implements PreferredSizeWidget {
               Row(
                 children: [
                   // Chat icon with badge
-                  ChatIconWithBadge(
-                    onTap: () {
-                      Navigator.pushNamed(context, '/chat');
-                    },
-                  ),
+                  // ChatIconWithBadge(
+                  //   onTap: () {
+                  //     Navigator.pushNamed(context, '/chat');
+                  //   },
+                  // ),
                   const SizedBox(width: 12),
                   // Notification icon with API-based badge
                   NotificationIconWithBadge(
