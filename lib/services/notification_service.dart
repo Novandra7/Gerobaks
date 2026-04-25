@@ -11,11 +11,12 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
   Timer? _dailyPantunTimer;
   Timer? _routinePantunTimer;
   bool _isInitialized = false;
-  
+
   // Standard notification details for consistent sound across the app
   static const gerobaksAndroidDetails = AndroidNotificationDetails(
     'gerobaks_channel',
@@ -27,11 +28,12 @@ class NotificationService {
     playSound: true,
     enableVibration: true,
     enableLights: true,
-    fullScreenIntent: true,  // Full screen intent to ensure visibility
-    category: AndroidNotificationCategory.alarm, // Treat as alarm category for importance
+    fullScreenIntent: true, // Full screen intent to ensure visibility
+    category: AndroidNotificationCategory
+        .alarm, // Treat as alarm category for importance
     ongoing: true, // Make it persistent until dismissed
   );
-  
+
   static const gerobaksIosDetails = DarwinNotificationDetails(
     presentAlert: true,
     presentBadge: true,
@@ -39,32 +41,37 @@ class NotificationService {
     sound: 'nf_gerobaks.wav', // Make sure this file exists in iOS bundle
     interruptionLevel: InterruptionLevel.critical, // Override silent mode
   );
-  
+
   static const gerobaksNotificationDetails = NotificationDetails(
     android: gerobaksAndroidDetails,
     iOS: gerobaksIosDetails,
   );
 
   Future<void> initialize() async {
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestSoundPermission: true,
       requestBadgePermission: true,
       requestAlertPermission: true,
-      requestCriticalPermission: true, // Request permission for critical alerts that bypass silent mode
+      requestCriticalPermission:
+          true, // Request permission for critical alerts that bypass silent mode
       defaultPresentSound: true,
       defaultPresentAlert: true,
       defaultPresentBadge: true,
     );
-    
+
     const initSettings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
 
     // Request permissions explicitly on Android
-    final androidImplementation = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidImplementation = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     await androidImplementation?.requestNotificationsPermission();
 
     await _notifications.initialize(
@@ -74,11 +81,11 @@ class NotificationService {
 
     // Create channels with highest priority
     await _createNotificationChannels();
-    
+
     // Other scheduled notifications
     await _scheduleDailyPantun();
     await _startRoutinePantunNotifications();
-    
+
     _isInitialized = true;
   }
 
@@ -138,21 +145,36 @@ class NotificationService {
       enableVibration: true,
     );
 
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(chatChannel);
-    
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(pickupChannel);
-    
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(pantunChannel);
-    
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(routinePantunChannel);
-    
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(subscriptionChannel);
-    
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(chatChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(pickupChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(pantunChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(routinePantunChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(subscriptionChannel);
+
     // OTP notifications channel
     const otpChannel = AndroidNotificationChannel(
       'otp_notifications',
@@ -163,9 +185,12 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
     );
-    
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(otpChannel);
+
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(otpChannel);
   }
 
   Future<void> _onNotificationTapped(NotificationResponse response) async {
@@ -193,13 +218,14 @@ class NotificationService {
 
     final subscriptionBadge = _getSubscriptionBadge(userSubscriptionStatus);
     String title;
-    
-    if (userSubscriptionStatus.toLowerCase() == 'none' || userSubscriptionStatus.toLowerCase() == '') {
+
+    if (userSubscriptionStatus.toLowerCase() == 'none' ||
+        userSubscriptionStatus.toLowerCase() == '') {
       title = '$subscriptionBadge $senderName (Anda belum berlangganan)';
     } else {
       title = '$subscriptionBadge $senderName';
     }
-    
+
     final androidDetails = AndroidNotificationDetails(
       'chat_notifications',
       'Chat Notifications',
@@ -304,7 +330,7 @@ class NotificationService {
     final storage = await LocalStorageService.getInstance();
     final lastPantunDate = await storage.getString('last_pantun_date');
     final today = DateTime.now().toIso8601String().split('T')[0];
-    
+
     if (lastPantunDate != today) {
       // Show pantun immediately instead of scheduling
       await _showDailyPantunNow();
@@ -315,7 +341,7 @@ class NotificationService {
     try {
       final geminiService = GeminiAIService();
       final pantun = await geminiService.generateDailyPantun();
-      
+
       final androidDetails = AndroidNotificationDetails(
         'daily_pantun',
         'Daily Pantun',
@@ -360,7 +386,6 @@ class NotificationService {
       final storage = await LocalStorageService.getInstance();
       final today = DateTime.now().toIso8601String().split('T')[0];
       await storage.saveString('last_pantun_date', today);
-      
     } catch (e) {
       print('Error showing pantun notification: $e');
       // Fallback with simple pantun
@@ -373,9 +398,9 @@ class NotificationService {
       'Bunga melati harum semerbak\nPagi hari burung berkicau\nSampah dipilah jangan sepak\nLingkungan bersih hati pun rau',
       'Gerobaks hadir solusi besar\nSampah terkelola hidup makin pas\nDaur ulang sampah jadi guna\nBumi lestari untuk nanti',
     ];
-    
+
     final randomPantun = pantuns[Random().nextInt(pantuns.length)];
-    
+
     final androidDetails = AndroidNotificationDetails(
       'daily_pantun',
       'Daily Pantun',
@@ -428,12 +453,12 @@ class NotificationService {
   void _scheduleNextRoutinePantun() {
     // Cancel previous timer if exists
     _routinePantunTimer?.cancel();
-    
+
     // Random interval between 30-60 minutes
     final random = Random();
     final minutesInterval = 30 + random.nextInt(31); // 30-60 minutes
     final duration = Duration(minutes: minutesInterval);
-    
+
     _routinePantunTimer = Timer(duration, () async {
       // Check if routine pantun is still enabled before showing
       final isEnabled = await isRoutinePantunEnabled();
@@ -446,49 +471,50 @@ class NotificationService {
 
   Future<void> _showRoutinePantunNotification() async {
     if (!_isInitialized) return;
-    
+
     final pantunList = [
       // Pantun tentang kebersihan lingkungan
       'Bunga melati harum semerbak\nPagi hari burung berkicau\nSampah dipilah jangan abaikan\nLingkungan bersih hati pun rau',
-      
+
       'Kupu kupu hinggap di bunga\nWarna warni sangat indah\nGerobaks hadir untuk kita\nSampah teratur hidup berubah',
-      
+
       'Anak ayam turun sepuluh\nMati satu tinggal sembilan\nJadwal sampah jangan terlupa\nGerobaks siap setiap hari',
-      
+
       'Burung merpati terbang tinggi\nHinggap di dahan beringin\nYuk gunakan aplikasi ini\nSampah bersih jadi rejeki',
-      
+
       'Bintang di langit berkelip\nCahayanya sangat terang\nSampah organik dan plastik\nPilah yuk jangan bercampur',
-      
+
       // Pantun motivasi menggunakan aplikasi
       'Pisang emas dibawa berlayar\nMasak dibeli dari negeri\nGerobaks mudah untuk diandalkan\nBuka aplikasi sekarang juga',
-      
+
       'Kalau ada jarum patah\nJangan disimpan dalam peti\nKalau sampah sudah menumpuk\nSegera buat jadwal di Gerobaks',
-      
+
       'Tepung tapioka dibuat onde\nRasanya manis sangat enak\nJangan lupa buka Gerobaks\nJadwal sampah mudah dibuat',
-      
+
       'Ikan paus berenang di laut\nGelombang besar tak mengapa\nSampah menumpuk jangan biarkan\nGerobaks solusi terdepan',
-      
+
       'Pohon mangga berbuah lebat\nRasanya manis menyegarkan\nRutin pakai aplikasi ini\nSampah bersih lingkungan sehat',
-      
+
       // Pantun reward dan manfaat
       'Burung elang terbang melayang\nSayapnya lebar mengembang\nKumpulkan poin dari Gerobaks\nReward menarik siap menanti',
-      
+
       'Mentimun muda dimakan ulat\nDaunnya layu tak berbunga\nSemakin rajin pakai Gerobaks\nPoin reward semakin bertambah',
-      
+
       'Kapal layar berlayar jauh\nAngin kencang mendorong cepat\nGerobaks bantu kelola sampah\nLingkungan bersih hidup sehat',
-      
+
       'Bebek berenang di kolam\nAirnya jernih tak beriak\nRajin jadwal angkut sampah\nHidup bersih jadi berkah',
-      
-      'Sinar matahari sangat terang\nMenyinari bumi penuh kasih\nGerobaks hadir solusi lengkap\nSampah teratur hidup bersih'
+
+      'Sinar matahari sangat terang\nMenyinari bumi penuh kasih\nGerobaks hadir solusi lengkap\nSampah teratur hidup bersih',
     ];
-    
+
     final random = Random();
     final selectedPantun = pantunList[random.nextInt(pantunList.length)];
-    
+
     final androidDetails = AndroidNotificationDetails(
       'routine_pantun',
       'Routine Pantun',
-      channelDescription: 'Regular motivational pantun reminders every 30-60 minutes',
+      channelDescription:
+          'Regular motivational pantun reminders every 30-60 minutes',
       importance: Importance.max, // Changed from low to max
       priority: Priority.max, // Changed from low to max
       styleInformation: BigTextStyleInformation(
@@ -521,11 +547,13 @@ class NotificationService {
 
     // Use different ID each time to avoid overwriting
     final notificationId = DateTime.now().millisecondsSinceEpoch % 1000000;
-    
+
     await _notifications.show(
       notificationId,
       '🌿 Pantun Motivasi Gerobaks',
-      selectedPantun.split('\n').join(' • '), // Convert to single line for preview
+      selectedPantun
+          .split('\n')
+          .join(' • '), // Convert to single line for preview
       details,
       payload: 'routine_pantun',
     );
@@ -542,17 +570,19 @@ class NotificationService {
 
     final badge = _getSubscriptionBadge(subscriptionStatus);
     String finalTitle;
-    
-    if (subscriptionStatus.toLowerCase() == 'none' || subscriptionStatus.toLowerCase() == '') {
+
+    if (subscriptionStatus.toLowerCase() == 'none' ||
+        subscriptionStatus.toLowerCase() == '') {
       finalTitle = '$badge $title - Anda belum berlangganan';
     } else {
       finalTitle = '$badge $title';
     }
-    
+
     final androidDetails = AndroidNotificationDetails(
       'subscription_notifications',
       'Subscription Notifications',
-      channelDescription: 'Notifications about subscription status and renewals',
+      channelDescription:
+          'Notifications about subscription status and renewals',
       importance: Importance.high,
       priority: Priority.high,
       styleInformation: BigTextStyleInformation(
@@ -564,13 +594,15 @@ class NotificationService {
       color: _getSubscriptionColor(subscriptionStatus),
       colorized: true,
       sound: const RawResourceAndroidNotificationSound('nf_gerobaks'),
-      actions: actionUrl != null ? [
-        const AndroidNotificationAction(
-          'open_subscription',
-          'Kelola Langganan',
-          showsUserInterface: true,
-        ),
-      ] : null,
+      actions: actionUrl != null
+          ? [
+              const AndroidNotificationAction(
+                'open_subscription',
+                'Kelola Langganan',
+                showsUserInterface: true,
+              ),
+            ]
+          : null,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -625,7 +657,7 @@ class NotificationService {
     required String address,
   }) async {
     final reminderTime = pickupTime.subtract(const Duration(minutes: 30));
-    
+
     if (reminderTime.isAfter(DateTime.now())) {
       // Show immediate notification instead of scheduling
       await _notifications.show(
@@ -643,8 +675,10 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            fullScreenIntent: true, // Make it a full-screen intent for importance
-            category: AndroidNotificationCategory.alarm, // Treat it like an alarm
+            fullScreenIntent:
+                true, // Make it a full-screen intent for importance
+            category:
+                AndroidNotificationCategory.alarm, // Treat it like an alarm
           ),
           iOS: DarwinNotificationDetails(
             presentAlert: true,
@@ -673,7 +707,13 @@ class NotificationService {
     if (!_isInitialized) return;
 
     // Force notification sound to play by adding channel importance
-    await _notifications.show(id, title, body, gerobaksNotificationDetails, payload: payload);
+    await _notifications.show(
+      id,
+      title,
+      body,
+      gerobaksNotificationDetails,
+      payload: payload,
+    );
   }
 
   Future<void> showLoginSuccessNotification() async {
@@ -688,10 +728,11 @@ class NotificationService {
     await showNotification(
       id: DateTime.now().millisecond,
       title: 'Selamat Bergabung!',
-      body: 'Akun Gerobaks Anda berhasil dibuat. Selamat menjadi bagian dari komunitas hijau!',
+      body:
+          'Akun Gerobaks Anda berhasil dibuat. Selamat menjadi bagian dari komunitas hijau!',
     );
   }
-  
+
   // Show OTP verification notification
   Future<void> showOTPNotification(String otp, String phoneNumber) async {
     if (!_isInitialized) return;
@@ -711,14 +752,15 @@ class NotificationService {
       fullScreenIntent: true, // Make it a full-screen intent for importance
       ongoing: true, // Make it persistent until dismissed
     );
-    
+
     // Custom iOS details with critical alert level
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
       sound: 'nf_gerobaks.wav',
-      interruptionLevel: InterruptionLevel.critical, // Override silent mode for OTP
+      interruptionLevel:
+          InterruptionLevel.critical, // Override silent mode for OTP
     );
 
     final details = NotificationDetails(
@@ -727,13 +769,13 @@ class NotificationService {
     );
 
     final formattedPhone = phoneNumber.replaceAll(RegExp(r'\+'), '');
-    
+
     // Generate a notification ID based on the phone number to ensure we can update it
     final notificationId = formattedPhone.hashCode;
-    
+
     await _notifications.show(
       notificationId,
-      'Kode Verifikasi Gerobaks', 
+      'Kode Verifikasi Gerobaks',
       'Kode OTP Anda adalah: $otp. Kode ini berlaku selama 10 menit.',
       details,
       payload: 'otp:$otp',
@@ -745,12 +787,14 @@ class NotificationService {
     if (!_isInitialized) return;
 
     const title = 'Dapatkan Pengalaman Terbaik!';
-    const message = 'Berlangganan sekarang untuk akses penuh ke semua fitur Gerobaks dan layanan premium.';
-    
+    const message =
+        'Berlangganan sekarang untuk akses penuh ke semua fitur Gerobaks dan layanan premium.';
+
     final androidDetails = AndroidNotificationDetails(
       'subscription_notifications',
       'Subscription Notifications',
-      channelDescription: 'Notifications about subscription status and renewals',
+      channelDescription:
+          'Notifications about subscription status and renewals',
       importance: Importance.high,
       priority: Priority.high,
       styleInformation: const BigTextStyleInformation(
@@ -805,18 +849,18 @@ class NotificationService {
   Future<void> cancelNotification(int id) async {
     await _notifications.cancel(id);
   }
-  
+
   // Test notification with forced sound
   Future<void> showTestNotification() async {
     if (!_isInitialized) await initialize();
-    
+
     // Create a channel specifically for testing with maximum priority
     final Int64List vibrationPattern = Int64List(4);
     vibrationPattern[0] = 0;
     vibrationPattern[1] = 500;
     vibrationPattern[2] = 200;
     vibrationPattern[3] = 500;
-    
+
     final testChannel = AndroidNotificationChannel(
       'test_channel',
       'Test Notifications',
@@ -828,11 +872,14 @@ class NotificationService {
       vibrationPattern: vibrationPattern,
       enableLights: true,
     );
-    
+
     // Register the channel
-    await _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.createNotificationChannel(testChannel);
-        
+    await _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(testChannel);
+
     // Create notification with high priority and forced sound
     final androidDetails = AndroidNotificationDetails(
       'test_channel',
@@ -848,7 +895,7 @@ class NotificationService {
       fullScreenIntent: true,
       ongoing: true,
     );
-    
+
     // iOS details with critical alert flag to bypass silent mode
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -857,12 +904,12 @@ class NotificationService {
       sound: 'nf_gerobaks.wav',
       interruptionLevel: InterruptionLevel.critical, // Override silent mode
     );
-    
+
     final details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
-    
+
     await _notifications.show(
       DateTime.now().millisecondsSinceEpoch,
       'Test Notifikasi',
@@ -898,23 +945,23 @@ class NotificationService {
     _dailyPantunTimer?.cancel();
     _routinePantunTimer?.cancel();
   }
-  
+
   // Reset notification settings and recreate channels
   // Call this method if the user reports issues with notification sounds
   Future<void> resetNotificationSettings() async {
     // Cancel all notifications first
     await _notifications.cancelAll();
-    
+
     // Re-create all notification channels
     await _createNotificationChannels();
-    
+
     // Test notification to confirm sound works
     await showTestNotification();
-    
+
     // Reset timers
     _dailyPantunTimer?.cancel();
     _routinePantunTimer?.cancel();
-    
+
     // Re-setup timers
     await _scheduleDailyPantun();
     await _startRoutinePantunNotifications();
