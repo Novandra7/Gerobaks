@@ -1,9 +1,17 @@
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../../../models/notification_model.dart';
-import '../../../services/notification_api_service.dart';
-import '../../../services/local_storage_service.dart';
-import '../../../shared/theme.dart';
+import 'package:bank_sha/models/notification_model.dart';
+import 'package:bank_sha/models/mitra_pickup_schedule.dart';
+import 'package:bank_sha/services/notification_api_service.dart';
+import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:bank_sha/services/chat_service.dart';
+import 'package:bank_sha/services/mitra_api_service.dart';
+import 'package:bank_sha/ui/pages/end_user/chat/chat_detail_page.dart';
+import 'package:bank_sha/ui/pages/mitra/schedule_detail_page.dart';
+import 'package:bank_sha/shared/theme.dart';
+import 'package:bank_sha/utils/app_logger.dart';
+import 'package:bank_sha/utils/navigation_service.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -58,7 +66,7 @@ class _NotificationScreenState extends State<NotificationScreen>
       await _loadNotifications();
       await _loadUnreadCount();
     } catch (e) {
-      print('❌ Error initializing services: $e');
+      AppLogger.error('Failed to initialize NotificationScreen', e);
       setState(() {
         _errorMessage = 'Failed to initialize. Please restart the app.';
       });
@@ -73,19 +81,10 @@ class _NotificationScreenState extends State<NotificationScreen>
     });
 
     try {
-      print('🔄 NotificationScreen: Loading notifications...');
-      print('   - Current tab: ${_tabController.index}');
-      print('   - Filter isRead: $filterIsRead');
-
       final response = await _notificationApi.getNotifications(
         page: currentPage,
         isRead: filterIsRead,
       );
-
-      print(
-        '✅ NotificationScreen: Received ${response.notifications.length} notifications',
-      );
-      print('   - Unread count: ${response.summary.unreadCount}');
 
       setState(() {
         notifications = response.notifications;
@@ -93,10 +92,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         isLoading = false;
       });
     } catch (e) {
-      print('❌ NotificationScreen: Error loading notifications');
-      print('   - Error type: ${e.runtimeType}');
-      print('   - Error message: $e');
-
+      AppLogger.error('Error loading notifications', e);
       setState(() {
         isLoading = false;
         _errorMessage = e.toString();
@@ -123,7 +119,7 @@ class _NotificationScreenState extends State<NotificationScreen>
         hasUrgent = response.hasUrgent;
       });
     } catch (e) {
-      print('⚠️ Error loading unread count: $e');
+      // Ignored
     }
   }
 
@@ -131,14 +127,17 @@ class _NotificationScreenState extends State<NotificationScreen>
   Future<void> _markAsRead(int id) async {
     try {
       await _notificationApi.markAsRead(id);
+      
+      // Trigger global badge refresh
+      NotificationIconWithBadge.refreshNotifier.value++;
+      
       await _loadNotifications();
       await _loadUnreadCount();
     } catch (e) {
-      print('❌ Error marking as read: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menandai sebagai dibaca'),
+            content: const Text('Gagal menandai sebagai dibaca'),
             backgroundColor: redcolor,
           ),
         );
@@ -152,6 +151,9 @@ class _NotificationScreenState extends State<NotificationScreen>
       final result = await _notificationApi.markAllAsRead();
       final markedCount = result['marked_count'];
 
+      // Trigger global badge refresh
+      NotificationIconWithBadge.refreshNotifier.value++;
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,11 +166,10 @@ class _NotificationScreenState extends State<NotificationScreen>
       await _loadNotifications();
       await _loadUnreadCount();
     } catch (e) {
-      print('❌ Error marking all as read: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menandai semua sebagai dibaca'),
+            content: const Text('Gagal menandai semua sebagai dibaca'),
             backgroundColor: redcolor,
           ),
         );
@@ -180,6 +181,10 @@ class _NotificationScreenState extends State<NotificationScreen>
   Future<void> _deleteNotification(int id) async {
     try {
       await _notificationApi.deleteNotification(id);
+      
+      // Trigger global badge refresh
+      NotificationIconWithBadge.refreshNotifier.value++;
+
       setState(() {
         notifications.removeWhere((n) => n.id == id);
       });
@@ -195,11 +200,10 @@ class _NotificationScreenState extends State<NotificationScreen>
 
       await _loadUnreadCount();
     } catch (e) {
-      print('❌ Error deleting notification: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menghapus notifikasi'),
+            content: const Text('Gagal menghapus notifikasi'),
             backgroundColor: redcolor,
           ),
         );
@@ -246,6 +250,9 @@ class _NotificationScreenState extends State<NotificationScreen>
     try {
       final deletedCount = await _notificationApi.clearReadNotifications();
 
+      // Trigger global badge refresh
+      NotificationIconWithBadge.refreshNotifier.value++;
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -258,11 +265,10 @@ class _NotificationScreenState extends State<NotificationScreen>
       await _loadNotifications();
       await _loadUnreadCount();
     } catch (e) {
-      print('❌ Error clearing notifications: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menghapus notifikasi'),
+            content: const Text('Gagal menghapus notifikasi'),
             backgroundColor: redcolor,
           ),
         );
@@ -279,35 +285,175 @@ class _NotificationScreenState extends State<NotificationScreen>
 
     // Navigate based on notification type
     switch (notif.type) {
-      case 'schedule':
-        // Navigate to schedule detail
-        if (notif.scheduleId != null) {
-          Navigator.pushNamed(
-            context,
-            '/schedule-detail',
-            arguments: notif.scheduleId,
-          );
-        }
+      case 'chat_message':
+        _handleChatNavigation(notif);
         break;
 
-      case 'reminder':
-        // Navigate to schedule list
-        Navigator.pushNamed(context, '/schedule');
-        break;
-
-      case 'info':
-        // Show info detail in dialog
+      case 'welcome':
         _showNotificationDetail(notif);
         break;
 
+      case 'schedule':
+        _handleScheduleNavigation(notif);
+        break;
+
+      case 'reminder':
+        Navigator.pushNamed(context, '/jadwal');
+        break;
+
+      case 'info':
       case 'system':
       case 'promo':
-        // Show detail in dialog
         _showNotificationDetail(notif);
         break;
 
       default:
+        _showNotificationDetail(notif);
         break;
+    }
+  }
+
+  /// Handle schedule navigation specifically
+  Future<void> _handleScheduleNavigation(NotificationModel notif) async {
+    final scheduleId = notif.scheduleId;
+    if (scheduleId == null) {
+      _showNotificationDetail(notif);
+      return;
+    }
+
+    try {
+      setState(() => isLoading = true);
+
+      // Fetch the full schedule object since the route expects MitraPickupSchedule
+      final mitraApi = MitraApiService();
+      await mitraApi.initialize();
+      final schedule = await mitraApi.getScheduleDetail(scheduleId);
+
+      final localStorage = await LocalStorageService.getInstance();
+      final userRole = (await localStorage.getUserRole() ?? '')
+          .trim()
+          .toLowerCase();
+      final isMitra =
+          userRole == LocalStorageService.roleMitra || userRole == 'admin';
+
+      setState(() => isLoading = false);
+
+      if (mounted) {
+        final navigator = NavigationService.navigatorKey?.currentState;
+        if (navigator == null) {
+          AppLogger.warning('Navigator not ready for schedule navigation');
+          // Fallback to local navigator
+          if (isMitra) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ScheduleDetailPage(schedule: schedule),
+              ),
+            );
+          } else {
+            Navigator.pushNamed(context, '/jadwal');
+          }
+          return;
+        }
+
+        if (isMitra) {
+          final route = MaterialPageRoute<void>(
+            builder: (context) => ScheduleDetailPage(schedule: schedule),
+          );
+          navigator.push(route);
+        } else {
+          navigator.pushNamed('/jadwal');
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error in schedule navigation', e);
+      setState(() => isLoading = false);
+      if (mounted) {
+        _showNotificationDetail(notif);
+      }
+    }
+  }
+
+  /// Handle chat navigation specifically
+  Future<void> _handleChatNavigation(NotificationModel notif) async {
+    try {
+      setState(() => isLoading = true);
+
+      final chatService = ChatService();
+      await chatService.initializeData();
+
+      final data = notif.data ?? {};
+      final roomIdRaw = (data['room_id'] ?? data['chat_room_id'] ?? '')
+          .toString();
+      final roomId = int.tryParse(roomIdRaw);
+
+      final payloadConversationId =
+          (data['conversation_id'] ?? data['chat_conversation_id'] ?? '')
+              .toString();
+      final pickupScheduleIdRaw =
+          (data['pickup_schedule_id'] ?? data['schedule_id'] ?? '').toString();
+      final pickupScheduleId = int.tryParse(pickupScheduleIdRaw);
+
+      String? conversationId;
+      if (payloadConversationId.isNotEmpty) {
+        conversationId = payloadConversationId;
+      } else if (pickupScheduleId != null) {
+        final counterpartName =
+            (data['sender_name'] ?? data['sender'] ?? 'Petugas').toString();
+        conversationId = await chatService.getOrCreatePickupConversationFast(
+          pickupScheduleId: pickupScheduleId,
+          counterpartName: counterpartName,
+        );
+      } else if (roomId != null) {
+        final counterpartName =
+            (data['sender_name'] ?? data['sender'] ?? 'User').toString();
+        conversationId = await chatService.getOrCreateConversationByRoomId(
+          roomId: roomId,
+          counterpartName: counterpartName,
+        );
+      }
+
+      final localStorage = await LocalStorageService.getInstance();
+      final userRole = (await localStorage.getUserRole() ?? '')
+          .trim()
+          .toLowerCase();
+      final isMitra =
+          userRole == LocalStorageService.roleMitra || userRole == 'admin';
+
+      setState(() => isLoading = false);
+
+      if (mounted) {
+        if (conversationId == null || conversationId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Data percakapan tidak ditemukan $conversationId'),
+              backgroundColor: orangeColor,
+            ),
+          );
+          return;
+        }
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              conversationId: conversationId!,
+              viewAsMitra: isMitra,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Error in chat navigation', e);
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal membuka chat: $e'),
+            backgroundColor: redcolor,
+          ),
+        );
+      }
     }
   }
 
@@ -320,8 +466,8 @@ class _NotificationScreenState extends State<NotificationScreen>
         title: Row(
           children: [
             Icon(
-              _getIcon(notif.icon),
-              color: _getPriorityColor(notif.priority),
+              _getIconForType(notif),
+              color: _getColorForType(notif.type),
               size: 24,
             ),
             const SizedBox(width: 12),
@@ -341,7 +487,10 @@ class _NotificationScreenState extends State<NotificationScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(notif.message, style: greyTextStyle.copyWith(fontSize: 14)),
+              Text(
+                notif.body ?? notif.message,
+                style: greyTextStyle.copyWith(fontSize: 14),
+              ),
               const SizedBox(height: 16),
               Text(
                 _formatTime(notif.createdAt),
@@ -602,31 +751,72 @@ class _NotificationScreenState extends State<NotificationScreen>
 
   Widget _buildNotificationTile(NotificationModel notif) {
     final priorityColor = _getPriorityColor(notif.priority);
+    final typeColor = _getColorForType(notif.type);
+    final isUnread = !notif.isRead;
+
+    // Gunakan warna soft mint/teal untuk background yang belum dibaca (Bukan Biru)
+    final unreadBgColor = const Color(0xffF1FAF5);
 
     return Container(
-      color: notif.isRead ? whiteColor : greenui,
+      decoration: BoxDecoration(
+        color: isUnread ? unreadBgColor : whiteColor,
+        border: Border(
+          left: BorderSide(
+            color: isUnread ? priorityColor : Colors.transparent,
+            width: 4,
+          ),
+        ),
+      ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
         ),
         leading: Container(
-          width: 48,
-          height: 48,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
-            color: priorityColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: isUnread ? whiteColor : typeColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isUnread
+                ? [
+                    BoxShadow(
+                      color: typeColor.withOpacity(0.1),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
-          child: Icon(_getIcon(notif.icon), color: priorityColor, size: 24),
+          child: Icon(_getIconForType(notif), color: typeColor, size: 26),
         ),
-        title: Text(
-          notif.title,
-          style: blackTextStyle.copyWith(
-            fontSize: 14,
-            fontWeight: notif.isRead ? medium : semiBold,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                notif.title,
+                style: blackTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: isUnread ? bold : semiBold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (isUnread)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: priorityColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  notif.priority == 'urgent' ? 'URGENT' : 'BARU',
+                  style: whiteTextStyle.copyWith(fontSize: 8, fontWeight: bold),
+                ),
+              ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,9 +826,13 @@ class _NotificationScreenState extends State<NotificationScreen>
               notif.message,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: greyTextStyle.copyWith(fontSize: 12),
+              style: greyTextStyle.copyWith(
+                fontSize: 12,
+                color: isUnread ? blackColor.withOpacity(0.7) : greyColor,
+                fontWeight: isUnread ? medium : regular,
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Icon(Icons.access_time, size: 12, color: greyColor),
@@ -648,22 +842,26 @@ class _NotificationScreenState extends State<NotificationScreen>
                   style: greyTextStyle.copyWith(fontSize: 11),
                 ),
                 const SizedBox(width: 12),
-                // Priority badge
+                // Type badge (Dibuat seragam untuk semua type agar lebih bersih)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: priorityColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    color: greyColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: greyColor.withOpacity(0.2),
+                      width: 0.5,
+                    ),
                   ),
                   child: Text(
-                    _getPriorityLabel(notif.priority),
+                    notif.type.toUpperCase().replaceAll('_', ' '),
                     style: TextStyle(
-                      color: priorityColor,
-                      fontSize: 10,
-                      fontWeight: semiBold,
+                      color: greyColor,
+                      fontSize: 9,
+                      fontWeight: bold,
                     ),
                   ),
                 ),
@@ -671,50 +869,57 @@ class _NotificationScreenState extends State<NotificationScreen>
             ),
           ],
         ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!notif.isRead)
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: priorityColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: priorityColor.withOpacity(0.3),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
         onTap: () => _handleNotificationTap(notif),
       ),
     );
   }
 
-  /// Get priority label
-  String _getPriorityLabel(String priority) {
-    switch (priority) {
-      case 'urgent':
-        return 'URGENT';
-      case 'high':
-        return 'TINGGI';
-      case 'normal':
-        return 'NORMAL';
-      case 'low':
-        return 'RENDAH';
+  /// Get icon berdasarkan type
+  IconData _getIconForType(NotificationModel notif) {
+    switch (notif.type) {
+      case 'chat_message':
+        return Icons.chat_bubble_outline_rounded;
+      case 'welcome':
+        return Icons.waving_hand_outlined;
+      case 'schedule':
+        return Icons.calendar_today_rounded;
+      case 'reminder':
+        return Icons.alarm_rounded;
+      case 'info':
+        return Icons.info_outline_rounded;
+      case 'system':
+        return Icons.settings_suggest_rounded;
+      case 'promo':
+        return Icons.local_offer_outlined;
       default:
-        return 'NORMAL';
+        return _getIconFromBackendName(notif.icon);
     }
   }
 
-  /// Get icon berdasarkan icon name dari backend
-  IconData _getIcon(String iconName) {
+  /// Get color berdasarkan type
+  Color _getColorForType(String type) {
+    switch (type) {
+      case 'chat_message':
+        return blueColor;
+      case 'welcome':
+        return orangeColor;
+      case 'schedule':
+        return greenColor;
+      case 'reminder':
+        return yellowColor;
+      case 'info':
+        return blueColor;
+      case 'system':
+        return greyColor;
+      case 'promo':
+        return purpleColor;
+      default:
+        return greyColor;
+    }
+  }
+
+  /// Original icon mapping from backend name
+  IconData _getIconFromBackendName(String iconName) {
     switch (iconName) {
       case 'calendar':
       case 'calendar_today':
@@ -736,16 +941,24 @@ class _NotificationScreenState extends State<NotificationScreen>
         return Icons.eco;
       case 'recycling':
         return Icons.recycling;
-      case 'delete_outline':
-        return Icons.delete_outline;
-      case 'electrical_services':
-        return Icons.electrical_services;
-      case 'cancel':
-        return Icons.cancel;
-      case 'info':
-        return Icons.info;
       default:
         return Icons.notifications;
+    }
+  }
+
+  /// Get priority label
+  String _getPriorityLabel(String priority) {
+    switch (priority) {
+      case 'urgent':
+        return 'URGENT';
+      case 'high':
+        return 'TINGGI';
+      case 'normal':
+        return 'NORMAL';
+      case 'low':
+        return 'RENDAH';
+      default:
+        return 'NORMAL';
     }
   }
 
@@ -757,11 +970,11 @@ class _NotificationScreenState extends State<NotificationScreen>
       case 'high':
         return orangeColor;
       case 'normal':
-        return blueColor;
+        return greentext; // Hijau Brand (Bukan Biru)
       case 'low':
         return greyColor;
       default:
-        return blueColor;
+        return greentext;
     }
   }
 
