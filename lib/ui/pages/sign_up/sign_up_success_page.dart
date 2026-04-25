@@ -46,7 +46,7 @@ class _SignUpSuccessPageState extends State<SignUpSuccessPage>
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: greenColor.withValues(alpha: 0.5)),
+                border: Border.all(color: greenColor.withOpacity(0.5)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
