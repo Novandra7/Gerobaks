@@ -17,6 +17,7 @@ class ChatNotificationMethod {
     await _notifications.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
+        print('aku disini');
         final String? payload = notificationResponse.payload;
         if (payload != null) {
           print('Notification payload: $payload');
