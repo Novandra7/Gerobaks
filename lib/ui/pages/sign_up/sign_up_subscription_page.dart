@@ -231,7 +231,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
         color: whiteColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 2),
@@ -261,9 +261,9 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: greenColor.withValues(alpha: 0.1),
+              color: greenColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: greenColor.withValues(alpha: 0.3)),
+              border: Border.all(color: greenColor.withOpacity(0.3)),
             ),
             child: Row(
               children: [
@@ -296,12 +296,12 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
         border: Border.all(
           color: plan.isPopular
               ? greenColor
-              : Colors.grey.withValues(alpha: 0.3),
+              : Colors.grey.withOpacity(0.3),
           width: plan.isPopular ? 2 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 2),
@@ -348,7 +348,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getPlanColor(plan.type).withValues(alpha: 0.1),
+                        color: _getPlanColor(plan.type).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -459,7 +459,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
         color: whiteColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
+            color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, -2),
@@ -475,7 +475,7 @@ class _SignUpSubscriptionPageState extends State<SignUpSubscriptionPage>
               onPressed: _skipSubscription,
               style: OutlinedButton.styleFrom(
                 foregroundColor: greyColor,
-                side: BorderSide(color: greyColor.withValues(alpha: 0.3)),
+                side: BorderSide(color: greyColor.withOpacity(0.3)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
