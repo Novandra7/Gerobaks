@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:bank_sha/ui/widgets/shared/notification_icon_with_badge.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:pusher_reverb_flutter/pusher_reverb_flutter.dart';
@@ -38,17 +39,44 @@ class ChatService {
   String? _lastLoggedSocketId;
   String? _activeRealtimeConversationId;
   String? _activeRealtimeChannelName;
+  String? _globalRealtimeChannelName;
+  PrivateChannel? _globalRealtimeChannel;
   late LocalStorageService _localStorage;
   late EndUserApiService _apiService;
   bool _isInitialized = false;
+  Completer<void>? _initCompleter;
+  bool _isGlobalRealtimeStarting = false;
+  Completer<void>? _realtimeInitCompleter;
+  static const Duration _transientMessageTtl = Duration(minutes: 2);
 
   // Initialize with local storage and API service
   Future<void> initializeData() async {
     if (_isInitialized) return;
-    _localStorage = await LocalStorageService.getInstance();
-    _apiService = EndUserApiService();
-    await _loadConversationsFromAPI();
-    _isInitialized = true;
+
+    // If already initializing, wait for it to complete
+    if (_initCompleter != null) {
+      return _initCompleter!.future;
+    }
+
+    _initCompleter = Completer<void>();
+
+    try {
+      _localStorage = await LocalStorageService.getInstance();
+      _apiService = EndUserApiService();
+      await _loadConversationsFromAPI();
+      _isInitialized = true;
+
+      // Complete the init before starting side-effects
+      _initCompleter!.complete();
+    } catch (e) {
+      _isInitialized = false;
+      if (_initCompleter != null && !_initCompleter!.isCompleted) {
+        _initCompleter!.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _initCompleter = null;
+    }
   }
 
   Future<void> _ensureInitialized() async {
@@ -71,16 +99,44 @@ class ChatService {
   }
 
   int? _extractPickupScheduleIdFromConversationTitle(String title) {
+    // Mendukung format "Pickup #123" atau "Room #123"
     final match = RegExp(
-      r'pickup\s*#\s*(\d+)',
+      r'(?:pickup|room)\s*#\s*(\d+)',
       caseSensitive: false,
     ).firstMatch(title);
     if (match == null) return null;
     return int.tryParse(match.group(1) ?? '');
   }
 
+  bool _isPickupChat(String conversationId) {
+    final id = conversationId.trim();
+    if (id.startsWith('pickup_')) return true;
+    if (id.startsWith('room_')) return true;
+    
+    // Jika ID hanya angka, kemungkinan besar ini adalah room_id dari backend
+    if (RegExp(r'^\d+$').hasMatch(id)) return true;
+    
+    if (_extractRoomIdFromConversationId(id) != null) return true;
+    
+    // Cek title percakapan jika ID tidak memberikan petunjuk
+    final conversation = getConversationById(id);
+    if (conversation != null) {
+      if (_extractPickupScheduleIdFromConversationTitle(conversation.title) != null) {
+        return true;
+      }
+      // Judul "Room #12" atau "Pickup #12" juga indikasi pickup chat
+      final lowerTitle = conversation.title.toLowerCase();
+      if (lowerTitle.contains('room #') || lowerTitle.contains('pickup #')) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
   String _resolvePickupConversationId(String conversationId) {
     if (conversationId.startsWith('pickup_')) return conversationId;
+    if (conversationId.startsWith('room_')) return conversationId;
 
     final conversation = getConversationById(conversationId);
     if (conversation == null) return conversationId;
@@ -209,8 +265,12 @@ class ChatService {
   }
 
   Future<int?> _ensurePickupRoomId(String conversationId) async {
+    // 1. Cek jika ID sudah berupa room ID langsung (room_123 atau numeric)
+    int? directRoomId = _extractRoomIdFromConversationId(conversationId);
+    if (directRoomId != null) return directRoomId;
+
+    // 2. Cek jika ID berupa pickup schedule ID (pickup_456)
     int? scheduleId = _extractPickupScheduleId(conversationId);
-    scheduleId ??= int.tryParse(conversationId.trim());
     if (scheduleId == null) return null;
 
     final cachedRoomId = _pickupRoomIds[scheduleId];
@@ -561,6 +621,9 @@ class ChatService {
 
     if (response.statusCode == 200 || response.statusCode == 204) {
       await _refreshPickupConversation(conversationId);
+      
+      // Picu refresh badge di Home
+      NotificationIconWithBadge.refreshNotifier.value++;
     }
   }
 
@@ -613,38 +676,84 @@ class ChatService {
   Future<void> _initializeRealtimeClient() async {
     if (_realtimeInitialized) return;
 
-    final appKey = _getRealtimeAppKey();
-    if (appKey.isEmpty) {
-      print(
-        'Realtime chat disabled: REVERB_APP_KEY/PUSHER_APP_KEY is not configured.',
-      );
-      return;
+    if (_realtimeInitCompleter != null) {
+      return _realtimeInitCompleter!.future;
     }
 
-    final scheme = _getRealtimeScheme();
-    final apiBase = ApiRoutes.baseUrl.replaceAll(RegExp(r'/$'), '');
-    final authEndpoint = '$apiBase/broadcasting/auth';
-    _realtimeClient = ReverbClient.instance(
-      host: _getRealtimeHost(),
-      port: _getRealtimePort(),
-      appKey: appKey,
-      useTLS: scheme == 'https',
-      authEndpoint: authEndpoint,
-      authorizer: (channelName, socketId) async {
-        final token = await _localStorage.getToken();
-        return {
-          'Accept': 'application/json',
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        };
-      },
-      onError: (error) {
-        print('Realtime chat connection error: $error');
-      },
-    );
+    _realtimeInitCompleter = Completer<void>();
 
-    unawaited(_realtimeClient!.connect());
-    _realtimeInitialized = true;
+    try {
+      final appKey = _getRealtimeAppKey();
+      if (appKey.isEmpty) {
+        print(
+          'Realtime chat disabled: REVERB_APP_KEY/PUSHER_APP_KEY is not configured.',
+        );
+        _realtimeInitCompleter!.complete();
+        return;
+      }
+
+      final scheme = _getRealtimeScheme();
+      final apiBase = ApiRoutes.baseUrl.replaceAll(RegExp(r'/$'), '');
+      final authEndpoint = '$apiBase/broadcasting/auth';
+      _realtimeClient = ReverbClient.instance(
+        host: _getRealtimeHost(),
+        port: _getRealtimePort(),
+        appKey: appKey,
+        useTLS: scheme == 'https',
+        authEndpoint: authEndpoint,
+        authorizer: (channelName, socketId) async {
+          final token = await _localStorage.getToken();
+          return {
+            'Accept': 'application/json',
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          };
+        },
+        onConnecting: () {
+          print('Realtime connecting...');
+        },
+        onConnected: (socketId) {
+          print('Realtime connected. Socket ID: $socketId');
+          unawaited(_restoreActiveRealtimeSubscription());
+        },
+        onReconnecting: () {
+          print('Realtime reconnecting...');
+        },
+        onDisconnected: () {
+          print('Realtime disconnected');
+        },
+        onError: (error) {
+          print('Realtime chat connection error: $error');
+        },
+      );
+
+      unawaited(_realtimeClient!.connect());
+      _realtimeInitialized = true;
+      _realtimeInitCompleter!.complete();
+    } catch (e) {
+      _realtimeInitialized = false;
+      final completer = _realtimeInitCompleter;
+      _realtimeInitCompleter = null;
+      if (completer != null && !completer.isCompleted) {
+        completer.completeError(e);
+      }
+      rethrow;
+    } finally {
+      _realtimeInitCompleter = null;
+    }
+  }
+
+  Future<void> _restoreActiveRealtimeSubscription() async {
+    final activeConversationId = _activeRealtimeConversationId;
+    if (activeConversationId == null) return;
+    try {
+      await startRealtimeForConversation(
+        activeConversationId,
+        forceResubscribe: true,
+      );
+    } catch (e) {
+      print('Realtime resubscribe failed: $e');
+    }
   }
 
   Future<bool> _waitForRealtimeConnection({
@@ -681,7 +790,10 @@ class ChatService {
     );
   }
 
-  Future<void> startRealtimeForConversation(String conversationId) async {
+  Future<void> startRealtimeForConversation(
+    String conversationId, {
+    bool forceResubscribe = false,
+  }) async {
     await _ensureInitialized();
 
     final resolvedConversationId = _resolvePickupConversationId(conversationId);
@@ -708,7 +820,8 @@ class ChatService {
 
     final channelName = 'chat.room.$roomId';
     final privateChannelName = 'private-$channelName';
-    if (_activeRealtimeChannelName == privateChannelName &&
+    if (!forceResubscribe &&
+        _activeRealtimeChannelName == privateChannelName &&
         (_activeRealtimeConversationId == conversationId ||
             _activeRealtimeConversationId == resolvedConversationId)) {
       return;
@@ -1148,7 +1261,7 @@ class ChatService {
 
   // Get messages for specific conversation
   List<ChatMessage> getMessages(String conversationId) {
-    if (conversationId.startsWith('pickup_')) {
+    if (_isPickupChat(conversationId)) {
       unawaited(_refreshPickupConversation(conversationId));
     }
     final conversation = _conversations.firstWhere(
@@ -1166,9 +1279,12 @@ class ChatService {
     final localStorage = await LocalStorageService.getInstance();
     final userRole = await localStorage.getUserRole() ?? 'end_user';
     final resolvedConversationId = _resolvePickupConversationId(conversationId);
-    final isPickupConversation = resolvedConversationId.startsWith('pickup_');
+    final isPickupConversation = _isPickupChat(resolvedConversationId);
 
     final bool isMitraUser = userRole == 'mitra';
+    print(
+      'isMitraUser: $isMitraUser, isPickupConversation: $isPickupConversation',
+    );
 
     if (isPickupConversation) {
       await _sendPickupMessage(
@@ -1452,7 +1568,7 @@ class ChatService {
 
   // Mark conversation as read
   Future<void> markConversationAsRead(String conversationId) async {
-    if (conversationId.startsWith('pickup_')) {
+    if (_isPickupChat(conversationId)) {
       await _markPickupRoomAsRead(conversationId);
       return;
     }
@@ -1478,6 +1594,9 @@ class ChatService {
 
         _conversationsController.add(_conversations);
         await _saveConversationsToStorage();
+        
+        // Picu refresh badge di Home
+        NotificationIconWithBadge.refreshNotifier.value++;
       }
     }
   }
@@ -1767,6 +1886,52 @@ class ChatService {
     return conversationId;
   }
 
+  Future<String> getOrCreateConversationByRoomId({
+    required int roomId,
+    String? counterpartName,
+  }) async {
+    await _ensureInitialized();
+
+    final existingConversationId = _conversationIdByRoomId[roomId];
+    if (existingConversationId != null) {
+      await _refreshPickupConversation(existingConversationId);
+      return existingConversationId;
+    }
+
+    final conversationId = 'room_$roomId';
+    final messagesRaw = await _fetchPickupRoomMessagesRaw(roomId);
+    final messages = await _mapPickupMessages(messagesRaw);
+    final displayName = (counterpartName ?? '').trim();
+
+    final existingIndex = _conversations.indexWhere(
+      (c) => c.id == conversationId,
+    );
+
+    final conversation = ChatConversation(
+      id: conversationId,
+      title: 'Room #$roomId',
+      lastMessage: messages.isNotEmpty ? messages.last.message : '',
+      lastMessageTime: messages.isNotEmpty
+          ? messages.last.timestamp
+          : DateTime.now(),
+      isUnread: false,
+      unreadCount: 0,
+      adminName: displayName.isNotEmpty ? displayName : 'Mitra/User',
+      messages: messages,
+    );
+
+    if (existingIndex == -1) {
+      _conversations.add(conversation);
+    } else {
+      _conversations[existingIndex] = conversation;
+    }
+
+    _conversationIdByRoomId[roomId] = conversationId;
+    _conversationsController.add(_conversations);
+    await _saveConversationsToStorage();
+    return conversationId;
+  }
+
   // Get total unread count
   int getTotalUnreadCount() {
     return _conversations.fold(
@@ -1777,7 +1942,8 @@ class ChatService {
 
   // Send image message
   Future<void> sendImageMessage(String conversationId, String imageUrl) async {
-    if (conversationId.startsWith('pickup_')) {
+    if (conversationId.startsWith('pickup_') ||
+        _extractRoomIdFromConversationId(conversationId) != null) {
       await _sendPickupMessage(
         conversationId: conversationId,
         messageText: '',
