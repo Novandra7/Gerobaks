@@ -81,7 +81,11 @@ class PopupNotificationService {
     if (_isShowing) return;
 
     _isShowing = true;
-    final overlay = Overlay.of(context);
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) {
+      _isShowing = false;
+      return;
+    }
 
     _currentOverlay = OverlayEntry(
       builder: (context) => PopupNotificationWidget(
