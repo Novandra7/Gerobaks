@@ -1,14 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:bank_sha/shared/theme.dart';
 import 'package:bank_sha/services/notification_api_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class NotificationIconWithBadge extends StatefulWidget {
   final VoidCallback? onTap;
   final Color? iconColor;
   final double? iconSize;
   final bool useAssetIcon;
+
+  // Global notifier to trigger refresh from anywhere in the app
+  static final ValueNotifier<int> refreshNotifier = ValueNotifier(0);
 
   const NotificationIconWithBadge({
     super.key,
@@ -27,11 +32,29 @@ class _NotificationIconWithBadgeState extends State<NotificationIconWithBadge> {
   int _notificationCount = 0;
   bool _hasUrgent = false;
   NotificationApiService? _notificationApi;
+  StreamSubscription<RemoteMessage>? _messagingSubscription;
 
   @override
   void initState() {
     super.initState();
     _initializeAndLoad();
+
+    // Listen for incoming notifications while app is in foreground
+    _messagingSubscription = FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (mounted) {
+        _loadNotificationCount();
+      }
+    });
+
+    // Listen for manual refresh triggers (e.g. after marking as read)
+    NotificationIconWithBadge.refreshNotifier.addListener(_loadNotificationCount);
+  }
+
+  @override
+  void dispose() {
+    _messagingSubscription?.cancel();
+    NotificationIconWithBadge.refreshNotifier.removeListener(_loadNotificationCount);
+    super.dispose();
   }
 
   Future<void> _initializeAndLoad() async {
