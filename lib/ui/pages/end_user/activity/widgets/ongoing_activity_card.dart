@@ -117,7 +117,7 @@ class OngoingActivityCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _getStatusColor(status).withValues(alpha: 0.1),
+                color: _getStatusColor(status).withOpacity(0.1),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
