@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/services/api_service_manager.dart';
+import 'package:bank_sha/services/firebase_messaging_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Utility class untuk membantu proses autentikasi
@@ -84,6 +85,13 @@ class AuthHelper {
           // Reload ApiServiceManager auth state
           await ApiServiceManager().reloadAuthState();
 
+          // Sync FCM token with backend after successful auto-login
+          try {
+            await FirebaseMessagingService().syncTokenWithBackend();
+          } catch (e) {
+            print("🔑 [AUTH] Failed to sync FCM token after token login: $e");
+          }
+
           print(
             "🔑 [AUTH] Auth success via token. Role: $role, Name: ${userData['name']}",
           );
@@ -154,6 +162,15 @@ class AuthHelper {
         
         // Reload ApiServiceManager auth state
         await ApiServiceManager().reloadAuthState();
+
+        // Sync FCM token with backend after successful auto-login
+        try {
+          await FirebaseMessagingService().syncTokenWithBackend();
+        } catch (e) {
+          print(
+            "🔑 [AUTH] Failed to sync FCM token after credential login: $e",
+          );
+        }
 
         print(
           "🔑 [AUTH] Auth success via credentials. Role: $role, Name: ${userData['name']}",
