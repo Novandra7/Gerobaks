@@ -9,6 +9,7 @@ import 'package:bank_sha/services/audio_player_service.dart';
 import 'package:bank_sha/ui/widgets/chat/voice_message_bubble.dart';
 import 'package:bank_sha/ui/widgets/chat/enhanced_message_input.dart';
 import 'package:bank_sha/utils/api_routes.dart';
+import 'package:bank_sha/utils/app_logger.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'dart:io';
@@ -19,6 +20,7 @@ class ChatDetailPage extends StatefulWidget {
   final bool isReadOnly;
   final String? customTitle;
   final String? readOnlyMessage;
+  final bool viewAsMitra;
 
   const ChatDetailPage({
     super.key,
@@ -26,6 +28,7 @@ class ChatDetailPage extends StatefulWidget {
     this.isReadOnly = false,
     this.customTitle,
     this.readOnlyMessage,
+    this.viewAsMitra = false,
   });
 
   @override
@@ -97,7 +100,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         final shouldAutoScroll = pending.length > _messages.length;
         setState(() {
           _messages = pending;
-          _visibleMessageCount = _messagePageSize;
+          final previousVisibleCount = _visibleMessageCount;
+          final minimumVisible = previousVisibleCount > _messagePageSize
+              ? previousVisibleCount
+              : _messagePageSize;
+          _visibleMessageCount = minimumVisible > pending.length
+              ? pending.length
+              : minimumVisible;
           _lastUiMessageSignature = _buildMessageSignature(pending);
         });
         _scheduleImageWork(pending);
@@ -153,12 +162,30 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   void _loadMessages() {
-    setState(() {
-      _messages = _chatService.getMessages(widget.conversationId);
-      _visibleMessageCount = _messagePageSize;
-      _lastUiMessageSignature = _buildMessageSignature(_messages);
-      _conversation = _chatService.getConversationById(widget.conversationId);
-    });
+    try {
+      if (widget.conversationId.isEmpty) {
+        setState(() {
+          _messages = [];
+          _visibleMessageCount = _messagePageSize;
+          _conversation = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _messages = _chatService.getMessages(widget.conversationId);
+        _visibleMessageCount = _messagePageSize;
+        _lastUiMessageSignature = _buildMessageSignature(_messages);
+        _conversation = _chatService.getConversationById(widget.conversationId);
+      });
+    } catch (e) {
+      AppLogger.error('ChatDetailPage: Failed to load messages', e);
+      setState(() {
+        _messages = [];
+        _visibleMessageCount = _messagePageSize;
+        _conversation = null;
+      });
+    }
     _scheduleImageWork(_messages);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom(animated: false);
@@ -166,7 +193,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   void _markAsRead() {
-    _chatService.markAsRead(widget.conversationId);
+    try {
+      if (widget.conversationId.isNotEmpty) {
+        _chatService.markAsRead(widget.conversationId);
+      }
+    } catch (e) {
+      AppLogger.warning('ChatDetailPage: Failed to mark as read: $e');
+    }
   }
 
   Future<void> _startRealtimeSafely() async {
@@ -174,9 +207,11 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     if (_isStartingRealtime) return;
     _isStartingRealtime = true;
     try {
-      await _chatService.startRealtimeForConversation(widget.conversationId);
+      if (widget.conversationId.isNotEmpty) {
+        await _chatService.startRealtimeForConversation(widget.conversationId);
+      }
     } catch (e) {
-      print('End-user realtime start failed: $e');
+      AppLogger.error('ChatDetailPage: Realtime start failed', e);
     } finally {
       _isStartingRealtime = false;
     }
@@ -195,7 +230,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   String _buildMessageSignature(List<ChatMessage> messages) {
     if (messages.isEmpty) return '0';
     final last = messages.last;
-    return '${messages.length}|${last.id}|${last.timestamp.microsecondsSinceEpoch}|${last.type.name}';
+    return '${messages.length}|${last.id}|${last.timestamp.microsecondsSinceEpoch}';
   }
 
   void _scrollToBottom({bool animated = true}) {
@@ -592,8 +627,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
-    final isUser = message.isFromUser;
-    final isPendingMessage = isUser && message.id.startsWith('local_');
+    final isMe = widget.viewAsMitra ? !message.isFromUser : message.isFromUser;
+    final isPendingMessage = isMe && message.id.startsWith('local_');
     final isSystem = message.type == MessageType.system;
     final isTyping = message.type == MessageType.typing;
 
@@ -628,7 +663,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withValues(alpha: 0.1),
+              backgroundColor: greenColor.withOpacity(0.1),
               child: Icon(Icons.support_agent, color: greenColor, size: 16),
             ),
             const SizedBox(width: 8),
@@ -653,7 +688,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: greenColor.withValues(alpha: 0.7),
+                      color: greenColor.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -662,7 +697,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: greenColor.withValues(alpha: 0.4),
+                      color: greenColor.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -679,7 +714,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       return VoiceMessageBubble(
         voiceUrl: message.voiceUrl!,
         durationInSeconds: message.voiceDuration ?? 0,
-        isFromUser: isUser,
+        isFromUser: isMe,
         timestamp: message.timestamp,
         audioPlayerService: _audioPlayerService,
       );
@@ -693,16 +728,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) ...[
+          if (!isMe) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withValues(alpha: 0.1),
-              child: Icon(Icons.support_agent, color: greenColor, size: 16),
+              backgroundColor: greenColor.withOpacity(0.1),
+              child: Icon(
+                widget.viewAsMitra ? Icons.person : Icons.support_agent,
+                color: greenColor,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -712,9 +749,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 maxWidth: MediaQuery.of(context).size.width * 0.7,
               ),
               child: Column(
-                crossAxisAlignment: isUser
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -722,20 +758,20 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: isUser ? greenColor : whiteColor,
+                      color: isMe ? greenColor : whiteColor,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft: isUser
+                        bottomLeft: isMe
                             ? const Radius.circular(16)
                             : const Radius.circular(4),
-                        bottomRight: isUser
+                        bottomRight: isMe
                             ? const Radius.circular(4)
                             : const Radius.circular(16),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: blackColor.withValues(alpha: 0.1),
+                          color: blackColor.withOpacity(0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -743,8 +779,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     ),
                     child: Text(
                       message.message,
-                      style: (isUser ? whiteTextStyle : blackTextStyle)
-                          .copyWith(fontSize: 14, height: 1.4),
+                      style: (isMe ? whiteTextStyle : blackTextStyle).copyWith(
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -756,9 +794,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               ),
             ),
           ),
-          if (isUser) ...[
+          if (isMe) ...[
             const SizedBox(width: 8),
-            _buildUserAvatar(isPending: isPendingMessage),
+            _buildUserAvatar(
+              isPending: isPendingMessage,
+              icon: widget.viewAsMitra ? Icons.support_agent : Icons.person,
+            ),
           ],
         ],
       ),
@@ -766,50 +807,51 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   Widget _buildImageBubble(ChatMessage message) {
-    final isUser = message.isFromUser;
-    final isPendingMessage = isUser && message.id.startsWith('local_');
+    final isMe = widget.viewAsMitra ? !message.isFromUser : message.isFromUser;
+    final isPendingMessage = isMe && message.id.startsWith('local_');
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isUser) ...[
+          if (!isMe) ...[
             CircleAvatar(
               radius: 16,
-              backgroundColor: greenColor.withValues(alpha: 0.1),
-              child: Icon(Icons.support_agent, color: greenColor, size: 16),
+              backgroundColor: greenColor.withOpacity(0.1),
+              child: Icon(
+                widget.viewAsMitra ? Icons.person : Icons.support_agent,
+                color: greenColor,
+                size: 16,
+              ),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isUser
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
                   decoration: BoxDecoration(
-                    color: isUser ? greenColor : whiteColor,
+                    color: isMe ? greenColor : whiteColor,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
-                      bottomLeft: isUser
+                      bottomLeft: isMe
                           ? const Radius.circular(16)
                           : const Radius.circular(4),
-                      bottomRight: isUser
+                      bottomRight: isMe
                           ? const Radius.circular(4)
                           : const Radius.circular(16),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: blackColor.withValues(alpha: 0.1),
+                        color: blackColor.withOpacity(0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -819,10 +861,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
-                      bottomLeft: isUser
+                      bottomLeft: isMe
                           ? const Radius.circular(16)
                           : const Radius.circular(4),
-                      bottomRight: isUser
+                      bottomRight: isMe
                           ? const Radius.circular(4)
                           : const Radius.circular(16),
                     ),
@@ -890,23 +932,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               ],
             ),
           ),
-          if (isUser) ...[
+          if (isMe) ...[
             const SizedBox(width: 8),
-            _buildUserAvatar(isPending: isPendingMessage),
+            _buildUserAvatar(
+              isPending: isPendingMessage,
+              icon: widget.viewAsMitra ? Icons.support_agent : Icons.person,
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildUserAvatar({required bool isPending}) {
+  Widget _buildUserAvatar({required bool isPending, IconData? icon}) {
     return Stack(
       alignment: Alignment.center,
       children: [
         CircleAvatar(
           radius: 16,
-          backgroundColor: greenColor.withValues(alpha: 0.1),
-          child: Icon(Icons.person, color: greenColor, size: 16),
+          backgroundColor: greenColor.withOpacity(0.1),
+          child: Icon(icon ?? Icons.person, color: greenColor, size: 16),
         ),
         if (isPending)
           SizedBox(
