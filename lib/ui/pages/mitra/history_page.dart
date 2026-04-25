@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/mitra_pickup_schedule.dart';
 import '../../../services/mitra_api_service.dart';
+import '../../../services/chat_service.dart';
+import '../end_user/chat/chat_detail_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -149,13 +151,13 @@ class _HistoryPageState extends State<HistoryPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: greyColor.withValues(alpha: 0.1),
+                color: greyColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.history,
                 size: 64,
-                color: greyColor.withValues(alpha: 0.6),
+                color: greyColor.withOpacity(0.6),
               ),
             ),
             const SizedBox(height: 24),
@@ -215,6 +217,30 @@ class _HistoryCard extends StatelessWidget {
     );
   }
 
+  void _navigateToChat(BuildContext context) async {
+    final chatService = ChatService();
+    // Use the user's name as counterpart name
+    final conversationId = await chatService.getOrCreatePickupConversationFast(
+      pickupScheduleId: schedule.id,
+      counterpartName: schedule.userName,
+    );
+
+    if (context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailPage(
+            conversationId: conversationId,
+            isReadOnly: true,
+            viewAsMitra: true,
+            customTitle: 'Chat Riwayat - ${schedule.userName}',
+            readOnlyMessage: 'Ini adalah riwayat chat untuk pengambilan ini.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pointsEarned = schedule.totalWeight != null
@@ -224,10 +250,10 @@ class _HistoryCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
-      shadowColor: greenColor.withValues(alpha: 0.1),
+      shadowColor: greenColor.withOpacity(0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: greenColor.withValues(alpha: 0.1), width: 1),
+        side: BorderSide(color: greenColor.withOpacity(0.1), width: 1),
       ),
       child: InkWell(
         onTap: () => _showDetailModal(context),
@@ -265,10 +291,10 @@ class _HistoryCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: schedule.statusColor.withValues(alpha: 0.15),
+                        color: schedule.statusColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: schedule.statusColor.withValues(alpha: 0.3),
+                          color: schedule.statusColor.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
@@ -293,7 +319,7 @@ class _HistoryCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Divider(height: 20, color: greyColor.withValues(alpha: 0.3)),
+                Divider(height: 20, color: greyColor.withOpacity(0.3)),
 
                 // User Info
                 Row(
@@ -301,10 +327,10 @@ class _HistoryCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: blueColor.withValues(alpha: 0.1),
+                        color: blueColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: blueColor.withValues(alpha: 0.3),
+                          color: blueColor.withOpacity(0.3),
                           width: 2,
                         ),
                       ),
@@ -353,9 +379,9 @@ class _HistoryCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: blueColor.withValues(alpha: 0.1),
+                    color: blueColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: blueColor.withValues(alpha: 0.2)),
+                    border: Border.all(color: blueColor.withOpacity(0.2)),
                   ),
                   child: Row(
                     children: [
@@ -394,15 +420,15 @@ class _HistoryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        orangeColor.withValues(alpha: 0.1),
-                        yellowColor.withValues(alpha: 0.1),
+                        orangeColor.withOpacity(0.1),
+                        yellowColor.withOpacity(0.1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: orangeColor.withValues(alpha: 0.2),
+                      color: orangeColor.withOpacity(0.2),
                     ),
                   ),
                   child: Row(
@@ -413,7 +439,7 @@ class _HistoryCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: orangeColor.withValues(alpha: 0.2),
+                                color: orangeColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -445,7 +471,7 @@ class _HistoryCard extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color: greyColor.withValues(alpha: 0.3),
+                        color: greyColor.withOpacity(0.3),
                       ),
                       Expanded(
                         child: Row(
@@ -454,7 +480,7 @@ class _HistoryCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: yellowColor.withValues(alpha: 0.2),
+                                color: yellowColor.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Icon(
@@ -488,39 +514,90 @@ class _HistoryCard extends StatelessWidget {
                   ),
                 ),
 
-                // Photos Count
-                if (schedule.pickupPhotos != null &&
-                    schedule.pickupPhotos!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: blueColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: blueColor.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.photo_library, size: 16, color: blueColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${schedule.pickupPhotos!.length} foto',
-                            style: blueTextStyle.copyWith(
-                              fontSize: 12,
-                              fontWeight: medium,
+                // Photos Count & Chat Button
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (schedule.pickupPhotos != null &&
+                          schedule.pickupPhotos!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: blueColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: blueColor.withOpacity(0.2),
                             ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.photo_library,
+                                size: 16,
+                                color: blueColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${schedule.pickupPhotos!.length} foto',
+                                style: blueTextStyle.copyWith(
+                                  fontSize: 12,
+                                  fontWeight: medium,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        const SizedBox(),
+
+                      // Chat History Button
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _navigateToChat(context),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: greenColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: greenColor.withOpacity(0.2),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.chat_outlined,
+                                  size: 16,
+                                  color: greenColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Lihat Chat',
+                                  style: greenTextStyle.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: medium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
+                ),
               ],
             ),
           ),
@@ -736,8 +813,10 @@ class _HistoryDetailModal extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           schedule.completedAt != null
-                              ? DateFormat('EEEE, dd MMM yyyy • HH:mm', 'id_ID')
-                                  .format(schedule.completedAt!)
+                              ? DateFormat(
+                                  'EEEE, dd MMM yyyy • HH:mm',
+                                  'id_ID',
+                                ).format(schedule.completedAt!)
                               : '-',
                           style: whiteTextStyle.copyWith(
                             fontSize: 14,
@@ -825,7 +904,7 @@ class _HistoryDetailModal extends StatelessWidget {
                             ],
                           ),
                         ),
-                        
+
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Divider(
@@ -834,7 +913,7 @@ class _HistoryDetailModal extends StatelessWidget {
                             color: greyColor.withAlpha(51),
                           ),
                         ),
-                        
+
                         // User Info Section
                         Row(
                           children: [
@@ -915,9 +994,7 @@ class _HistoryDetailModal extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: orangeColor.withAlpha(26),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: orangeColor.withAlpha(51),
-                      ),
+                      border: Border.all(color: orangeColor.withAlpha(51)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1005,9 +1082,7 @@ class _HistoryDetailModal extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: whiteColor,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: color.withAlpha(77),
-                          ),
+                          border: Border.all(color: color.withAlpha(77)),
                           boxShadow: [
                             BoxShadow(
                               color: color.withAlpha(26),
@@ -1073,7 +1148,9 @@ class _HistoryDetailModal extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFF59E0B).withAlpha(51),
+                                    color: const Color(
+                                      0xFFF59E0B,
+                                    ).withAlpha(51),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   ),
@@ -1224,7 +1301,7 @@ class _HistoryDetailModal extends StatelessWidget {
                                         end: Alignment.bottomCenter,
                                         colors: [
                                           Colors.transparent,
-                                          Colors.black.withValues(alpha: 0.4),
+                                          Colors.black.withOpacity(0.4),
                                         ],
                                       ),
                                     ),
@@ -1333,10 +1410,7 @@ class _HistoryDetailModal extends StatelessWidget {
         children: [
           Text(
             label,
-            style: greyTextStyle.copyWith(
-              fontSize: 14,
-              fontWeight: medium,
-            ),
+            style: greyTextStyle.copyWith(fontSize: 14, fontWeight: medium),
           ),
           Container(
             padding: isHighlighted
