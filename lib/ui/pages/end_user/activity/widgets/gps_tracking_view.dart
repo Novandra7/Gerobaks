@@ -557,7 +557,7 @@ class _GpsTrackingViewState extends State<GpsTrackingView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.blue.shade700.withValues(alpha: 0.9),
+          color: Colors.blue.shade700.withOpacity(0.9),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
