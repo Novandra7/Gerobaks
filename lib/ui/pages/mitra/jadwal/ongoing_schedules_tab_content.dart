@@ -7,6 +7,8 @@ import '../../../../models/mitra_pickup_schedule.dart';
 import '../../../../services/mitra_api_service.dart';
 import '../../../../services/location_service.dart';
 import '../../../../services/realtime_tracking_service.dart';
+import '../../../../services/chat_service.dart';
+import '../chat/mitra_chat_detail_page.dart';
 
 /// Tab content for "Berjalan" tab
 /// Shows schedules with status: accepted, on_the_way, arrived, on_progress
@@ -21,11 +23,24 @@ class OngoingSchedulesTabContent extends StatefulWidget {
 class _OngoingSchedulesTabContentState extends State<OngoingSchedulesTabContent>
     with AutomaticKeepAliveClientMixin {
   static const String _trackingReminderShownKey = 'tracking_reminder_shown';
+  static const Set<String> _chatActiveStatuses = {
+    'assigned',
+    'accepted',
+    'on_the_way',
+    'arrived',
+    'on_progress',
+  };
+  static const Set<String> _chatReadOnlyStatuses = {
+    'completed',
+    'cancelled',
+    'canceled',
+  };
 
   final MitraApiService _apiService = MitraApiService();
   final LocationService _locationService = LocationService();
   final RealTimeTrackingService _realtimeTrackingService =
       RealTimeTrackingService();
+  final ChatService _chatService = ChatService();
   List<MitraPickupSchedule> _schedules = [];
   bool _isLoading = false;
   bool _isProcessing = false;
@@ -118,6 +133,49 @@ class _OngoingSchedulesTabContentState extends State<OngoingSchedulesTabContent>
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     }
+  }
+
+  bool _isChatAvailableForStatus(String status) {
+    final normalized = status.toLowerCase();
+    return _chatActiveStatuses.contains(normalized) ||
+        _chatReadOnlyStatuses.contains(normalized);
+  }
+
+  bool _isChatReadOnlyStatus(String status) {
+    return _chatReadOnlyStatuses.contains(status.toLowerCase());
+  }
+
+  Future<void> _openScheduleChat(MitraPickupSchedule schedule) async {
+    if (!_isChatAvailableForStatus(schedule.status)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat belum tersedia untuk status jadwal ini'),
+        ),
+      );
+      return;
+    }
+
+    final isReadOnly = _isChatReadOnlyStatus(schedule.status);
+    final conversationId = await _chatService.getOrCreatePickupConversationFast(
+      pickupScheduleId: schedule.id,
+      counterpartName: schedule.userName,
+    );
+
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MitraChatDetailPage(
+          conversationId: conversationId,
+          customTitle: schedule.userName,
+          isReadOnly: isReadOnly,
+          readOnlyMessage: isReadOnly
+              ? 'Pickup sudah ${schedule.statusDisplay.toLowerCase()}, chat hanya dapat dibaca.'
+              : null,
+        ),
+      ),
+    );
   }
 
   Future<void> _startJourney(MitraPickupSchedule schedule) async {
@@ -622,6 +680,7 @@ class _OngoingSchedulesTabContentState extends State<OngoingSchedulesTabContent>
             onStartJourney: () => _startJourney(schedule),
             onNavigate: () => _openGoogleMaps(schedule),
             onCall: () => _callUser(schedule),
+            onChat: () => _openScheduleChat(schedule),
             onConfirmArrival: () => _confirmArrival(schedule),
             onCancel: () => _releaseSchedule(schedule),
           );
@@ -639,6 +698,7 @@ class _OngoingScheduleCard extends StatelessWidget {
   final VoidCallback onStartJourney;
   final VoidCallback onNavigate;
   final VoidCallback onCall;
+  final VoidCallback onChat;
   final VoidCallback onConfirmArrival;
   final VoidCallback onCancel;
 
@@ -650,6 +710,7 @@ class _OngoingScheduleCard extends StatelessWidget {
     required this.onStartJourney,
     required this.onNavigate,
     required this.onCall,
+    required this.onChat,
     required this.onConfirmArrival,
     required this.onCancel,
   });
@@ -934,7 +995,7 @@ class _OngoingScheduleCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons() {
-    // accepted → "Mulai Perjalanan" + "Batalkan" + "Navigasi"
+    // accepted → "Mulai Perjalanan" + "Chat User" + "Batalkan" + "Navigasi"
     if (schedule.isAccepted) {
       return Column(
         children: [
@@ -971,85 +1032,21 @@ class _OngoingScheduleCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onCancel,
-                  icon: Icon(Icons.close, size: 18, color: redcolor),
-                  label: Text(
-                    'Batalkan',
-                    style: TextStyle(
-                      color: redcolor,
-                      fontSize: 13,
-                      fontWeight: semiBold,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: redcolor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onNavigate,
-                  icon: Icon(Icons.navigation, size: 18, color: blueColor),
-                  label: Text(
-                    'Navigasi',
-                    style: TextStyle(
-                      color: blueColor,
-                      fontSize: 13,
-                      fontWeight: semiBold,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: blueColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    // on_the_way → "Sudah Tiba" + "Batalkan" + "Navigasi"
-    if (schedule.isOnTheWay) {
-      return Column(
-        children: [
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: isProcessing ? null : onConfirmArrival,
-              icon: isProcessing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.location_on, size: 18),
+            child: OutlinedButton.icon(
+              onPressed: onChat,
+              icon: Icon(Icons.chat_outlined, size: 18, color: greenColor),
               label: Text(
-                'Sudah Tiba',
-                style: whiteTextStyle.copyWith(
-                  fontSize: 14,
+                'Chat User',
+                style: TextStyle(
+                  color: greenColor,
+                  fontSize: 13,
                   fontWeight: semiBold,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: greenColor,
-                foregroundColor: whiteColor,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: greenColor),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1106,52 +1103,212 @@ class _OngoingScheduleCard extends StatelessWidget {
       );
     }
 
-    // arrived → "Lihat Detail" (to complete from detail page)
-    if (schedule.isArrived) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: onTap,
-          icon: const Icon(Icons.done_all, size: 18),
-          label: Text(
-            'Selesaikan Pickup',
-            style: whiteTextStyle.copyWith(fontSize: 14, fontWeight: semiBold),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: greenColor,
-            foregroundColor: whiteColor,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+    // on_the_way → "Sudah Tiba" + "Chat User" + "Batalkan" + "Navigasi"
+    if (schedule.isOnTheWay) {
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isProcessing ? null : onConfirmArrival,
+              icon: isProcessing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.location_on, size: 18),
+              label: Text(
+                'Sudah Tiba',
+                style: whiteTextStyle.copyWith(
+                  fontSize: 14,
+                  fontWeight: semiBold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                foregroundColor: whiteColor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onChat,
+              icon: Icon(Icons.chat_outlined, size: 18, color: greenColor),
+              label: Text(
+                'Chat User',
+                style: TextStyle(
+                  color: greenColor,
+                  fontSize: 13,
+                  fontWeight: semiBold,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: greenColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onCancel,
+                  icon: Icon(Icons.close, size: 18, color: redcolor),
+                  label: Text(
+                    'Batalkan',
+                    style: TextStyle(
+                      color: redcolor,
+                      fontSize: 13,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: redcolor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onNavigate,
+                  icon: Icon(Icons.navigation, size: 18, color: blueColor),
+                  label: Text(
+                    'Navigasi',
+                    style: TextStyle(
+                      color: blueColor,
+                      fontSize: 13,
+                      fontWeight: semiBold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: blueColor),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       );
     }
 
-    // on_progress → "Lihat Detail"
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: Icon(Icons.visibility, size: 18, color: orangeColor),
-        label: Text(
-          'Lihat Detail',
-          style: TextStyle(
-            color: orangeColor,
-            fontSize: 14,
-            fontWeight: semiBold,
+    // arrived → "Selesaikan Pickup" + "Chat User"
+    if (schedule.isArrived) {
+      return Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.done_all, size: 18),
+              label: Text(
+                'Selesaikan Pickup',
+                style: whiteTextStyle.copyWith(fontSize: 14, fontWeight: semiBold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: greenColor,
+                foregroundColor: whiteColor,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onChat,
+              icon: Icon(Icons.chat_outlined, size: 18, color: greenColor),
+              label: Text(
+                'Chat User',
+                style: TextStyle(
+                  color: greenColor,
+                  fontSize: 13,
+                  fontWeight: semiBold,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: greenColor),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // on_progress → "Chat User" + "Lihat Detail"
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onChat,
+            icon: Icon(Icons.chat_outlined, size: 18, color: greenColor),
+            label: Text(
+              'Chat User',
+              style: TextStyle(
+                color: greenColor,
+                fontSize: 13,
+                fontWeight: semiBold,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: greenColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: orangeColor),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onTap,
+            icon: Icon(Icons.visibility, size: 18, color: orangeColor),
+            label: Text(
+              'Lihat Detail',
+              style: TextStyle(
+                color: orangeColor,
+                fontSize: 14,
+                fontWeight: semiBold,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: orangeColor),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
