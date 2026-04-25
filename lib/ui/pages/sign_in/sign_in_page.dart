@@ -10,6 +10,7 @@ import 'package:bank_sha/ui/widgets/shared/buttons.dart';
 import 'package:bank_sha/utils/toast_helper.dart';
 import 'package:bank_sha/services/notification_service.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/firebase_messaging_service.dart';
 import 'package:flutter/material.dart';
 
 class SignInPage extends StatefulWidget {
@@ -128,6 +129,12 @@ class _SignInPageState extends State<SignInPage> {
           }
 
           // Navigate based on role
+          try {
+            await _syncFcmTokenAfterLogin();
+          } catch (e) {
+            print('⚠️ Failed to sync FCM token after session restore: $e');
+          }
+
           if (role == 'mitra') {
             Navigator.pushReplacementNamed(context, '/mitra-dashboard-new');
           } else {
@@ -377,6 +384,13 @@ class _SignInPageState extends State<SignInPage> {
       // Reload ApiServiceManager auth state
       await ApiServiceManager().reloadAuthState();
 
+      // Sync FCM token with backend after successful login
+      try {
+        await _syncFcmTokenAfterLogin();
+      } catch (e) {
+        print('⚠️ Failed to sync FCM token after login: $e');
+      }
+
       // Menampilkan notifikasi login berhasil
       await NotificationService().showNotification(
         id: DateTime.now().millisecond,
@@ -443,6 +457,7 @@ class _SignInPageState extends State<SignInPage> {
     } catch (e) {
       if (mounted) {
         // More user-friendly error message
+        print('❌ Login error: $e'); // Log error untuk debugging
         String errorMessage = 'Email atau password salah';
 
         if (e.toString().contains('NotInitializedError')) {
@@ -470,6 +485,12 @@ class _SignInPageState extends State<SignInPage> {
         });
       }
     }
+  }
+
+  Future<void> _syncFcmTokenAfterLogin() async {
+    final firebaseMessagingService = FirebaseMessagingService();
+    await firebaseMessagingService.initialize();
+    await firebaseMessagingService.syncTokenWithBackend();
   }
 
   @override
