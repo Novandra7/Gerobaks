@@ -73,10 +73,12 @@ import 'package:bank_sha/services/gemini_ai_service.dart';
 import 'package:bank_sha/services/local_storage_service.dart';
 import 'package:bank_sha/services/subscription_service.dart';
 import 'package:bank_sha/services/user_service.dart';
+import 'package:bank_sha/services/firebase_messaging_service.dart';
 // import 'package:bank_sha/services/global_notification_polling_service.dart'; // ❌ DISABLED - see FIX_DOUBLE_NOTIFICATION_POPUP.md
 import 'package:bank_sha/controllers/profile_controller.dart';
 import 'package:bank_sha/services/auth_api_service.dart';
 import 'package:bank_sha/utils/app_config.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // Fungsi untuk memeriksa dan membuat file .env jika tidak ada
 Future<void> ensureEnvFileExists() async {
@@ -103,6 +105,14 @@ Future<void> main() async {
   try {
     // Ensure Flutter is initialized before doing anything
     WidgetsFlutterBinding.ensureInitialized();
+
+    try {
+      await ensureFirebaseInitialized();
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      print("Firebase berhasil diinisialisasi");
+    } catch (e) {
+      print("Error saat inisialisasi Firebase: $e");
+    }
 
     // Debug console test
     print('===== DEBUG CONSOLE TEST =====');
@@ -174,6 +184,9 @@ Future<void> main() async {
       await NotificationService().initialize();
       print("Notifikasi berhasil diinisialisasi");
 
+      await FirebaseMessagingService().initialize();
+      print("Firebase Messaging berhasil diinisialisasi");
+
       // Pastikan notifikasi pantun berjalan
       try {
         await fixPantunNotifications();
@@ -234,36 +247,20 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   // Global navigator key untuk notification service
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-
+  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Set global navigator key for NavigationService
+    // Set global navigator key untuk NavigationService
     NavigationService.setNavigatorKey(_navigatorKey);
 
-    // ❌ DISABLED: Initialize global notification polling service
-    // Reason: Menyebabkan duplicate popup dengan FCM push notification
-    // See: FIX_DOUBLE_NOTIFICATION_POPUP.md
-    // _initializeGlobalNotification();
+    // ✅ Setup FCM handlers SETELAH navigatorKey siap
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await FirebaseMessagingService().setupHandlersAfterNavigatorReady();
+    });
   }
-
-  // ❌ DISABLED: Polling service initialization
-  // Future<void> _initializeGlobalNotification() async {
-  //   try {
-  //     final GlobalNotificationPollingService notificationService =
-  //         GlobalNotificationPollingService();
-  //
-  //     // Wait for first frame to ensure navigator is ready
-  //     WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //       await notificationService.initialize(_navigatorKey);
-  //       print('✅ Global notification service initialized');
-  //     });
-  //   } catch (e) {
-  //     print('❌ Error initializing global notification: $e');
-  //   }
-  // }
 
   @override
   void dispose() {
@@ -351,7 +348,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           '/notif': (context) => const NotificationPage(),
           '/notifications': (context) =>
               const NotificationScreen(), // New notification feature
-          '/chat': (context) => ChatListPage(),
+          // '/chat': (context) => ChatListPage(),
           '/debug-notification': (context) =>
               const DebugNotificationPage(), // Debug test banner
           '/subscription-plans': (context) => SubscriptionPlansPage(),
