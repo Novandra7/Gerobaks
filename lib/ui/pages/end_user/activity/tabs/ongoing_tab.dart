@@ -269,32 +269,44 @@ class _OngoingTabState extends State<OngoingTab>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (_isLoading) {
-      return _buildSkeletonLoading();
-    }
-
-    final filteredSchedules = _getFilteredActivities();
-
-    if (filteredSchedules.isEmpty) {
-      return _buildEmptyState();
-    }
-
     return RefreshIndicator(
       onRefresh: _loadSchedules,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        itemCount: filteredSchedules.length,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: OngoingActivityCard(
-              schedule: filteredSchedules[index],
-              onRefresh: _loadSchedules,
-              onChat: () => _openScheduleChat(filteredSchedules[index]),
-            ),
-          );
-        },
-      ),
+      child: _isLoading
+          ? _buildSkeletonLoading()
+          : _getFilteredActivities().isEmpty
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        Container(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: _buildEmptyState(),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
+                  itemCount: _getFilteredActivities().length,
+                  itemBuilder: (context, index) {
+                    final filteredSchedules = _getFilteredActivities();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: OngoingActivityCard(
+                        schedule: filteredSchedules[index],
+                        onRefresh: _loadSchedules,
+                        onChat: () => _openScheduleChat(filteredSchedules[index]),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
