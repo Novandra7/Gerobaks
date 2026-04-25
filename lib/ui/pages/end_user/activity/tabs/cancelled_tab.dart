@@ -238,31 +238,43 @@ class _CancelledTabState extends State<CancelledTab>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (_isLoading) {
-      return _buildSkeletonLoading();
-    }
-
-    final filteredActivities = _getFilteredActivities();
-
-    if (filteredActivities.isEmpty) {
-      return _buildEmptyState();
-    }
-
     return RefreshIndicator(
       onRefresh: _loadSchedules,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        itemCount: filteredActivities.length,
-        itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ActivityItemImproved(
-              activity: filteredActivities[index],
-              onCancelled: _loadSchedules,
-            ),
-          );
-        },
-      ),
+      child: _isLoading
+          ? _buildSkeletonLoading()
+          : _getFilteredActivities().isEmpty
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        Container(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: _buildEmptyState(),
+                        ),
+                      ],
+                    );
+                  },
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
+                  itemCount: _getFilteredActivities().length,
+                  itemBuilder: (context, index) {
+                    final filteredActivities = _getFilteredActivities();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: ActivityItemImproved(
+                        activity: filteredActivities[index],
+                        onCancelled: _loadSchedules,
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
