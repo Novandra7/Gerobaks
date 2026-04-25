@@ -176,12 +176,7 @@ class _HomeContentState extends State<HomeContent> with AppDialogMixin {
         // Check raw user data
         // print("🏠 Step 4b: Checking raw userData...");
         final rawUserData = await localStorage.getUserData();
-        // print("   Raw userData exists: ${rawUserData != null}");
-        // if (rawUserData != null) {
-        //   print("   Raw userData name: ${rawUserData['name']}");
-        //   print("   Raw userData email: ${rawUserData['email']}");
-        //   print("   Raw userData structure keys: ${rawUserData.keys.toList()}");
-        // }
+    
 
         // Check UserModel creation
         // print("🏠 Step 4c: Trying to get UserModel directly...");
