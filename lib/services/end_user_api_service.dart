@@ -320,7 +320,6 @@ class EndUserApiService {
         final data = json.decode(response.body);
 
         if (data['success'] == true && data['data'] != null) {
-          _logger.i('✅ Pickup schedules fetched successfully');
 
           // Handle nested response: data.data contains the array
           dynamic schedulesData = data['data'];
@@ -331,9 +330,7 @@ class EndUserApiService {
               final schedules = List<Map<String, dynamic>>.from(
                 schedulesData['data'],
               );
-              _logger.i(
-                '📦 Loaded ${schedules.length} schedules from nested data.data',
-              );
+         
               return schedules;
             }
             // Check for 'schedules' key (alternative format)
@@ -499,11 +496,11 @@ class EndUserApiService {
         return List<Map<String, dynamic>>.from(data['data'] ?? []);
       } else {
         _logger.e('Failed to fetch chats: ${response.statusCode}');
-        return [];
+        throw Exception('Gagal memuat daftar chat: ${response.statusCode}');
       }
     } catch (e) {
       _logger.e('Error fetching chats: $e');
-      return [];
+      rethrow;
     }
   }
 
