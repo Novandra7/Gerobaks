@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/notification_model.dart';
 
 /// Service untuk handle API notification
@@ -8,7 +9,7 @@ class NotificationApiService {
 
   NotificationApiService({required Dio dio, String? baseUrl})
     : _dio = dio,
-      baseUrl = baseUrl ?? 'http://127.0.0.1:8000/api';
+      baseUrl = baseUrl ?? (dotenv.env['API_BASE_URL']! + '/api');
 
   /// Setup Dio dengan Bearer token
   void setAuthToken(String token) {
@@ -85,15 +86,8 @@ class NotificationApiService {
   /// - has_urgent: Boolean if ada urgent notification
   Future<UnreadCountResponse> getUnreadCount() async {
     try {
-      print('📊 Fetching unread count...');
 
       final response = await _dio.get('$baseUrl/notifications/unread-count');
-
-      print('📦 Unread count response status: ${response.statusCode}');
-      print('📦 Unread count response data: ${response.data}');
-
-      final unreadCount = response.data['data']['unread_count'];
-      print('✅ Unread count: $unreadCount');
 
       return UnreadCountResponse.fromJson(response.data);
     } on DioException catch (e) {
@@ -257,7 +251,7 @@ class NotificationApiService {
   Future<bool> registerFcmToken({
     required String fcmToken,
     required String deviceType,
-    String? deviceName,
+    required String deviceName,
   }) async {
     try {
       print('📤 Registering FCM token...');
@@ -268,7 +262,7 @@ class NotificationApiService {
         data: {
           'fcm_token': fcmToken,
           'device_type': deviceType,
-          if (deviceName != null) 'device_name': deviceName,
+          'device_name': deviceName,
         },
       );
 
