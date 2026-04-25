@@ -58,6 +58,7 @@ class ChatConversation {
   final int unreadCount;
   final String adminName;
   final String? adminAvatar;
+  final String status; // 'active', 'closed', etc.
   final List<ChatMessage> messages;
 
   ChatConversation({
@@ -69,19 +70,23 @@ class ChatConversation {
     this.unreadCount = 0,
     this.adminName = 'Customer Service',
     this.adminAvatar,
+    this.status = 'active',
     this.messages = const [],
   });
 
   factory ChatConversation.fromJson(Map<String, dynamic> json) {
     return ChatConversation(
-      id: json['id'],
-      title: json['title'],
-      lastMessage: json['lastMessage'],
-      lastMessageTime: DateTime.parse(json['lastMessageTime']),
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      lastMessage: json['lastMessage'] ?? '',
+      lastMessageTime: json['lastMessageTime'] != null 
+          ? DateTime.parse(json['lastMessageTime'])
+          : DateTime.now(),
       isUnread: json['isUnread'] ?? false,
       unreadCount: json['unreadCount'] ?? 0,
       adminName: json['adminName'] ?? 'Customer Service',
       adminAvatar: json['adminAvatar'],
+      status: json['status'] ?? 'active',
       messages: (json['messages'] as List?)
           ?.map((m) => ChatMessage.fromJson(m))
           .toList() ?? [],
@@ -98,6 +103,7 @@ class ChatConversation {
       'unreadCount': unreadCount,
       'adminName': adminName,
       'adminAvatar': adminAvatar,
+      'status': status,
       'messages': messages.map((m) => m.toJson()).toList(),
     };
   }
