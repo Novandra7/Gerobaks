@@ -183,7 +183,7 @@ class OngoingDetailPage extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _getStatusColor(status).withValues(alpha: 0.1),
+                color: _getStatusColor(status).withOpacity(0.1),
               ),
               child: Column(
                 children: [
